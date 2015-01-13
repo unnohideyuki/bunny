@@ -153,7 +153,7 @@ peepCtx = do
 -- Token Actions
 
 act_white_space :: AlexAction result
-act_white_spece = do
+act_white_spece _ _ = do
   toks = getPendingToks
   case toks of
     (t:ts) -> do setPendingToks ts
