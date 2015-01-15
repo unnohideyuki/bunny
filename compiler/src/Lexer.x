@@ -3,13 +3,92 @@ module Lexer where
 }
 %wrapper "monadUserState"
 
-tokens :-
+$ascSymbol = [\! \# \$ \% \& \* \+ \. \/ \< \= \> \? \@ \\ \^ \| \- \~]
+$symbol = $ascSymbol
+
+$small = [a-z]
+$large = [A-Z]
+$digit = [0-9]
+$octit = [0-7]
+$hexit = [0-9a-fA-F]
+
+@varid = ($small [$small $large $digit \']*)
+@conid = ($large [$small $large $digit \']*)
+@varsym = ($symbol [$symbol :]*)
+@consym = (: [$symbol :]*)
+@qual = (@conid \.)+
+
+@integer = ($digit+ | 0o $octit+ | 0O $octit+ | 0x $hexit+ | 0X $hexit+)
+@exponent = ([eE] [\+ \-]? $digit+)
+@float = ($digit+ "." $digit+ @exponent? | $digit+ @exponent?)
+
+haskell :-
 
 <0> $white                      { act_white_space }
 
 <0,comment> "{-"                { act_open_comment }
-<comment> $white+               { skip }
-<comment> .                     { act_ncomment }
+<comment> . | \n                { act_nested_comment }
+
+<0> "--"\-* [^$symbol :] .*     { skip }
+<0> "--"\-* [\ \t]* $           { skip }
+
+-- reserved id 
+<0> "as" { skip }
+<0> "case" { skip }
+<0> "class" { skip }
+<0> "data" { skip }
+<0> "default" { skip }
+<0> "deriving" { skip }
+<0> "do" { skip }
+<0> "else" { skip }
+<0> "hiding" { skip }
+<0> "foreign" { skip }
+<0> "if" { skip }
+<0> "import" { skip }
+<0> "in" { skip }
+<0> "infix" { skip }
+<0> "infixl" { skip }
+<0> "infixr" { skip }
+<0> "instance" { skip }
+<0> "let" { skip }
+<0> "module" { skip }
+<0> "newtype" { skip }
+<0> "of" { skip }
+<0> "qualified" { skip }
+<0> "then" { skip }
+<0> "type" { skip }
+<0> "where" { skip }
+<0> "_" { skip -- underscore}
+
+-- reserved op
+<0> ".." { skip -- dotdot}
+<0> ":" { skip -- colon}
+<0> "::" { skip -- dcolon}
+<0> "=" { skip -- equal}
+<0> "\\" { skip -- lam}
+<0> "|" { skip -- vbar}
+<0> "<-" { skip -- larrow}
+<0> "->" { skip -- rarrow}
+<0> "@" { skip  -- at}
+<0> "~" { skip -- tilde}
+<0> "=>" { skip -- darrow}
+
+-- symbol
+<0> "-" { skip -- minus}
+<0> "!" { skip -- bang}
+
+<0> @varid { skip }
+<0> @conid { skip }
+<0> @varsym { skip }
+<0> @consym { skip }
+
+<0> @qual @varid              { skip }
+<0> @qual @conid              { skip }
+<0> @qual @varsym             { skip }
+<0> @qual @consym             { skip }
+
+<0> @integer {skip}
+<0> @float {skip}
 
 {
 data Token = TOBrace AlexPosn
@@ -17,10 +96,45 @@ data Token = TOBrace AlexPosn
            | VOBrace AlexPosn
            | VCBrace AlexPosn
            | TSemi AlexPosn
-           | TLet AlexPosn
-           | TWhere AlexPosn
+           -- reservedids
+           | TAs AlexPosn
+           | TCase AlexPosn
+           | TClass AlexPosn
+           | TData AlexPosn
+           | TDefault AlexPosn
+           | TDeriving AlexPosn
            | TDo AlexPosn
-           | TOf AlexPosn
+           | TElse AlexPosn
+           | THiding AlexPosn
+           | TForeign AlexPosn
+           | TIf AlexPosn
+           | TImport AlexPosn
+           | TIn AlexPosn
+           | TInfix AlexPosn
+           | TInfixl AlexPosn
+           | TInfixr AlexPosn
+           | TInstance AlexPosn
+           | TLet AlexPosn
+           | TModule AlexPosn
+           | TNewtype AlexPosn
+           | TOf AlexPosn           
+           | TQualified AlexPosn
+           | TThen AlexPosn
+           | TType AlexPosn
+           | TWhere AlexPosn
+           | TUnderscore AlexPosn
+           -- reserved ops
+           | TDotdot AlexPosn
+           | TColon AlexPosn
+           | TDColon AlexPosn
+           | TEqual AlexPosn
+           | TLam AlexPosn
+           | TVBar AlexPosn
+           | TLArrow AlexPosn
+           | TRArrow AlexPosn
+           | TAt AlexPosn
+           | TTilde AlexPosn
+           | TDArrow AlexPosn
            | Eof
              deriving (Show)
 
@@ -30,6 +144,7 @@ data AlexUserState = AlexUserState { bof :: Bool
                                    , pending_toks :: [Token]
                                    , str :: String
                                    , comment_depth :: Int
+                                   , last_char :: Char
                                    }
 
 alexInitUserState :: AlexUserState
@@ -39,78 +154,68 @@ alexInitUserState = AlexUserState { bof = True
                                   , pending_toks = []
                                   , str = ""
                                   , comment_depth = 0
+                                  , last_char = '\0'
                                   }
 
 -- State Utilities
 
 getBof :: Alex Bool
-getBof = Alex $ \st -> Right (st, bof $ alex_ust st)
+getBof = Alex $ \st@AlexState{alex_ust=ust} -> Right (st, bof ust)
 
 setBof :: Bool -> Alex ()
-setBof b = Alex $ \st ->
-  let
-    ust = alex_ust st
-    ust' = ust{bof=b}
-  in
-   Right (st{alex_ust=ust'}, ())
+setBof b = Alex $ \st@AlexState{alex_ust=ust} ->
+  Right (st{alex_ust=ust{bof=b}}, ())
 
 getMorrow :: Alex Bool
-getMorrow = Alex $ \st -> Right (st, morrow $ alex_ust st)
+getMorrow = Alex $ \st@AlexState{alex_ust=ust} -> 
+  Right (st, morrow ust)
 
 setMorrow :: Bool -> Alex ()
-setMorrow b = Alex $ \st ->
-  let
-    ust = alex_ust st
-    ust' = ust{morrow=b}
-  in
-   Right (st{alex_ust=ust'}, ())
+setMorrow b = Alex $ \st@AlexState{alex_ust=ust} -> 
+  Right (st{alex_ust=ust{morrow=b}}, ())
 
 unFlags :: Alex ()
 unFlags = do setBof False; setMorrow False
 
 getLayoutCtx :: Alex [Int]
-getLayoutCtx = Alex $ \st -> Right (st, layout_ctx $ alex_ust st)
+getLayoutCtx = Alex $ \st@AlexState{alex_ust=ust} -> 
+  Right (st, layout_ctx ust)
 
 setLayoutCtx :: [Int] -> Alex ()
-setLayoutCtx cs = Alex $ \st ->
-  let
-    ust = alex_ust st
-    ust' = ust{layout_ctx=cs}
-  in
-   Right (st{alex_ust=ust'}, ())
+setLayoutCtx cs = Alex $ \st@AlexState{alex_ust=ust} ->
+  Right (st{alex_ust=ust{layout_ctx=cs}}, ())
 
 getPendingToks :: Alex [Token]
-getPendingToks = Alex $ \st -> Right (st, pending_toks $ alex_ust st)
+getPendingToks = Alex $ \st@AlexState{alex_ust=ust} -> 
+  Right (st, pending_toks ust)
 
 setPendingToks :: [Token] -> Alex ()
-setPendingToks ts = Alex $ \st ->
-  let
-    ust = alex_ust st
-    ust' = ust{pending_toks=ts}
-  in
-   Right (st{alex_ust=ust'}, ())
+setPendingToks ts = Alex $ \st@AlexState{alex_ust=ust} ->
+  Right (st{alex_ust=ust{pending_toks=ts}}, ())
 
 getStr :: Alex String
-getStr = Alex $ \st -> Right (st, str $ alex_ust st)
+getStr = Alex $ \st@AlexState{alex_ust=ust} -> 
+  Right (st, str ust)
 
 setStr :: String -> Alex ()
-setStr s = Alex $ \st ->
-  let
-    ust = alex_ust st
-    ust' = ust{str=s}
-  in
-   Right (st{alex_ust=ust'}, ())
+setStr s = Alex $ \st@AlexState{alex_ust=ust} -> 
+  Right (st{alex_ust=ust{str=s}}, ())
 
 getCommentDepth :: Alex Int
-getCommentDepth = Alex $ \st -> Right (st, comment_depth $ alex_ust st)
+getCommentDepth = Alex $ \st@AlexState{alex_ust=ust} -> 
+  Right (st, comment_depth ust)
 
 setCommentDepth :: Int -> Alex ()
-setCommentDepth d = Alex $ \st ->
-  let
-    ust = alex_ust st
-    ust' = ust{comment_depth=d}
-  in
-   Right (st{alex_ust=ust'}, ())
+setCommentDepth d = Alex $ \st@AlexState{alex_ust=ust} ->
+   Right (st{alex_ust=ust{comment_depth=d}}, ())
+
+getLastChar :: Alex Char
+getLastChar = Alex $ \st@AlexState{alex_ust=ust} -> 
+  Right (st, last_char ust)
+
+setLastChar :: Char -> Alex ()
+setLastChar c = Alex $ \st@AlexState{alex_ust=ust} ->
+  Right (st{alex_ust=ust{last_char=c}}, ())
 
 nop :: Alex ()
 nop = return ()
@@ -183,8 +288,23 @@ act_open_comment _ _ = do
   alexSetStartCode comment
   alexMonadScan
 
-act_ncomment :: AlexAction Token
-act_ncomment (pos, _, _, _) len = undefined
+act_nested_comment :: AlexAction Token
+act_nested_comment (_, _, _, s) _ = do
+  c' <- getLastChar
+  setLastChar c
+  case (c':c:[]) of
+    "{-" -> incDepth
+    "-}" -> decDepth
+    _ -> nop
+  alexMonadScan
+  where
+    c = head s
+    incDepth :: Alex ()
+    incDepth = do d <- getCommentDepth; setCommentDepth (d + 1)
+    decDepth :: Alex ()
+    decDepth = do d <- getCommentDepth
+                  setCommentDepth (d - 1)
+                  alexSetStartCode $ if d > 1 then comment else 0
 
 act_obrace :: AlexAction Token
 act_obrace (pos, _, _, _) _ = do
