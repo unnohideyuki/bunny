@@ -32,70 +32,87 @@ haskell :-
 <0> "--"\-* [^$symbol :] .*     { skip }
 <0> "--"\-* [\ \t]* $           { skip }
 
+-- special symbols
+<0> "("                         { act_token1 TOParen }
+<0> ")"                         { act_token1 TCParen }
+<0> ","                         { act_token1 TComma }
+<0> ";"                         { act_token1 TSemi }
+<0> "["                         { act_token1 TOBrack }
+<0> "]"                         { act_token1 TCBrack }
+<0> "`"                         { act_token1 TBackquote }
+<0> "{"                         { act_ocurly }
+<0> "}"                         { act_ccurly }
+
 -- reserved id 
-<0> "as" { skip }
-<0> "case" { skip }
-<0> "class" { skip }
-<0> "data" { skip }
-<0> "default" { skip }
-<0> "deriving" { skip }
-<0> "do" { skip }
-<0> "else" { skip }
-<0> "hiding" { skip }
-<0> "foreign" { skip }
-<0> "if" { skip }
-<0> "import" { skip }
-<0> "in" { skip }
-<0> "infix" { skip }
-<0> "infixl" { skip }
-<0> "infixr" { skip }
-<0> "instance" { skip }
-<0> "let" { skip }
-<0> "module" { skip }
-<0> "newtype" { skip }
-<0> "of" { skip }
-<0> "qualified" { skip }
-<0> "then" { skip }
-<0> "type" { skip }
-<0> "where" { skip }
-<0> "_" { skip -- underscore}
+<0> "as"                        { act_token1 TAs }
+<0> "case"                      { act_token1 TCase }
+<0> "class"                     { act_token1 TClass }
+<0> "data"                      { act_token1 TData }
+<0> "default"                   { act_token1 TDefault }
+<0> "deriving"                  { act_token1 TDeriving }
+<0> "do"                        { act_layout_keyword TDo }
+<0> "else"                      { act_token1 TElse }
+<0> "hiding"                    { act_token1 THiding }
+<0> "foreign"                   { act_token1 TForeign }
+<0> "if"                        { act_token1 TIf }
+<0> "import"                    { act_token1 TImport }
+<0> "in"                        { act_token1 TIn }
+<0> "infix"                     { act_token1 TInfix }
+<0> "infixl"                    { act_token1 TInfixl }
+<0> "infixr"                    { act_token1 TInfixr }
+<0> "instance"                  { act_token1 TInstance }
+<0> "let"                       { act_layout_keyword TLet }
+<0> "module"                    { act_token1 TModule }
+<0> "newtype"                   { act_token1 TNewtype }
+<0> "of"                        { act_layout_keyword TOf }
+<0> "qualified"                 { act_token1 TQualified }
+<0> "then"                      { act_token1 TThen }
+<0> "type"                      { act_token1 TType }
+<0> "where"                     { act_layout_keyword TWhere }
+<0> "_"                         { act_token1 TUnderscore }
 
 -- reserved op
-<0> ".." { skip -- dotdot}
-<0> ":" { skip -- colon}
-<0> "::" { skip -- dcolon}
-<0> "=" { skip -- equal}
-<0> "\\" { skip -- lam}
-<0> "|" { skip -- vbar}
-<0> "<-" { skip -- larrow}
-<0> "->" { skip -- rarrow}
-<0> "@" { skip  -- at}
-<0> "~" { skip -- tilde}
-<0> "=>" { skip -- darrow}
+<0> ".."                        { act_token1 TDotdot }
+<0> ":"                         { act_token1 TColon }
+<0> "::"                        { act_token1 TDColon }
+<0> "="                         { act_token1 TEqual }
+<0> "\\"                        { act_token1 TLam }
+<0> "|"                         { act_token1 TVBar }
+<0> "<-"                        { act_token1 TLArrow }
+<0> "->"                        { act_token1 TRArrow }
+<0> "@"                         { act_token1 TAt }
+<0> "~"                         { act_token1 TTilde }
+<0> "=>"                        { act_token1 TDArrow }
+<0> "-"                         { act_token1 TMinus }
+<0> "!"                         { act_token1 TBang }
 
--- symbol
-<0> "-" { skip -- minus}
-<0> "!" { skip -- bang}
+<0> @varid                      { act_token2 TVarid }
+<0> @conid                      { act_token2 TConid }
+<0> @varsym                     { act_token2 TVarsym }
+<0> @consym                     { act_token2 TConsym }
 
-<0> @varid { skip }
-<0> @conid { skip }
-<0> @varsym { skip }
-<0> @consym { skip }
+<0> @qual @varid                { act_token2 TQVarid }
+<0> @qual @conid                { act_token2 TQConid }
+<0> @qual @varsym               { act_token2 TQVarsym }
+<0> @qual @consym               { act_token2 TQConsym }
 
-<0> @qual @varid              { skip }
-<0> @qual @conid              { skip }
-<0> @qual @varsym             { skip }
-<0> @qual @consym             { skip }
-
-<0> @integer {skip}
-<0> @float {skip}
+<0> @integer                    { act_integer }
+<0> @float                      { act_float }
 
 {
-data Token = TOBrace AlexPosn
-           | TCBrace AlexPosn
-           | VOBrace AlexPosn
-           | VCBrace AlexPosn
+data Token = 
+           -- special symbols
+             TOParen AlexPosn
+           | TCParen AlexPosn
+           | TComma AlexPosn            
            | TSemi AlexPosn
+           | TOBrack AlexPosn
+           | TCBrack AlexPosn
+           | TBackquote AlexPosn
+           | TOCurly AlexPosn 
+           | TCCurly AlexPosn
+           | TVOCurly AlexPosn
+           | TVCCurly AlexPosn
            -- reservedids
            | TAs AlexPosn
            | TCase AlexPosn
@@ -135,6 +152,20 @@ data Token = TOBrace AlexPosn
            | TAt AlexPosn
            | TTilde AlexPosn
            | TDArrow AlexPosn
+           | TMinus AlexPosn
+           | TBang AlexPosn
+           -- varid, conid, varsym, consym etc.
+           | TVarid String AlexPosn
+           | TConid String AlexPosn
+           | TVarsym String AlexPosn
+           | TConsym String AlexPosn
+           | TQVarid String AlexPosn
+           | TQConid String AlexPosn
+           | TQVarsym String AlexPosn
+           | TQConsym String AlexPosn
+           -- Literals
+           | TInteger Integer AlexPosn
+           | TFloat Float AlexPosn
            | Eof
              deriving (Show)
 
@@ -306,41 +337,42 @@ act_nested_comment (_, _, _, s) _ = do
                   setCommentDepth (d - 1)
                   alexSetStartCode $ if d > 1 then comment else 0
 
-act_obrace :: AlexAction Token
-act_obrace (pos, _, _, _) _ = do
+act_ocurly :: AlexAction Token
+act_ocurly (pos, _, _, _) _ = do
   unFlags
   pushCtx 0
-  return $ TOBrace pos
+  return $ TOCurly pos
 
-act_cbrace :: AlexAction Token
-act_cbrace (pos, _, _, _) _ = do
+act_ccurly :: AlexAction Token
+act_ccurly (pos, _, _, _) _ = do
   unFlags
   popCtx
-  return $ TCBrace pos
+  return $ TCCurly pos
 
-act_layout_keyword :: AlexAction Token
-act_layout_keyword (pos, _, _, s) len = do setMorrow True; return tok
+act_layout_keyword :: (AlexPosn -> Token) -> AlexAction Token
+act_layout_keyword maker (pos, _, _, _) _ = do setMorrow True; return tok
   where
-    tok = case take len s of
-      "let" -> TLet pos
-      "where" -> TWhere pos
-      "do" -> TDo pos
-      "of" -> TOf pos
-      _ -> undefined
+    tok = maker pos
 
-act_layout :: (AlexPosn -> Token) -> AlexAction Token
-act_layout maker (pos@(AlexPn _ _ n), _, _, _) _ = do
+act_token1 :: (AlexPosn -> Token) -> AlexAction Token
+act_token1 maker (pos@(AlexPn _ _ n), _, _, _) _ = do
   morr <- getMorrow
+  beg <- getBof
+  let lcond = if beg then
+                case tok of
+                  TModule _ -> False
+                  _ -> True
+              else
+                morr
   unFlags
   m <- peepCtx
-  if morr then
+  if lcond then
     if n > m then
-      do pushCtx n; appendToken tok; appendToken (VOBrace pos)
+      do pushCtx n; appendToken tok; appendToken (TVOCurly pos)
     else
-      do appendToken (VOBrace pos); appendToken (VCBrace pos)
+      do appendToken (TVOCurly pos); appendToken (TVCCurly pos); layout
   else
-    nop
-  layout
+    layout
   alexMonadScan
  where
   tok = maker pos
@@ -348,10 +380,24 @@ act_layout maker (pos@(AlexPn _ _ n), _, _, _) _ = do
   layout = do
     m' <- peepCtx
     if n < m' then
-      do popCtx; appendToken $ VCBrace pos; layout
+      do popCtx; appendToken $ TVCCurly pos; layout
     else
       if n == m' then
-        appendToken $ TSemi pos
+        do appendToken $ TSemi pos; appendToken tok
       else
-        return ()
+        appendToken tok
+
+act_token2 :: (String -> AlexPosn -> Token) -> AlexAction Token
+act_token2 maker inp@(_, _, _, s) len = 
+  act_token1 (maker $ take len s) inp len
+
+act_integer :: AlexAction Token
+act_integer (pos, _, _, s) len = return (TInteger i pos)
+  where
+    i = read $ take len s  
+
+act_float :: AlexAction Token
+act_float (pos, _, _, s) len = return (TFloat x pos)
+  where
+    x = read $ take len s  
 }
