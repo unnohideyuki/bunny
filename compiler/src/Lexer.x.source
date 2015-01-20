@@ -3,6 +3,9 @@ module Lexer where
 }
 %wrapper "monadUserState"
 
+-- include for $uniwhite, $unismall, $unilarge, $unisymbol and $unidigit
+#include "unisets.txt"
+
 $ascSymbol = [\! \# \$ \% \& \* \+ \. \/ \< \= \> \? \@ \\ \^ \| \- \~]
 $symbol = $ascSymbol
 
