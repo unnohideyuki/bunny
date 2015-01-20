@@ -61,6 +61,11 @@ haskell :-
 <string> @escape                { act_esc_string }
 <string> \\ $whitechar+ \\      { skip }
 
+-- char
+<0> \' $graphic # [\' \\] \'    { act_char }
+<0> \' " " \'                   { act_char }
+<0> \' @escape \'               { act_esc_char }
+
 -- special symbols
 <0> "("                         { act_token1 TOParen }
 <0> ")"                         { act_token1 TCParen }
@@ -207,6 +212,7 @@ data Token =
            | TInteger Integer AlexPosn
            | TFloat Float AlexPosn
            | TString String AlexPosn
+           | TChar Char AlexPosn
            | Eof
              deriving (Show)
 
@@ -454,6 +460,17 @@ act_esc_string (_, _, _, s) len = do
     Just c -> appendChar c
     Nothing -> alexError $ "lexical error in string literal, " ++ esc
   alexMonadScan
+  where
+    (_:esc) = take len s
+
+act_char :: AlexAction Token
+act_char (pos, _, _, (c:_)) _ = return $ TChar c pos
+
+act_esc_char :: AlexAction Token
+act_esc_char (pos, _, _, s) len = do
+  case esc2Char esc of
+    Just c -> return $ TChar c pos
+    Nothing -> alexError $ "lexical error in char literal, " ++ esc
   where
     (_:esc) = take len s
 
