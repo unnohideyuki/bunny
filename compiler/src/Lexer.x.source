@@ -33,7 +33,7 @@ haskell :-
 <comment> . | \n                { act_nested_comment }
 
 <0> "--"\-* [^$symbol :] .*     { skip }
-<0> "--"\-* [\ \t]* $           { skip }
+<0> "--"\-* [\ \t]* / {eoleof}  { skip }
 
 -- special symbols
 <0> "("                         { act_token1 TOParen }
@@ -190,6 +190,13 @@ alexInitUserState = AlexUserState { bof = True
                                   , comment_depth = 0
                                   , last_char = '\0'
                                   }
+
+eoleof :: user -> AlexInput -> Int -> AlexInput -> Bool
+eoleof _ _ _ (_, _, _, s) =
+  case s of
+    []       -> True -- end of file
+    ('\n':_) -> True -- end of line
+    _ -> False
 
 -- State Utilities
 
