@@ -47,7 +47,6 @@ haskell :-
 <0> "}"                         { act_ccurly }
 
 -- reserved id 
-<0> "as"                        { act_token1 TAs }
 <0> "case"                      { act_token1 TCase }
 <0> "class"                     { act_token1 TClass }
 <0> "data"                      { act_token1 TData }
@@ -55,7 +54,6 @@ haskell :-
 <0> "deriving"                  { act_token1 TDeriving }
 <0> "do"                        { act_layout_keyword TDo }
 <0> "else"                      { act_token1 TElse }
-<0> "hiding"                    { act_token1 THiding }
 <0> "foreign"                   { act_token1 TForeign }
 <0> "if"                        { act_token1 TIf }
 <0> "import"                    { act_token1 TImport }
@@ -68,11 +66,17 @@ haskell :-
 <0> "module"                    { act_token1 TModule }
 <0> "newtype"                   { act_token1 TNewtype }
 <0> "of"                        { act_layout_keyword TOf }
-<0> "qualified"                 { act_token1 TQualified }
 <0> "then"                      { act_token1 TThen }
 <0> "type"                      { act_token1 TType }
 <0> "where"                     { act_layout_keyword TWhere }
 <0> "_"                         { act_token1 TUnderscore }
+
+-- named keywords (not reserved)
+<0> "as"                        { act_token1 TAs }
+<0> "hiding"                    { act_token1 THiding }
+<0> "qualified"                 { act_token1 TQualified }
+<0> "safe"                      { act_token1 TSafe }
+<0> "unsafe"                    { act_token1 TUnsafe }
 
 -- reserved op
 <0> ".."                        { act_token1 TDotdot }
@@ -86,6 +90,8 @@ haskell :-
 <0> "@"                         { act_token1 TAt }
 <0> "~"                         { act_token1 TTilde }
 <0> "=>"                        { act_token1 TDArrow }
+
+-- named symbols (not reserved)
 <0> "-"                         { act_token1 TMinus }
 <0> "!"                         { act_token1 TBang }
 
@@ -117,7 +123,6 @@ data Token =
            | TVOCurly AlexPosn
            | TVCCurly AlexPosn
            -- reservedids
-           | TAs AlexPosn
            | TCase AlexPosn
            | TClass AlexPosn
            | TData AlexPosn
@@ -125,7 +130,6 @@ data Token =
            | TDeriving AlexPosn
            | TDo AlexPosn
            | TElse AlexPosn
-           | THiding AlexPosn
            | TForeign AlexPosn
            | TIf AlexPosn
            | TImport AlexPosn
@@ -138,11 +142,16 @@ data Token =
            | TModule AlexPosn
            | TNewtype AlexPosn
            | TOf AlexPosn           
-           | TQualified AlexPosn
            | TThen AlexPosn
            | TType AlexPosn
            | TWhere AlexPosn
            | TUnderscore AlexPosn
+           -- named keywords (not reserved)
+           | TAs AlexPosn
+           | THiding AlexPosn
+           | TQualified AlexPosn
+           | TSafe AlexPosn
+           | TUnsafe AlexPosn
            -- reserved ops
            | TDotdot AlexPosn
            | TColon AlexPosn
@@ -155,6 +164,7 @@ data Token =
            | TAt AlexPosn
            | TTilde AlexPosn
            | TDArrow AlexPosn
+           -- named symbols (not reserved)
            | TMinus AlexPosn
            | TBang AlexPosn
            -- varid, conid, varsym, consym etc.
@@ -402,12 +412,12 @@ act_token2 maker inp@(_, _, _, s) len =
   act_token1 (maker $ take len s) inp len
 
 act_integer :: AlexAction Token
-act_integer (pos, _, _, s) len = return (TInteger i pos)
+act_integer (pos, _, _, s) len = do unFlags; return (TInteger i pos)
   where
     i = read $ take len s  
 
 act_float :: AlexAction Token
-act_float (pos, _, _, s) len = return (TFloat x pos)
+act_float (pos, _, _, s) len = do unFlags; return (TFloat x pos)
   where
     x = read $ take len s  
 }
