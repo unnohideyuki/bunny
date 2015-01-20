@@ -1,19 +1,26 @@
 {
 module Lexer where
+
+import Data.Char
 }
 %wrapper "monadUserState"
 
 -- include for $uniwhite, $unismall, $unilarge, $unisymbol and $unidigit
 #include "unisets.txt"
 
-$ascSymbol = [\! \# \$ \% \& \* \+ \. \/ \< \= \> \? \@ \\ \^ \| \- \~]
-$symbol = $ascSymbol
+$whitechar = [$white $uniwhite]
 
-$small = [a-z]
-$large = [A-Z]
-$digit = [0-9]
+$special = [\( \) \, \; \[ \] \` \{ \}]
+$ascSymbol = [\! \# \$ \% \& \* \+ \. \/ \< \= \> \? \@ \\ \^ \| \- \~]
+$symbol = [$ascSymbol $unisymbol] # [$special _ \" \']
+
+$small = [a-z _ $unismall] 
+$large = [A-Z $unilarge]
+$digit = [0-9 $unidigit]
 $octit = [0-7]
 $hexit = [0-9a-fA-F]
+
+$graphic = [$small $large $symbol $digit $special \" \']
 
 @varid = ($small [$small $large $digit \']*)
 @conid = ($large [$small $large $digit \']*)
@@ -25,15 +32,31 @@ $hexit = [0-9a-fA-F]
 @exponent = ([eE] [\+ \-]? $digit+)
 @float = ($digit+ "." $digit+ @exponent? | $digit+ @exponent?)
 
+$charesc = [a b f n r t v \\ \" \']
+$cntrl = [A-Z \@ \[ \\ \] \^ _]
+@ascii = ("^" $cntrl | "NUL" | "SOH" | "STX" | "ETX" | "EOT" | "ENQ" | "ACK" | "BEL" | "BS" | "HT" | "LF" | "VT" | "FF" | "CR" | "SO" | "SI" | "DLE" | "DC1" | "DC2" | "DC3" | "DC4" | "NAK" | "SYN" | "ETB" | "CAN" | "EM" | "SUB" | "ESC" | "FS" | "GS" | "RS" | "US" | "SP" | "DEL")
+@escape = \\ ($charesc | @ascii | $digit+ | "o" $octit+ | "x" $hexit+)
+
 haskell :-
 
-<0> $white                      { act_white_space }
+-- white spaces
+<0> $whitechar                  { act_white_space }
 
+-- comments
 <0,comment> "{-"                { act_open_comment }
 <comment> . | \n                { act_nested_comment }
 
 <0> "--"\-* [^$symbol :] .*     { skip }
 <0> "--"\-* [\ \t]* / {eoleof}  { skip }
+
+-- string
+<0> \"                          { act_open_string }
+<string> \"                     { act_close_string }
+<string> $graphic # [\" \\]     { act_string }
+<string> " "                    { act_string }
+<string> "\\&"                  { skip }
+<string> @escape                { act_esc_string }
+<string> \\ $whitechar+ \\      { skip }
 
 -- special symbols
 <0> "("                         { act_token1 TOParen }
@@ -52,7 +75,6 @@ haskell :-
 <0> "data"                      { act_token1 TData }
 <0> "default"                   { act_token1 TDefault }
 <0> "deriving"                  { act_token1 TDeriving }
-<0> "do"                        { act_layout_keyword TDo }
 <0> "else"                      { act_token1 TElse }
 <0> "foreign"                   { act_token1 TForeign }
 <0> "if"                        { act_token1 TIf }
@@ -62,14 +84,16 @@ haskell :-
 <0> "infixl"                    { act_token1 TInfixl }
 <0> "infixr"                    { act_token1 TInfixr }
 <0> "instance"                  { act_token1 TInstance }
-<0> "let"                       { act_layout_keyword TLet }
 <0> "module"                    { act_token1 TModule }
 <0> "newtype"                   { act_token1 TNewtype }
-<0> "of"                        { act_layout_keyword TOf }
 <0> "then"                      { act_token1 TThen }
 <0> "type"                      { act_token1 TType }
-<0> "where"                     { act_layout_keyword TWhere }
 <0> "_"                         { act_token1 TUnderscore }
+
+<0> "do"                        { act_layout_keyword TDo }
+<0> "let"                       { act_layout_keyword TLet }
+<0> "of"                        { act_layout_keyword TOf }
+<0> "where"                     { act_layout_keyword TWhere }
 
 -- named keywords (not reserved)
 <0> "as"                        { act_token1 TAs }
@@ -179,6 +203,7 @@ data Token =
            -- Literals
            | TInteger Integer AlexPosn
            | TFloat Float AlexPosn
+           | TString String AlexPosn
            | Eof
              deriving (Show)
 
@@ -251,6 +276,9 @@ getStr = Alex $ \st@AlexState{alex_ust=ust} ->
 setStr :: String -> Alex ()
 setStr s = Alex $ \st@AlexState{alex_ust=ust} -> 
   Right (st{alex_ust=ust{str=s}}, ())
+
+appendChar :: Char -> Alex ()
+appendChar c = do s <- getStr; setStr $ s ++ [c]
 
 getCommentDepth :: Alex Int
 getCommentDepth = Alex $ \st@AlexState{alex_ust=ust} -> 
@@ -357,22 +385,86 @@ act_nested_comment (_, _, _, s) _ = do
                   setCommentDepth (d - 1)
                   alexSetStartCode $ if d > 1 then comment else 0
 
+act_open_string :: AlexAction Token
+act_open_string _ _ = 
+  do setStr ""; alexSetStartCode comment; alexMonadScan
+
+act_close_string :: AlexAction Token
+act_close_string (pos, _, _, _) _ = 
+  do s <- getStr; alexSetStartCode 0; return (TString s pos)
+
+act_string :: AlexAction Token
+act_string (_, _, _, (c:_)) _ = do appendChar c; alexMonadScan
+
+esc2Char :: String -> Maybe Char
+esc2Char "a" = Just '\a'
+esc2Char "b" = Just '\b'
+esc2Char "f" = Just '\f'
+esc2Char "n" = Just '\n'
+esc2Char "r" = Just '\r'
+esc2Char "t" = Just '\t'
+esc2Char "v" = Just '\v'
+esc2Char "\\" = Just '\\'
+esc2Char "\"" = Just '\"'
+esc2Char "\'" = Just '\''
+esc2Char ('^':c:[]) = if c >= '@' && c <= '_'
+                      then Just (chr (ord c - ord '@'))
+                      else Nothing
+esc2Char "NUL" = Just '\NUL'
+esc2Char "SOH" = Just '\SOH'
+esc2Char "STX" = Just '\STX'
+esc2Char "ETX" = Just '\ETX'
+esc2Char "EOT" = Just '\EOT'
+esc2Char "ENQ" = Just '\ENQ'
+esc2Char "ACK" = Just '\ACK'
+esc2Char "BEL" = Just '\BEL'
+esc2Char "BS" = Just '\BS'
+esc2Char "HT" = Just '\HT'
+esc2Char "LF" = Just '\LF'
+esc2Char "VT" = Just '\VT'
+esc2Char "FF" = Just '\FF'
+esc2Char "CR" = Just '\CR'
+esc2Char "SO" = Just '\SO'
+esc2Char "SI" = Just '\SI'
+esc2Char "DLE" = Just '\DLE'
+esc2Char "DC1" = Just '\DC1'
+esc2Char "DC2" = Just '\DC2'
+esc2Char "DC3" = Just '\DC3'
+esc2Char "DC4" = Just '\DC4'
+esc2Char "NAK" = Just '\NAK'
+esc2Char "SYN" = Just '\SYN'
+esc2Char "ETB" = Just '\ETB'
+esc2Char "CAN" = Just '\CAN'
+esc2Char "EM" = Just '\EM'
+esc2Char "SUB" = Just '\SUB'
+esc2Char "ESC" = Just '\ESC'
+esc2Char "FS" = Just '\FS'
+esc2Char "GS" = Just '\GS'
+esc2Char "RS" = Just '\RS'
+esc2Char "US" = Just '\US'
+esc2Char "SP" = Just '\SP'
+esc2Char "DEL" = Just '\DEL'
+
+act_esc_string :: AlexAction Token
+act_esc_string (_, _, _, s) len = do 
+  case esc2Char esc of
+    Just c -> appendChar c
+    Nothing -> alexError $ "lexical error in string literal, " ++ esc
+  alexMonadScan
+  where
+    (_:esc) = take len s
+
 act_ocurly :: AlexAction Token
-act_ocurly (pos, _, _, _) _ = do
-  unFlags
-  pushCtx 0
-  return $ TOCurly pos
+act_ocurly (pos, _, _, _) _ = 
+  do unFlags; pushCtx 0; return $ TOCurly pos
 
 act_ccurly :: AlexAction Token
-act_ccurly (pos, _, _, _) _ = do
-  unFlags
-  popCtx
-  return $ TCCurly pos
+act_ccurly (pos, _, _, _) _ = 
+  do unFlags; popCtx; return $ TCCurly pos
 
 act_layout_keyword :: (AlexPosn -> Token) -> AlexAction Token
-act_layout_keyword maker (pos, _, _, _) _ = do setMorrow True; return tok
-  where
-    tok = maker pos
+act_layout_keyword maker (pos, _, _, _) _ = 
+  do setMorrow True; return $ maker pos
 
 act_token1 :: (AlexPosn -> Token) -> AlexAction Token
 act_token1 maker (pos@(AlexPn _ _ n), _, _, _) _ = do
