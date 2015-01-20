@@ -1,2 +1,4 @@
 compiler/src/Lexer.hs
+compiler/src/Lexer.x
+compiler/src/unicateg
 *~
