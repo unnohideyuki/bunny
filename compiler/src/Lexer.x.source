@@ -1,6 +1,5 @@
 {
 module Lexer where
-
 import Data.Char
 }
 %wrapper "monadUserState"
@@ -20,7 +19,7 @@ $digit = [0-9 $unidigit]
 $octit = [0-7]
 $hexit = [0-9a-fA-F]
 
-$graphic = [$small $large $symbol $digit $special \" \']
+$graphic = [$small $large $symbol $digit $special \" \' :]
 
 @varid = ($small [$small $large $digit \']*)
 @conid = ($large [$small $large $digit \']*)
@@ -34,10 +33,12 @@ $graphic = [$small $large $symbol $digit $special \" \']
 
 $charesc = [a b f n r t v \\ \" \']
 $cntrl = [A-Z \@ \[ \\ \] \^ _]
-@ascii = ("^" $cntrl | "NUL" | "SOH" | "STX" | "ETX" | "EOT" | "ENQ" | "ACK"
-        | "BEL" | "BS" | "HT" | "LF" | "VT" | "FF" | "CR" | "SO" | "SI" | "DLE"
-        | "DC1" | "DC2" | "DC3" | "DC4" | "NAK" | "SYN" | "ETB" | "CAN" | "EM" 
-        | "SUB" | "ESC" | "FS" | "GS" | "RS" | "US" | "SP" | "DEL")
+@ascii = ("^" $cntrl 
+        | "NUL" | "SOH" | "STX" | "ETX" | "EOT" | "ENQ" | "ACK" | "BEL" 
+        | "BS"  | "HT"  | "LF"  | "VT"  | "FF"  | "CR"  | "SO"  | "SI" 
+        | "DLE" | "DC1" | "DC2" | "DC3" | "DC4" | "NAK" | "SYN" | "ETB" 
+        | "CAN" | "EM"  | "SUB" | "ESC" | "FS"  | "GS"  | "RS"  | "US" 
+        | "SP"  | "DEL" )
 @escape = \\ ($charesc | @ascii | $digit+ | "o" $octit+ | "x" $hexit+)
 
 haskell :-
@@ -50,7 +51,7 @@ haskell :-
 <comment> . | \n                { act_nested_comment }
 
 <0> "--"\-* [^$symbol :] .*     { skip }
-<0> "--"\-* [\ \t]* / {eoleof}  { skip }
+<0> "--"\-*  / {eoleof}         { skip }
 
 -- string
 <0> \"                          { act_open_string }
@@ -377,7 +378,7 @@ act_open_comment _ _ = do
   alexMonadScan
 
 act_nested_comment :: AlexAction Token
-act_nested_comment (_, _, _, s) _ = do
+act_nested_comment (_, _, _, (c:_)) _ = do
   c' <- getLastChar
   setLastChar c
   case (c':c:[]) of
@@ -386,7 +387,6 @@ act_nested_comment (_, _, _, s) _ = do
     _ -> nop
   alexMonadScan
   where
-    c = head s
     incDepth :: Alex ()
     incDepth = do d <- getCommentDepth; setCommentDepth (d + 1)
     decDepth :: Alex ()
@@ -406,53 +406,22 @@ act_string :: AlexAction Token
 act_string (_, _, _, (c:_)) _ = do appendChar c; alexMonadScan
 
 esc2Char :: String -> Maybe Char
-esc2Char "a" = Just '\a'
-esc2Char "b" = Just '\b'
-esc2Char "f" = Just '\f'
-esc2Char "n" = Just '\n'
-esc2Char "r" = Just '\r'
-esc2Char "t" = Just '\t'
-esc2Char "v" = Just '\v'
-esc2Char "\\" = Just '\\'
-esc2Char "\"" = Just '\"'
-esc2Char "\'" = Just '\''
 esc2Char ('^':c:[]) = if c >= '@' && c <= '_'
                       then Just (chr (ord c - ord '@'))
                       else Nothing
-esc2Char "NUL" = Just '\NUL'
-esc2Char "SOH" = Just '\SOH'
-esc2Char "STX" = Just '\STX'
-esc2Char "ETX" = Just '\ETX'
-esc2Char "EOT" = Just '\EOT'
-esc2Char "ENQ" = Just '\ENQ'
-esc2Char "ACK" = Just '\ACK'
-esc2Char "BEL" = Just '\BEL'
-esc2Char "BS" = Just '\BS'
-esc2Char "HT" = Just '\HT'
-esc2Char "LF" = Just '\LF'
-esc2Char "VT" = Just '\VT'
-esc2Char "FF" = Just '\FF'
-esc2Char "CR" = Just '\CR'
-esc2Char "SO" = Just '\SO'
-esc2Char "SI" = Just '\SI'
-esc2Char "DLE" = Just '\DLE'
-esc2Char "DC1" = Just '\DC1'
-esc2Char "DC2" = Just '\DC2'
-esc2Char "DC3" = Just '\DC3'
-esc2Char "DC4" = Just '\DC4'
-esc2Char "NAK" = Just '\NAK'
-esc2Char "SYN" = Just '\SYN'
-esc2Char "ETB" = Just '\ETB'
-esc2Char "CAN" = Just '\CAN'
-esc2Char "EM" = Just '\EM'
-esc2Char "SUB" = Just '\SUB'
-esc2Char "ESC" = Just '\ESC'
-esc2Char "FS" = Just '\FS'
-esc2Char "GS" = Just '\GS'
-esc2Char "RS" = Just '\RS'
-esc2Char "US" = Just '\US'
-esc2Char "SP" = Just '\SP'
-esc2Char "DEL" = Just '\DEL'
+esc2Char s = lookup s xs where
+  xs =[("a",   '\a'),   ("b",   '\b'),   ("f",   '\f'),   ("n",   '\n'), 
+       ("r",   '\r'),   ("t",   '\t'),   ("v",   '\v'),   ("\\",  '\\'), 
+       ("\"",  '\"'),   ("\'",  '\''),
+       ("NUL", '\NUL'), ("SOH", '\SOH'), ("STX", '\STX'), ("ETX", '\ETX'),
+       ("EOT", '\EOT'), ("ENQ", '\ENQ'), ("ACK", '\ACK'), ("BEL", '\BEL'),
+       ("BS",  '\BS'),  ("HT",  '\HT'),  ("LF",  '\LF'),  ("VT",  '\VT'),
+       ("FF",  '\FF'),  ("CR",  '\CR'),  ("SO",  '\SO'),  ("SI",  '\SI'),
+       ("DLE", '\DLE'), ("DC1", '\DC1'), ("DC2", '\DC2'), ("DC3", '\DC3'),
+       ("DC4", '\DC4'), ("NAK", '\NAK'), ("SYN", '\SYN'), ("ETB", '\ETB'),
+       ("CAN", '\CAN'), ("EM",  '\EM'),  ("SUB", '\SUB'), ("ESC", '\ESC'),
+       ("FS",  '\FS'),  ("GS",  '\GS'),  ("RS",  '\RS'),  ("US",  '\US'),
+       ("SP",  '\SP'),  ("DEL", '\DEL')]
 
 act_esc_string :: AlexAction Token
 act_esc_string (_, _, _, s) len = do 
@@ -490,34 +459,29 @@ act_token1 :: (AlexPosn -> Token) -> AlexAction Token
 act_token1 maker (pos@(AlexPn _ _ n), _, _, _) _ = do
   morr <- getMorrow
   beg <- getBof
-  let lcond = if beg then
-                case tok of
-                  TModule _ -> False
-                  _ -> True
-              else
-                morr
   unFlags
   m <- peepCtx
-  if lcond then
+  if (beg && not moduleTok) || morr then
     if n > m then
-      do pushCtx n; appendToken tok; appendToken (TVOCurly pos)
+      do pushCtx n; appendToken tok; return $ TVOCurly pos
     else
-      do appendToken (TVOCurly pos); appendToken (TVCCurly pos); layout
+      do appendToken $ TVOCurly pos; appendToken $ TVCCurly pos; layout
   else
     layout
-  alexMonadScan
- where
-  tok = maker pos
-  layout :: Alex ()
-  layout = do
-    m' <- peepCtx
-    if n < m' then
-      do popCtx; appendToken $ TVCCurly pos; layout
-    else
-      if n == m' then
-        do appendToken $ TSemi pos; appendToken tok
+  where
+    tok = maker pos
+    moduleTok = case tok of {TModule _ -> True; _ -> False}
+    layout :: Alex Token
+    layout = do
+      m' <- peepCtx
+      if n < m' then
+        do popCtx; appendToken $ TVCCurly pos; layout
       else
-        appendToken tok
+        do if n == m' then
+             do appendToken $ TSemi pos; appendToken tok
+           else
+             appendToken tok
+           alexMonadScan
 
 act_token2 :: (String -> AlexPosn -> Token) -> AlexAction Token
 act_token2 maker inp@(_, _, _, s) len = 
