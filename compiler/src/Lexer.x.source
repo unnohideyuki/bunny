@@ -10,8 +10,8 @@ import Data.Char
 $whitechar = [$white $uniwhite]
 
 $special = [\( \) \, \; \[ \] \` \{ \}]
-$ascSymbol = [\! \# \$ \% \& \* \+ \. \/ \< \= \> \? \@ \\ \^ \| \- \~]
-$symbol = [$ascSymbol $unisymbol] # [$special _ \" \']
+$ascsymbol = [\! \# \$ \% \& \* \+ \. \/ \< \= \> \? \@ \\ \^ \| \- \~]
+$symbol = [$ascsymbol $unisymbol] # [$special _ \" \']
 
 $small = [a-z _ $unismall] 
 $large = [A-Z $unilarge]
