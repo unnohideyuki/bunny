@@ -201,19 +201,19 @@ data Token =
            | TMinus AlexPosn
            | TBang AlexPosn
            -- varid, conid, varsym, consym etc.
-           | TVarid String AlexPosn
-           | TConid String AlexPosn
-           | TVarsym String AlexPosn
-           | TConsym String AlexPosn
-           | TQVarid String AlexPosn
-           | TQConid String AlexPosn
-           | TQVarsym String AlexPosn
-           | TQConsym String AlexPosn
+           | TVarid (String, AlexPosn)
+           | TConid (String, AlexPosn)
+           | TVarsym (String, AlexPosn)
+           | TConsym (String, AlexPosn)
+           | TQVarid (String, AlexPosn)
+           | TQConid (String, AlexPosn)
+           | TQVarsym (String, AlexPosn)
+           | TQConsym (String, AlexPosn)
            -- Literals
-           | TInteger Integer AlexPosn
-           | TFloat Float AlexPosn
-           | TString String AlexPosn
-           | TChar Char AlexPosn
+           | TInteger (Integer, AlexPosn)
+           | TFloat (Float, AlexPosn)
+           | TString (String, AlexPosn)
+           | TChar (Char, AlexPosn)
            | Eof
              deriving (Show)
 
@@ -400,7 +400,7 @@ act_open_string _ _ =
 
 act_close_string :: AlexAction Token
 act_close_string (pos, _, _, _) _ = 
-  do s <- getStr; alexSetStartCode 0; return (TString s pos)
+  do s <- getStr; alexSetStartCode 0; return $ TString (s, pos)
 
 act_string :: AlexAction Token
 act_string (_, _, _, (c:_)) _ = do appendChar c; alexMonadScan
@@ -433,12 +433,12 @@ act_esc_string (_, _, _, s) len = do
     (_:esc) = take len s
 
 act_char :: AlexAction Token
-act_char (pos, _, _, (c:_)) _ = return $ TChar c pos
+act_char (pos, _, _, (c:_)) _ = return $ TChar (c, pos)
 
 act_esc_char :: AlexAction Token
 act_esc_char (pos, _, _, s) len = do
   case esc2Char esc of
-    Just c -> return $ TChar c pos
+    Just c -> return $ TChar (c, pos)
     Nothing -> alexError $ "lexical error in char literal, " ++ esc
   where
     (_:esc) = take len s
@@ -483,17 +483,17 @@ act_token1 maker (pos@(AlexPn _ _ n), _, _, _) _ = do
              appendToken tok
            alexMonadScan
 
-act_token2 :: (String -> AlexPosn -> Token) -> AlexAction Token
+act_token2 :: ((String, AlexPosn) -> Token) -> AlexAction Token
 act_token2 maker inp@(_, _, _, s) len = 
-  act_token1 (maker $ take len s) inp len
+  act_token1 (\pos -> maker $ (take len s, pos)) inp len
 
 act_integer :: AlexAction Token
-act_integer (pos, _, _, s) len = do unFlags; return (TInteger i pos)
+act_integer (pos, _, _, s) len = do unFlags; return $ TInteger (i, pos)
   where
     i = read $ take len s  
 
 act_float :: AlexAction Token
-act_float (pos, _, _, s) len = do unFlags; return (TFloat x pos)
+act_float (pos, _, _, s) len = do unFlags; return $ TFloat (x, pos)
   where
     x = read $ take len s  
 }
