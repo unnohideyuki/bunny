@@ -11,20 +11,20 @@ import Absyn
 %tokentype { Token }
 
 %token
-"("        { TOParen     $$ }
-")"        { TCParen     $$ }
-","        { TComma      $$ }
-";"        { TSemi       $$ }
-"["        { TOBrack     $$ }
-"]"        { TCBrack     $$ }
-"`"        { TBackquote  $$ }
-"{"        { TOCurly     $$ }
-"}"        { TCCurly     $$ }
+'('        { TOParen     $$ }
+')'        { TCParen     $$ }
+','        { TComma      $$ }
+';'        { TSemi       $$ }
+'['        { TOBrack     $$ }
+']'        { TCBrack     $$ }
+'`'        { TBackquote  $$ }
+'{'        { TOCurly     $$ }
+'}'        { TCCurly     $$ }
 vocurly    { TVOCurly    $$ }
 vccurly    { TVCCurly    $$ }
-case       { TCase       $$ }
-class      { TClass      $$ }
-data       { TData       $$ }
+'case'     { TCase       $$ }
+'class'    { TClass      $$ }
+'data'     { TData       $$ }
 default    { TDefault    $$ }
 deriving   { TDeriving   $$ }
 do         { TDo         $$ }
@@ -38,56 +38,87 @@ infixl     { TInfixl     $$ }
 infixr     { TInfixr     $$ }
 instance   { TInstance   $$ }
 let        { TLet        $$ }
-"module"   { TModule     $$ }
+'module'   { TModule     $$ }
 newtype    { TNewtype    $$ }
 of         { TOf         $$ }
 then       { TThen       $$ }
 type       { TType       $$ }
-"where"    { TWhere      $$ }
-"_"        { TUnderscore $$ }
-as         { TAs         $$ }
-hiding     { THiding     $$ }
-qualified  { TQualified  $$ }
-safe       { TSafe       $$ }
-unsafe     { TUnsafe     $$ }
+'where'    { TWhere      $$ }
+'_'        { TUnderscore $$ }
+'as'            { TAs         $$ }
+'hiding'        { THiding     $$ }
+'qualified'     { TQualified  $$ }
+'safe'          { TSafe       $$ }
+'unsafe'        { TUnsafe     $$ }
 dotdot     { TDotdot     $$ }
-":"        { TColon      $$ }
+':'        { TColon      $$ }
 dcolon     { TDColon     $$ }
-"="        { TEqual      $$ }
-"\\"       { TLam        $$ }
-"|"        { TVBar       $$ }
+'='        { TEqual      $$ }
+'\\'       { TLam        $$ }
+'|'        { TVBar       $$ }
 larr       { TLArrow     $$ }
 rarr       { TRArrow     $$ }
-"@"        { TAt         $$ }
-"~"        { TTilde      $$ }
-darr       { TDArrow     $$ }
-"-"        { TMinus      $$ }
-"!"        { TBang       $$ }
-varid      { TVarid   $$ }
-conid      { TConid   $$ }
-varsym     { TVarsym  $$ }
-consym     { TConsym  $$ }
-qvarid     { TQVarid  $$ }
-qconid     { TQConid  $$ }
-qvarsym    { TQVarsym $$ }
-qconsym    { TQConsym $$ }
-litint     { TInteger $$ }
-litfloat   { TFloat   $$ }
-litstr     { TString  $$ }
-litchar    { TChar $$ }
+'@'             { TAt         $$ }
+'~'             { TTilde      $$ }
+darr            { TDArrow     $$ }
+'-'             { TMinus      $$ }
+'!'             { TBang       $$ }
+tvarid          { TVarid      $$ }
+tconid          { TConid      $$ }
+tvarsym         { TVarsym     $$ }
+tconsym         { TConsym     $$ }
+tqvarid         { TQVarid     $$ }
+tqconid         { TQConid     $$ }
+tqvarsym        { TQVarsym    $$ }
+tqconsym        { TQConsym    $$ }
+tlitint         { TInteger    $$ }
+tlitfloat       { TFloat      $$ }
+tlitstr         { TString     $$ }
+tlitchar        { TChar       $$ }
 
 %%
-module: "module" modid "where"  { mkModule $2 }
+module: 'module' modid 'where'  { mkModule $2 }
+
+varid: tvarid                   { mkName $1 }
+  |    'as'                     { mkName ("as", $1) }
+  |    'hiding'                 { mkName ("hiding", $1) }
+  |    'qualified'              { mkName ("qualified", $1) }
+  |    'safe'                   { mkName ("safe", $1) }
+  |    'unsafe'                 { mkName ("unsafe", $1) }
+
+conid: tconid                   { mkName $1 }
+
+varsym: tvarsym                 { mkName $1 }
+  |     '-'                     { mkName ("-", $1) }
+  |     '!'                     { mkName ("!", $1) }
+
+qvarid: tqvarid                 { mkName $1 }
+qconid: tqconid                 { mkName $1 }
 
 modid:  qconid                  { $1 }
   |     conid                   { $1 }
 
 
-{
-mkModule (name, _) = Module name []
 
+
+
+{
 extrPos :: AlexPosn -> Pos
 extrPos (AlexPn _ line col) = (line, col)
+
+extrQual qual name =
+  case span (/= '.') name of
+    (_, "")      -> (qual, name)
+    (q, ('.':n)) -> extrQual (qual ++ q ++ ".") n
+    (q, n)       -> extrQual (qual ++ q ++ ".") n
+
+mkName (s, pos) = Name { name_body = body
+                       , name_qual = Just qual
+                       , name_pos  = extrPos pos }
+  where
+    (qual, body) = extrQual "" s
+
+mkModule modid = Module modid []
 
 lexwrap :: (Token -> Alex a) -> Alex a
 lexwrap = (alexMonadScan >>=)

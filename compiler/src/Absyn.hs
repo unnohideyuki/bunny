@@ -7,13 +7,17 @@ posLine (line, _) = line
 posCol :: Pos -> Int
 posCol (_, col) = col
 
-type Name = String
+data Name = Name { name_body :: String
+                 , name_qual :: Maybe String
+                 , name_pos  :: Pos
+                 }
+          deriving Show
 
-data Moule = Module { modid    :: Name
-                    , exports  :: [IE]
-                    -- , impdecls :: [Impdecl]
-                    -- , topdecls :: [Topdecl]
-                    }
+data Module = Module { modid    :: Name
+                     , exports  :: [IE]
+                       -- , impdecls :: [Impdecl]
+                       -- , topdecls :: [Topdecl]
+                     }
              deriving Show
 
 -- | Imported or exported entity

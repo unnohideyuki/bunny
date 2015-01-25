@@ -41,6 +41,15 @@ $cntrl = [A-Z \@ \[ \\ \] \^ _]
         | "SP"  | "DEL" )
 @escape = \\ ($charesc | @ascii | $digit+ | "o" $octit+ | "x" $hexit+)
 
+@rsvdid = ( "case" | "class"  | "data"    | "default" | "deriving"
+          | "do"   | "else"   | "foreign" | "if"      | "import"
+          | "in"   | "infix"  | "infixl"  | "infixr"  | "instance"
+          | "let"  | "module" | "newtype" | "of"      | "then"
+          | "type" | "where"  | "_"       )
+
+@rsvdop = ( ".." | ":" | "::" | "=" | "\\" | "|" | "<-" | "->"
+          | "@" | "~" | "=>" )
+
 haskell :-
 
 -- white spaces
@@ -133,9 +142,9 @@ haskell :-
 <0> @varsym                     { act_token2 TVarsym }
 <0> @consym                     { act_token2 TConsym }
 
-<0> @qual @varid                { act_token2 TQVarid }
+<0> @qual (@varid ## @rsvdid)   { act_token2 TQVarid }
 <0> @qual @conid                { act_token2 TQConid }
-<0> @qual @varsym               { act_token2 TQVarsym }
+<0> @qual (@varsym ## @rsvdop)  { act_token2 TQVarsym }
 <0> @qual @consym               { act_token2 TQConsym }
 
 <0> @integer                    { act_integer }
@@ -146,7 +155,7 @@ data Token =
            -- special symbols
              TOParen AlexPosn
            | TCParen AlexPosn
-           | TComma AlexPosn            
+           | TComma AlexPosn
            | TSemi AlexPosn
            | TOBrack AlexPosn
            | TCBrack AlexPosn
