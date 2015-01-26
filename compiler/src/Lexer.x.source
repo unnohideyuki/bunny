@@ -13,7 +13,7 @@ $special = [\( \) \, \; \[ \] \` \{ \}]
 $ascsymbol = [\! \# \$ \% \& \* \+ \. \/ \< \= \> \? \@ \\ \^ \| \- \~]
 $symbol = [$ascsymbol $unisymbol] # [$special _ \" \']
 
-$small = [a-z _ $unismall] 
+$small = [a-z _ $unismall]
 $large = [A-Z $unilarge]
 $digit = [0-9 $unidigit]
 $octit = [0-7]
@@ -142,9 +142,11 @@ haskell :-
 <0> @varsym                     { act_token2 TVarsym }
 <0> @consym                     { act_token2 TConsym }
 
-<0> @qual (@varid ## @rsvdid)   { act_token2 TQVarid }
+<0> @qual @rsvdid               { \_ _ -> alexError "syntax error" }
+<0> @qual @rsvdop               { \_ _ -> alexError "syntax error" }
+<0> @qual @varid                { act_token2 TQVarid }
 <0> @qual @conid                { act_token2 TQConid }
-<0> @qual (@varsym ## @rsvdop)  { act_token2 TQVarsym }
+<0> @qual @varsym               { act_token2 TQVarsym }
 <0> @qual @consym               { act_token2 TQConsym }
 
 <0> @integer                    { act_integer }
@@ -231,6 +233,7 @@ data AlexUserState = AlexUserState { bof :: Bool
                                    , layout_ctx :: [Int]
                                    , pending_toks :: [Token]
                                    , str :: String
+                                   , str_pos :: AlexPosn
                                    , comment_depth :: Int
                                    , last_char :: Char
                                    }
@@ -241,6 +244,7 @@ alexInitUserState = AlexUserState { bof = True
                                   , layout_ctx = []
                                   , pending_toks = []
                                   , str = ""
+                                  , str_pos = (AlexPn 0 0 0)
                                   , comment_depth = 0
                                   , last_char = '\0'
                                   }
@@ -295,6 +299,14 @@ getStr = Alex $ \st@AlexState{alex_ust=ust} ->
 setStr :: String -> Alex ()
 setStr s = Alex $ \st@AlexState{alex_ust=ust} -> 
   Right (st{alex_ust=ust{str=s}}, ())
+
+getStrPos :: Alex AlexPosn
+getStrPos = Alex $ \st@AlexState{alex_ust=ust} -> 
+  Right (st, str_pos ust)
+
+setStrPos :: AlexPosn -> Alex ()
+setStrPos pos = Alex $ \st@AlexState{alex_ust=ust} -> 
+  Right (st{alex_ust=ust{str_pos=pos}}, ())
 
 appendChar :: Char -> Alex ()
 appendChar c = do s <- getStr; setStr $ s ++ [c]
@@ -404,12 +416,18 @@ act_nested_comment (_, _, _, (c:_)) _ = do
                   alexSetStartCode $ if d > 1 then comment else 0
 
 act_open_string :: AlexAction Token
-act_open_string _ _ = 
-  do setStr ""; alexSetStartCode comment; alexMonadScan
+act_open_string (pos, _, _, _)  _ =
+  do setStr ""
+     setStrPos pos
+     alexSetStartCode string
+     alexMonadScan
 
 act_close_string :: AlexAction Token
-act_close_string (pos, _, _, _) _ = 
-  do s <- getStr; alexSetStartCode 0; return $ TString (s, pos)
+act_close_string _ _ =
+  do s <- getStr
+     pos <- getStrPos
+     alexSetStartCode 0
+     act_token (TString (s, pos)) pos
 
 act_string :: AlexAction Token
 act_string (_, _, _, (c:_)) _ = do appendChar c; alexMonadScan
@@ -464,8 +482,8 @@ act_layout_keyword :: (AlexPosn -> Token) -> AlexAction Token
 act_layout_keyword maker (pos, _, _, _) _ = 
   do setMorrow True; return $ maker pos
 
-act_token1 :: (AlexPosn -> Token) -> AlexAction Token
-act_token1 maker (pos@(AlexPn _ _ n), _, _, _) _ = do
+act_token :: Token -> AlexPosn -> Alex Token
+act_token tok pos@(AlexPn _ _ n) = do
   morr <- getMorrow
   beg <- getBof
   unFlags
@@ -478,7 +496,6 @@ act_token1 maker (pos@(AlexPn _ _ n), _, _, _) _ = do
   else
     layout
   where
-    tok = maker pos
     moduleTok = case tok of {TModule _ -> True; _ -> False}
     layout :: Alex Token
     layout = do
@@ -491,6 +508,10 @@ act_token1 maker (pos@(AlexPn _ _ n), _, _, _) _ = do
            else
              appendToken tok
            alexMonadScan
+
+act_token1 :: (AlexPosn -> Token) -> AlexAction Token
+act_token1 maker (pos@(AlexPn _ _ n), _, _, _) _ =
+  act_token (maker pos) pos
 
 act_token2 :: ((String, AlexPosn) -> Token) -> AlexAction Token
 act_token2 maker inp@(_, _, _, s) len = 
