@@ -8,7 +8,7 @@ posCol :: Pos -> Int
 posCol (_, col) = col
 
 data Name = Name { name_body :: String
-                 , name_qual :: Maybe String
+                 , name_qual :: String
                  , name_pos  :: Pos
                  }
           deriving Show
