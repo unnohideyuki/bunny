@@ -478,7 +478,7 @@ pat: lpat qconop pat                            {}
 lpat: apat                                      {}
   |   '-' integer                               {}
   |   '-' float                                 {}
-  |   gcon seq_apat                             {}
+  |   gcon seq1_apat                            {}
 
 seq_apat: seq_apat apat                         {}
   |       {- empty -}                           {}
