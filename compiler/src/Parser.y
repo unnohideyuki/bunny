@@ -81,11 +81,11 @@ module: 'module' modid exports_opt 'where' body { mkModule $2 }
   |     body                                    {}
 
 body: '{'     impdecls ';' topdecls '}'         {}
-  |   vocurly impdecls ';' topdecls vccurly_opt {}
+  |   vocurly impdecls ';' topdecls close       {}
   |   '{'     impdecls '}'                      {}
-  |   vocurly impdecls vccurly_opt              {}
+  |   vocurly impdecls close                    {}
   |   '{'     topdecls '}'                      {}
-  |   vocurly topdecls vccurly_opt              {}
+  |   vocurly topdecls close                    {}
 
 impdecls: impdecls ';' impdecl                  {}
   |       impdecl                               {}
@@ -190,8 +190,8 @@ deriving_opt: deriving                          {}
 
 decls: '{'     sseq1_decl '}'                   {}
   |    '{'                '}'                   {}
-  |    vocurly sseq1_decl vccurly_opt           {}
-  |    vocurly            vccurly_opt           {}
+  |    vocurly sseq1_decl close                 {}
+  |    vocurly            close                 {}
 
 sseq1_decl: sseq1_decl ';' decl                 {}
   |         decl                                {}
@@ -202,8 +202,8 @@ decl: gendecl                                   {}
 
 cdecls: '{'     sseq1_cdecl '}'                 {}
   |     '{'                 '}'                 {}
-  |     vocurly sseq1_cdecl vccurly_opt         {}
-  |     vocurly             vccurly_opt         {}
+  |     vocurly sseq1_cdecl close               {}
+  |     vocurly             close               {}
 
 sseq1_cdecl: sseq1_cdecl ';' cdecl              {}
   |          cdecl                              {}
@@ -214,8 +214,8 @@ cdecl: gendecl                                  {}
 
 idecls: '{'     sseq1_idecl '}'                 {}
   |     '{'                 '}'                 {}
-  |     vocurly sseq1_idecl vccurly_opt         {}
-  |     vocurly             vccurly_opt         {}
+  |     vocurly sseq1_idecl close               {}
+  |     vocurly             close               {}
 
 sseq1_idecl: sseq1_idecl ';' idecl              {}
   |          idecl                              {}
@@ -399,13 +399,13 @@ lexp: '\\' seq1_apat '->' exp                   {}
       'then' exp semi_opt
       'else' exp                                {}
   |   'case' exp 'of' '{' alts '}'              {}
-  |   'case' exp 'of' vocurly alts vccurly_opt  {}
+  |   'case' exp 'of' vocurly alts close        {}
   |   'do' '{' stmt '}'                         {}
-  |   'do' vocurly stmt vccurly_opt             {}
+  |   'do' vocurly stmt close                   {}
   |   fexp                                      {}
 
-vccurly_opt: vccurly                            {}
-  |          {- empty -}                        { {- pop ctx -} }
+close: vccurly                                  {}
+     | error                                    { {- pop context -} }
 
 semi_opt: ';'                                   {}
   |    {- empty -}                              {}
