@@ -93,11 +93,10 @@ impdecls: impdecls ';' impdecl                  {}
 exports_opt: exports                            {}
            | {- empty -}                        {}
 
-exports: '(' cseq_export ',' ')'                {}
-       | '(' cseq_export     ')'                {}
-
-cseq_export: cseq1_export                       {}
-           | {- empry -}                        {}
+exports: '(' cseq1_export ',' ')'               {}
+       | '(' cseq1_export     ')'               {}
+       | '('              ',' ')'               {}
+       | '('                  ')'               {}
 
 cseq1_export: cseq1_export ',' export           {}
             | export                            {}
@@ -120,10 +119,8 @@ as_modid_opt: 'as' modid                        {}
 impspec_opt: impspec                            {}
            | {- empty -}                        {}
 
-impspec: '(' cseq_export ',' ')'                {}
-       | '(' cseq_export     ')'                {}
-       | 'hiding' '(' cseq_export ',' ')'       {}
-       | 'hiding' '(' cseq_export     ')'       {}
+impspec: exports                                {}
+       | 'hiding' exports                       {}
 
 cseq_cname: cseq1_cname                         {}
           | {- empty -}                         {}
@@ -304,7 +301,7 @@ cseq1_dclass: cseq1_dclass ',' dclass           {}
 dclass: qtycls                                  {}
 
 inst: gtycon                                    {}
-  |   '(' seq_tyvar ')'                         {}
+  |   '(' gtycon seq_tyvar ')'                  {}
   |   '(' cseq1_tyvar ',' tyvar ')'             {}
   |   '[' tyvar ']'                             {}
   |   '(' tyvar '->' tyvar ')'                  {}
