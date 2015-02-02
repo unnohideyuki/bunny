@@ -63,18 +63,18 @@ vccurly     { TVCCurly    $$ }
 '=>'        { TDArrow     $$ }
 '-'         { TMinus      $$ }
 '!'         { TBang       $$ }
-tvarid      { TVarid      $$ }
-tconid      { TConid      $$ }
-tvarsym     { TVarsym     $$ }
-tconsym     { TConsym     $$ }
-tqvarid     { TQVarid     $$ }
-tqconid     { TQConid     $$ }
-tqvarsym    { TQVarsym    $$ }
-tqconsym    { TQConsym    $$ }
-tlitint     { TInteger    $$ }
-tlitfloat   { TFloat      $$ }
-tlitstr     { TString     $$ }
-tlitchar    { TChar       $$ }
+TVARID      { TVarid      $$ }
+TCONID      { TConid      $$ }
+TVARSYM     { TVarsym     $$ }
+TCONSYM     { TConsym     $$ }
+TQVARID     { TQVarid     $$ }
+TQCONID     { TQConid     $$ }
+TQVARSYM    { TQVarsym    $$ }
+TQCONSYM    { TQConsym    $$ }
+TLITINT     { TInteger    $$ }
+TLITFLOAT   { TFloat      $$ }
+TLITSTR     { TString     $$ }
+TLITCHAR    { TChar       $$ }
 
 %%
 module: 'module' modid exports_opt 'where' body { mkModule $2 }
@@ -558,28 +558,28 @@ gconsym: ':'                                    {}
 modid:  qconid                  { $1 }
   |     conid                   { $1 }
 
-varid: tvarid                                   { mkName $1 }
+varid: TVARID                                   { mkName $1 }
   |    'as'                                     { mkName ("as", $1) }
   |    'hiding'                                 { mkName ("hiding", $1) }
   |    'qualified'                              { mkName ("qualified", $1) }
   |    'safe'                                   { mkName ("safe", $1) }
   |    'unsafe'                                 { mkName ("unsafe", $1) }
 
-conid: tconid                                   { mkName $1 }
+conid: TCONID                                   { mkName $1 }
 
-varsym: tvarsym                                 { mkName $1 }
+varsym: TVARSYM                                 { mkName $1 }
   |     '-'                                     { mkName ("-", $1) }
   |     '!'                                     { mkName ("!", $1) }
 
-varsym_: tvarsym                                {}
+varsym_: TVARSYM                                {}
   |      '!'                                    {}
 
-consym: tconsym                                 {}
+consym: TCONSYM                                 {}
 
-qvarid: tqvarid                                 { mkName $1 }
-qconid: tqconid                                 { mkName $1 }
-qvarsym: tqvarsym                               {}
-qconsym: tqconsym                               {}
+qvarid: TQVARID                                 { mkName $1 }
+qconid: TQCONID                                 { mkName $1 }
+qvarsym: TQVARSYM                               {}
+qconsym: TQCONSYM                               {}
 qtycon: qconid                                  {}
 
 tyvar: varid                                    {}
@@ -588,10 +588,10 @@ tycls: conid                                    {}
 qtycls: qconid                                  {}
   |     conid                                   {}
 
-integer: tlitint                                {}
-float:   tlitfloat                              {}
-char:    tlitchar                               {}
-string:  tlitstr                                {}
+integer: TLITINT                                {}
+float:   TLITFLOAT                              {}
+char:    TLITCHAR                               {}
+string:  TLITSTR                                {}
 
 literal: integer                                {}
   |      float                                  {}
