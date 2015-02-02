@@ -312,17 +312,18 @@ seq_tyvar: seq_tyvar tyvar                      {}
 cseq1_tyvar: cseq1_tyvar ',' tyvar              {}
   |          tyvar                              {}
 
-fdecl: 'import' callconv safety impent var '::'
-       ftype                                    {}
+fdecl: 'import' callconv safety fspec
+                                                {}
+     | 'import' callconv        fspec
+                                                {}
+
+fspec: string var '::' ftype                    {}
+     |        var '::' ftype                    {}
 
 callconv: {- tbd -}                             {}
 
-impent: string                                  {}
-  |     {- empty -}                             {}
-
 safety: 'unsafe'                                {}
   |     'safe'                                  {}
-  |     {- empty -}                             {}
 
 ftype: frtype                                   {}
   |    fatype '->' ftype                        {}

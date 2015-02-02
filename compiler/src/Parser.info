@@ -20,7 +20,6 @@ state 202 contains 7 reduce/reduce conflicts.
 state 205 contains 1 shift/reduce conflicts.
 state 237 contains 1 shift/reduce conflicts.
 state 243 contains 22 reduce/reduce conflicts.
-state 272 contains 2 shift/reduce conflicts.
 
 -----------------------------------------------------------------------------
 Grammar
@@ -189,13 +188,13 @@ Grammar
 	seq_tyvar ->                                       (161)
 	cseq1_tyvar -> cseq1_tyvar ',' tyvar               (162)
 	cseq1_tyvar -> tyvar                               (163)
-	fdecl -> 'import' callconv safety impent var '::' ftype   (164)
-	callconv ->                                        (165)
-	impent -> string                                   (166)
-	impent ->                                          (167)
-	safety -> 'unsafe'                                 (168)
-	safety -> 'safe'                                   (169)
-	safety ->                                          (170)
+	fdecl -> 'import' callconv safety fspec            (164)
+	fdecl -> 'import' callconv fspec                   (165)
+	fspec -> string var '::' ftype                     (166)
+	fspec -> var '::' ftype                            (167)
+	callconv ->                                        (168)
+	safety -> 'unsafe'                                 (169)
+	safety -> 'safe'                                   (170)
 	ftype -> frtype                                    (171)
 	ftype -> fatype '->' ftype                         (172)
 	frtype -> fatype                                   (173)
@@ -497,10 +496,10 @@ Non-terminals
 	inst            rules 155, 156, 157, 158, 159
 	seq_tyvar       rules 160, 161
 	cseq1_tyvar     rules 162, 163
-	fdecl           rule  164
-	callconv        rule  165
-	impent          rules 166, 167
-	safety          rules 168, 169, 170
+	fdecl           rules 164, 165
+	fspec           rules 166, 167
+	callconv        rule  168
+	safety          rules 169, 170
 	ftype           rules 171, 172
 	frtype          rules 173, 174
 	fatype          rule  175
@@ -4343,16 +4342,17 @@ State 115
 
 State 116
 
-	fdecl -> 'import' . callconv safety impent var '::' ftype    (rule 164)
+	fdecl -> 'import' . callconv safety fspec           (rule 164)
+	fdecl -> 'import' . callconv fspec                  (rule 165)
 
-	'('            reduce using rule 165
-	'as'           reduce using rule 165
-	'hiding'       reduce using rule 165
-	'qualified'    reduce using rule 165
-	'safe'         reduce using rule 165
-	'unsafe'       reduce using rule 165
-	TVARID         reduce using rule 165
-	TLITSTR        reduce using rule 165
+	'('            reduce using rule 168
+	'as'           reduce using rule 168
+	'hiding'       reduce using rule 168
+	'qualified'    reduce using rule 168
+	'safe'         reduce using rule 168
+	'unsafe'       reduce using rule 168
+	TVARID         reduce using rule 168
+	TLITSTR        reduce using rule 168
 
 	callconv       goto state 272
 
@@ -6545,7 +6545,7 @@ State 194
 	error          shift, and enter state 189
 	vccurly        shift, and enter state 190
 
-	close          goto state 421
+	close          goto state 424
 
 State 195
 
@@ -6579,11 +6579,11 @@ State 197
 	'qualified'    shift, and enter state 57
 	'safe'         shift, and enter state 58
 	'unsafe'       shift, and enter state 59
-	'->'           shift, and enter state 420
+	'->'           shift, and enter state 423
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	atype          goto state 419
+	atype          goto state 422
 	gtycon         goto state 199
 	varid          goto state 201
 	qconid         goto state 215
@@ -6724,7 +6724,7 @@ State 200
 
 	gendecl -> vars '::' context . '=>' type            (rule 80)
 
-	'=>'           shift, and enter state 418
+	'=>'           shift, and enter state 421
 
 
 State 201
@@ -6954,8 +6954,8 @@ State 205
 	TCONID         shift, and enter state 65
 	TQCONID        shift, and enter state 67
 
-	type           goto state 411
-	cseq1_type     goto state 412
+	type           goto state 414
+	cseq1_type     goto state 415
 	btype          goto state 197
 	atype          goto state 198
 	gtycon         goto state 199
@@ -6986,7 +6986,7 @@ State 206
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	type           goto state 417
+	type           goto state 420
 	btype          goto state 197
 	atype          goto state 198
 	gtycon         goto state 199
@@ -7020,20 +7020,20 @@ State 209
 	'!'            shift, and enter state 163
 	TVARSYM        shift, and enter state 164
 
-	varsym         goto state 416
+	varsym         goto state 419
 
 State 210
 
 	varop -> '`' varid . '`'                            (rule 281)
 
-	'`'            shift, and enter state 415
+	'`'            shift, and enter state 418
 
 
 State 211
 
 	conop -> '`' conid . '`'                            (rule 287)
 
-	'`'            shift, and enter state 414
+	'`'            shift, and enter state 417
 
 
 State 212
@@ -7060,7 +7060,7 @@ State 213
 
 	varop          goto state 179
 	conop          goto state 180
-	op             goto state 413
+	op             goto state 416
 	varsym         goto state 158
 	consym         goto state 182
 
@@ -7194,8 +7194,8 @@ State 216
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	type           goto state 411
-	cseq1_type     goto state 412
+	type           goto state 414
+	cseq1_type     goto state 415
 	btype          goto state 197
 	atype          goto state 198
 	gtycon         goto state 199
@@ -7209,35 +7209,35 @@ State 217
 
 	exp -> infixexp '::' context . '=>' type            (rule 190)
 
-	'=>'           shift, and enter state 410
+	'=>'           shift, and enter state 413
 
 
 State 218
 
 	qvarop -> '`' varid . '`'                           (rule 285)
 
-	'`'            shift, and enter state 409
+	'`'            shift, and enter state 412
 
 
 State 219
 
 	qconop -> '`' conid . '`'                           (rule 291)
 
-	'`'            shift, and enter state 408
+	'`'            shift, and enter state 411
 
 
 State 220
 
 	qvarop -> '`' qvarid . '`'                          (rule 283)
 
-	'`'            shift, and enter state 407
+	'`'            shift, and enter state 410
 
 
 State 221
 
 	qconop -> '`' qconid . '`'                          (rule 289)
 
-	'`'            shift, and enter state 406
+	'`'            shift, and enter state 409
 
 
 State 222
@@ -7299,8 +7299,8 @@ State 223
 	aexp1 -> aexp '{' seq1_fbind . '}'                  (rule 230)
 	seq1_fbind -> seq1_fbind . ',' fbind                (rule 237)
 
-	','            shift, and enter state 395
-	'}'            shift, and enter state 405
+	','            shift, and enter state 398
+	'}'            shift, and enter state 408
 
 
 State 224
@@ -7315,7 +7315,7 @@ State 225
 
 	fbind -> qvar . '=' exp                             (rule 257)
 
-	'='            shift, and enter state 404
+	'='            shift, and enter state 407
 
 
 State 226
@@ -7329,7 +7329,7 @@ State 226
 	TQVARSYM       shift, and enter state 149
 
 	varsym         goto state 304
-	qvarsym        goto state 403
+	qvarsym        goto state 406
 
 State 227
 
@@ -7360,7 +7360,7 @@ State 227
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	guard          goto state 402
+	guard          goto state 405
 	exp            goto state 17
 	infixexp       goto state 229
 	lexp           goto state 19
@@ -7455,7 +7455,7 @@ State 230
 
 	guard -> pat . '<-' infixexp                        (rule 187)
 
-	'<-'           shift, and enter state 401
+	'<-'           shift, and enter state 404
 
 
 State 231
@@ -7466,7 +7466,7 @@ State 231
 	'{'            shift, and enter state 104
 	vocurly        shift, and enter state 105
 
-	decls          goto state 400
+	decls          goto state 403
 
 State 232
 
@@ -7477,7 +7477,7 @@ State 232
 	';'            reduce using rule 180
 	'}'            reduce using rule 180
 	vccurly        reduce using rule 180
-	'where'        shift, and enter state 399
+	'where'        shift, and enter state 402
 
 
 State 233
@@ -7518,7 +7518,7 @@ State 234
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 398
+	exp            goto state 401
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
@@ -7544,7 +7544,7 @@ State 235
 	'{'            shift, and enter state 104
 	vocurly        shift, and enter state 105
 
-	decls          goto state 397
+	decls          goto state 400
 
 State 236
 
@@ -7636,7 +7636,7 @@ State 238
 
 	aexp1 -> qcon '{' seq_fbind . '}'                   (rule 229)
 
-	'}'            shift, and enter state 396
+	'}'            shift, and enter state 399
 
 
 State 239
@@ -7644,7 +7644,7 @@ State 239
 	seq_fbind -> seq1_fbind .                           (rule 235)
 	seq1_fbind -> seq1_fbind . ',' fbind                (rule 237)
 
-	','            shift, and enter state 395
+	','            shift, and enter state 398
 	'}'            reduce using rule 235
 
 
@@ -7652,7 +7652,7 @@ State 240
 
 	qop_no_minus -> '`' qvarid . '`'                    (rule 298)
 
-	'`'            shift, and enter state 394
+	'`'            shift, and enter state 397
 
 
 State 241
@@ -7909,7 +7909,7 @@ State 245
 
 	aexp1 -> '(' qop_no_minus infixexp . ')'            (rule 228)
 
-	')'            shift, and enter state 393
+	')'            shift, and enter state 396
 
 
 State 246
@@ -8004,7 +8004,7 @@ State 248
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 392
+	exp            goto state 395
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
@@ -8027,7 +8027,7 @@ State 249
 
 	aexp1 -> '(' infixexp qop . ')'                     (rule 227)
 
-	')'            shift, and enter state 391
+	')'            shift, and enter state 394
 
 
 State 250
@@ -8108,7 +8108,7 @@ State 251
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	seq1_apat      goto state 390
+	seq1_apat      goto state 393
 	aexp           goto state 89
 	aexp1          goto state 22
 	apat           goto state 90
@@ -8153,7 +8153,7 @@ State 252
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 389
+	exp            goto state 392
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
@@ -8256,7 +8256,7 @@ State 254
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 388
+	exp            goto state 391
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
@@ -8282,7 +8282,7 @@ State 255
 
 	'('            shift, and enter state 85
 	'['            shift, and enter state 38
-	']'            shift, and enter state 387
+	']'            shift, and enter state 390
 	'case'         shift, and enter state 39
 	'do'           shift, and enter state 43
 	'if'           shift, and enter state 45
@@ -8305,7 +8305,7 @@ State 255
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 386
+	exp            goto state 389
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
@@ -8333,7 +8333,7 @@ State 256
 	'case'         shift, and enter state 39
 	'do'           shift, and enter state 43
 	'if'           shift, and enter state 45
-	'let'          shift, and enter state 385
+	'let'          shift, and enter state 388
 	'_'            shift, and enter state 54
 	'as'           shift, and enter state 55
 	'hiding'       shift, and enter state 56
@@ -8353,15 +8353,15 @@ State 256
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 381
+	exp            goto state 384
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
 	aexp           goto state 21
 	aexp1          goto state 22
-	seq1_qual      goto state 382
-	qual           goto state 383
-	pat            goto state 384
+	seq1_qual      goto state 385
+	qual           goto state 386
+	pat            goto state 387
 	gcon           goto state 24
 	qvar           goto state 26
 	qcon           goto state 27
@@ -8380,8 +8380,8 @@ State 257
 	lexp -> 'case' exp 'of' . '{' alts '}'              (rule 199)
 	lexp -> 'case' exp 'of' . vocurly alts close        (rule 200)
 
-	'{'            shift, and enter state 379
-	vocurly        shift, and enter state 380
+	'{'            shift, and enter state 382
+	vocurly        shift, and enter state 383
 
 
 State 258
@@ -8393,7 +8393,7 @@ State 258
 	';'            reduce using rule 46
 	'}'            reduce using rule 46
 	vccurly        reduce using rule 46
-	'where'        shift, and enter state 378
+	'where'        shift, and enter state 381
 
 
 State 259
@@ -8411,38 +8411,38 @@ State 260
 	deriving -> 'deriving' . dclass                     (rule 147)
 	deriving -> 'deriving' . '(' cseq_dclass ')'        (rule 148)
 
-	'('            shift, and enter state 377
+	'('            shift, and enter state 380
 	TCONID         shift, and enter state 65
 	TQCONID        shift, and enter state 67
 
-	dclass         goto state 375
+	dclass         goto state 378
 	conid          goto state 109
 	qconid         goto state 100
-	qtycls         goto state 376
+	qtycls         goto state 379
 
 State 261
 
 	topdecl -> 'data' ty_hdr '=' . constrs deriving     (rule 43)
 
-	'('            shift, and enter state 373
+	'('            shift, and enter state 376
 	'['            shift, and enter state 206
 	'as'           shift, and enter state 55
 	'hiding'       shift, and enter state 56
 	'qualified'    shift, and enter state 57
 	'safe'         shift, and enter state 58
 	'unsafe'       shift, and enter state 59
-	'!'            shift, and enter state 374
+	'!'            shift, and enter state 377
 	TVARID         shift, and enter state 64
 	TCONID         shift, and enter state 65
 	TQCONID        shift, and enter state 67
 
-	btype          goto state 367
-	atype          goto state 368
+	btype          goto state 370
+	atype          goto state 371
 	gtycon         goto state 199
-	constrs        goto state 369
-	constr         goto state 370
-	borbatype      goto state 371
-	con            goto state 372
+	constrs        goto state 372
+	constr         goto state 373
+	borbatype      goto state 374
+	con            goto state 375
 	varid          goto state 201
 	conid          goto state 328
 	qconid         goto state 215
@@ -8461,7 +8461,7 @@ State 263
 
 	topdecl -> 'default' '(' cseq_type . ')'            (rule 50)
 
-	')'            shift, and enter state 366
+	')'            shift, and enter state 369
 
 
 State 264
@@ -8470,7 +8470,7 @@ State 264
 	cseq1_type -> cseq1_type . ',' type                 (rule 96)
 
 	')'            reduce using rule 94
-	','            shift, and enter state 365
+	','            shift, and enter state 368
 
 
 State 265
@@ -8478,7 +8478,7 @@ State 265
 	stmt -> exp . ';'                                   (rule 253)
 	pat -> exp .                                        (rule 258)
 
-	';'            shift, and enter state 364
+	';'            shift, and enter state 367
 	'<-'           reduce using rule 258
 
 
@@ -8489,13 +8489,13 @@ State 266
 	error          shift, and enter state 189
 	vccurly        shift, and enter state 190
 
-	close          goto state 363
+	close          goto state 366
 
 State 267
 
 	stmt -> pat . '<-' exp ';'                          (rule 254)
 
-	'<-'           shift, and enter state 362
+	'<-'           shift, and enter state 365
 
 
 State 268
@@ -8539,13 +8539,13 @@ State 269
 	'{'            shift, and enter state 104
 	vocurly        shift, and enter state 105
 
-	decls          goto state 361
+	decls          goto state 364
 
 State 270
 
 	lexp -> 'do' '{' stmts . '}'                        (rule 201)
 
-	'}'            shift, and enter state 360
+	'}'            shift, and enter state 363
 
 
 State 271
@@ -8579,13 +8579,13 @@ State 271
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 358
+	exp            goto state 361
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
 	aexp           goto state 21
 	aexp1          goto state 22
-	stmt           goto state 359
+	stmt           goto state 362
 	pat            goto state 267
 	gcon           goto state 24
 	qvar           goto state 26
@@ -8602,22 +8602,23 @@ State 271
 
 State 272
 
-	fdecl -> 'import' callconv . safety impent var '::' ftype    (rule 164)
+	fdecl -> 'import' callconv . safety fspec           (rule 164)
+	fdecl -> 'import' callconv . fspec                  (rule 165)
 
-	'('            reduce using rule 170
-	'as'           reduce using rule 170
-	'hiding'       reduce using rule 170
-	'qualified'    reduce using rule 170
-	'safe'         shift, and enter state 356
-			(reduce using rule 170)
+	'('            shift, and enter state 209
+	'as'           shift, and enter state 55
+	'hiding'       shift, and enter state 56
+	'qualified'    shift, and enter state 57
+	'safe'         shift, and enter state 359
+	'unsafe'       shift, and enter state 360
+	TVARID         shift, and enter state 64
+	TLITSTR        shift, and enter state 70
 
-	'unsafe'       shift, and enter state 357
-			(reduce using rule 170)
-
-	TVARID         reduce using rule 170
-	TLITSTR        reduce using rule 170
-
-	safety         goto state 355
+	fspec          goto state 355
+	safety         goto state 356
+	var            goto state 357
+	varid          goto state 208
+	string         goto state 358
 
 State 273
 
@@ -9277,22 +9278,22 @@ State 318
 	export -> qtycon '(' . '..' ')'                     (rule 21)
 	export -> qtycon '(' . cseq_cname ')'               (rule 22)
 
-	'('            shift, and enter state 498
+	'('            shift, and enter state 502
 	')'            reduce using rule 34
 	'as'           shift, and enter state 55
 	'hiding'       shift, and enter state 56
 	'qualified'    shift, and enter state 57
 	'safe'         shift, and enter state 58
 	'unsafe'       shift, and enter state 59
-	'..'           shift, and enter state 499
+	'..'           shift, and enter state 503
 	TVARID         shift, and enter state 64
 	TCONID         shift, and enter state 65
 
-	cseq_cname     goto state 493
-	cseq1_cname    goto state 494
-	cname          goto state 495
-	var            goto state 496
-	con            goto state 497
+	cseq_cname     goto state 497
+	cseq1_cname    goto state 498
+	cname          goto state 499
+	var            goto state 500
+	con            goto state 501
 	varid          goto state 208
 	conid          goto state 328
 
@@ -9313,7 +9314,7 @@ State 320
 	cseq1_export -> cseq1_export ',' . export           (rule 17)
 
 	'('            shift, and enter state 226
-	')'            shift, and enter state 492
+	')'            shift, and enter state 496
 	'module'       shift, and enter state 313
 	'as'           shift, and enter state 55
 	'hiding'       shift, and enter state 56
@@ -9324,7 +9325,7 @@ State 320
 	TQVARID        shift, and enter state 66
 	TQCONID        shift, and enter state 67
 
-	export         goto state 491
+	export         goto state 495
 	qvar           goto state 309
 	varid          goto state 84
 	qvarid         goto state 30
@@ -9487,7 +9488,7 @@ State 326
 	vccurly        reduce using rule 149
 	'deriving'     shift, and enter state 260
 
-	deriving       goto state 490
+	deriving       goto state 494
 
 State 327
 
@@ -9496,7 +9497,7 @@ State 327
 
 	'('            shift, and enter state 216
 	'['            shift, and enter state 206
-	'{'            shift, and enter state 489
+	'{'            shift, and enter state 493
 	'as'           shift, and enter state 55
 	'hiding'       shift, and enter state 56
 	'qualified'    shift, and enter state 57
@@ -9505,7 +9506,7 @@ State 327
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	atype          goto state 488
+	atype          goto state 492
 	gtycon         goto state 199
 	varid          goto state 201
 	qconid         goto state 215
@@ -9537,7 +9538,7 @@ State 329
 
 	TCONSYM        shift, and enter state 148
 
-	consym         goto state 452
+	consym         goto state 455
 
 State 330
 
@@ -9566,7 +9567,7 @@ State 331
 	TVARID         reduce using rule 106
 	TQCONID        reduce using rule 106
 
-	seq_atype      goto state 487
+	seq_atype      goto state 491
 
 State 332
 
@@ -9575,7 +9576,7 @@ State 332
 	TCONID         shift, and enter state 65
 	TQCONID        shift, and enter state 67
 
-	class          goto state 486
+	class          goto state 490
 	conid          goto state 109
 	qconid         goto state 100
 	qtycls         goto state 101
@@ -9677,7 +9678,7 @@ State 335
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	decl           goto state 485
+	decl           goto state 489
 	gendecl        goto state 13
 	vars           goto state 14
 	fixity         goto state 15
@@ -9785,7 +9786,7 @@ State 338
 
 	inst -> '[' tyvar . ']'                             (rule 158)
 
-	']'            shift, and enter state 484
+	']'            shift, and enter state 488
 
 
 State 339
@@ -9855,14 +9856,14 @@ State 340
 	'unsafe'       reduce using rule 161
 	TVARID         reduce using rule 161
 
-	seq_tyvar      goto state 483
+	seq_tyvar      goto state 487
 
 State 341
 
 	inst -> '(' cseq1_tyvar . ',' tyvar ')'             (rule 157)
 	cseq1_tyvar -> cseq1_tyvar . ',' tyvar              (rule 162)
 
-	','            shift, and enter state 482
+	','            shift, and enter state 486
 
 
 State 342
@@ -9870,7 +9871,7 @@ State 342
 	gtycon -> '(' commas . ')'                          (rule 111)
 	commas -> commas . ','                              (rule 266)
 
-	')'            shift, and enter state 481
+	')'            shift, and enter state 485
 	','            shift, and enter state 247
 
 
@@ -9880,7 +9881,7 @@ State 343
 	cseq1_tyvar -> tyvar .                              (rule 163)
 
 	','            reduce using rule 163
-	'->'           shift, and enter state 480
+	'->'           shift, and enter state 484
 
 
 State 344
@@ -9961,17 +9962,17 @@ State 347
 
 	gtycon -> '(' '->' . ')'                            (rule 110)
 
-	')'            shift, and enter state 479
+	')'            shift, and enter state 483
 
 
 State 348
 
 	topdecl -> 'instance' cl_hdr inst 'where' . idecls    (rule 49)
 
-	'{'            shift, and enter state 477
-	vocurly        shift, and enter state 478
+	'{'            shift, and enter state 481
+	vocurly        shift, and enter state 482
 
-	idecls         goto state 476
+	idecls         goto state 480
 
 State 349
 
@@ -9995,7 +9996,7 @@ State 350
 	TCONID         shift, and enter state 65
 	TQCONID        shift, and enter state 67
 
-	simpleclass    goto state 475
+	simpleclass    goto state 479
 	conid          goto state 109
 	qconid         goto state 100
 	qtycls         goto state 279
@@ -10016,11 +10017,11 @@ State 352
 	';'            reduce using rule 30
 	'}'            reduce using rule 30
 	vccurly        reduce using rule 30
-	'hiding'       shift, and enter state 474
+	'hiding'       shift, and enter state 478
 
-	exports        goto state 471
-	impspec_opt    goto state 472
-	impspec        goto state 473
+	exports        goto state 475
+	impspec_opt    goto state 476
+	impspec        goto state 477
 
 State 353
 
@@ -10029,7 +10030,7 @@ State 353
 	TCONID         shift, and enter state 75
 	TQCONID        shift, and enter state 76
 
-	modid          goto state 470
+	modid          goto state 474
 
 State 354
 
@@ -10059,7 +10060,7 @@ State 354
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 469
+	exp            goto state 473
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
@@ -10080,23 +10081,74 @@ State 354
 
 State 355
 
-	fdecl -> 'import' callconv safety . impent var '::' ftype    (rule 164)
+	fdecl -> 'import' callconv fspec .                  (rule 165)
 
-	'('            reduce using rule 167
-	'as'           reduce using rule 167
-	'hiding'       reduce using rule 167
-	'qualified'    reduce using rule 167
-	'safe'         reduce using rule 167
-	'unsafe'       reduce using rule 167
-	TVARID         reduce using rule 167
-	TLITSTR        shift, and enter state 70
+	error          reduce using rule 165
+	';'            reduce using rule 165
+	'}'            reduce using rule 165
+	vccurly        reduce using rule 165
 
-	impent         goto state 467
-	string         goto state 468
 
 State 356
 
-	safety -> 'safe' .                                  (rule 169)
+	fdecl -> 'import' callconv safety . fspec           (rule 164)
+
+	'('            shift, and enter state 209
+	'as'           shift, and enter state 55
+	'hiding'       shift, and enter state 56
+	'qualified'    shift, and enter state 57
+	'safe'         shift, and enter state 58
+	'unsafe'       shift, and enter state 59
+	TVARID         shift, and enter state 64
+	TLITSTR        shift, and enter state 70
+
+	fspec          goto state 472
+	var            goto state 357
+	varid          goto state 208
+	string         goto state 358
+
+State 357
+
+	fspec -> var . '::' ftype                           (rule 167)
+
+	'::'           shift, and enter state 471
+
+
+State 358
+
+	fspec -> string . var '::' ftype                    (rule 166)
+
+	'('            shift, and enter state 209
+	'as'           shift, and enter state 55
+	'hiding'       shift, and enter state 56
+	'qualified'    shift, and enter state 57
+	'safe'         shift, and enter state 58
+	'unsafe'       shift, and enter state 59
+	TVARID         shift, and enter state 64
+
+	var            goto state 470
+	varid          goto state 208
+
+State 359
+
+	safety -> 'safe' .                                  (rule 170)
+	varid -> 'safe' .                                   (rule 308)
+
+	'('            reduce using rule 170
+	'as'           reduce using rule 170
+	'hiding'       reduce using rule 170
+	'qualified'    reduce using rule 170
+	'safe'         reduce using rule 170
+	'unsafe'       reduce using rule 170
+	'::'           reduce using rule 308
+	TVARID         reduce using rule 170
+	TLITSTR        reduce using rule 170
+
+
+State 360
+
+	safety -> 'unsafe' .                                (rule 169)
+	varid -> 'unsafe' .                                 (rule 309)
 
 	'('            reduce using rule 169
 	'as'           reduce using rule 169
@@ -10104,37 +10156,24 @@ State 356
 	'qualified'    reduce using rule 169
 	'safe'         reduce using rule 169
 	'unsafe'       reduce using rule 169
+	'::'           reduce using rule 309
 	TVARID         reduce using rule 169
 	TLITSTR        reduce using rule 169
 
 
-State 357
-
-	safety -> 'unsafe' .                                (rule 168)
-
-	'('            reduce using rule 168
-	'as'           reduce using rule 168
-	'hiding'       reduce using rule 168
-	'qualified'    reduce using rule 168
-	'safe'         reduce using rule 168
-	'unsafe'       reduce using rule 168
-	TVARID         reduce using rule 168
-	TLITSTR        reduce using rule 168
-
-
-State 358
+State 361
 
 	stmts -> seq_stmt exp . semi_opt                    (rule 250)
 	stmt -> exp . ';'                                   (rule 253)
 	pat -> exp .                                        (rule 258)
 
-	';'            shift, and enter state 466
+	';'            shift, and enter state 469
 	'}'            reduce using rule 207
 	'<-'           reduce using rule 258
 
-	semi_opt       goto state 465
+	semi_opt       goto state 468
 
-State 359
+State 362
 
 	seq_stmt -> seq_stmt stmt .                         (rule 251)
 
@@ -10165,7 +10204,7 @@ State 359
 	TLITCHAR       reduce using rule 251
 
 
-State 360
+State 363
 
 	lexp -> 'do' '{' stmts '}' .                        (rule 201)
 
@@ -10219,16 +10258,16 @@ State 360
 	TLITCHAR       reduce using rule 201
 
 
-State 361
+State 364
 
 	lexp -> 'let' decls . 'in' exp                      (rule 197)
 	stmt -> 'let' decls . ';'                           (rule 255)
 
-	';'            shift, and enter state 464
+	';'            shift, and enter state 467
 	'in'           shift, and enter state 291
 
 
-State 362
+State 365
 
 	stmt -> pat '<-' . exp ';'                          (rule 254)
 
@@ -10256,7 +10295,7 @@ State 362
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 463
+	exp            goto state 466
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
@@ -10275,7 +10314,7 @@ State 362
 	string         goto state 35
 	literal        goto state 36
 
-State 363
+State 366
 
 	lexp -> 'do' vocurly stmt close .                   (rule 202)
 
@@ -10329,7 +10368,7 @@ State 363
 	TLITCHAR       reduce using rule 202
 
 
-State 364
+State 367
 
 	stmt -> exp ';' .                                   (rule 253)
 
@@ -10337,7 +10376,7 @@ State 364
 	vccurly        reduce using rule 253
 
 
-State 365
+State 368
 
 	cseq1_type -> cseq1_type ',' . type                 (rule 96)
 
@@ -10351,7 +10390,7 @@ State 365
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	type           goto state 462
+	type           goto state 465
 	btype          goto state 197
 	atype          goto state 198
 	gtycon         goto state 199
@@ -10360,7 +10399,7 @@ State 365
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 366
+State 369
 
 	topdecl -> 'default' '(' cseq_type ')' .            (rule 50)
 
@@ -10370,7 +10409,7 @@ State 366
 	vccurly        reduce using rule 50
 
 
-State 367
+State 370
 
 	btype -> btype . atype                              (rule 98)
 	borbatype -> btype .                                (rule 137)
@@ -10393,14 +10432,14 @@ State 367
 	TCONSYM        reduce using rule 137
 	TQCONID        shift, and enter state 67
 
-	atype          goto state 419
+	atype          goto state 422
 	gtycon         goto state 199
 	varid          goto state 201
 	qconid         goto state 215
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 368
+State 371
 
 	btype -> atype .                                    (rule 99)
 
@@ -10423,7 +10462,7 @@ State 368
 	TQCONID        reduce using rule 99
 
 
-State 369
+State 372
 
 	topdecl -> 'data' ty_hdr '=' constrs . deriving     (rule 43)
 	constrs -> constrs . '|' constr                     (rule 128)
@@ -10433,11 +10472,11 @@ State 369
 	'}'            reduce using rule 149
 	vccurly        reduce using rule 149
 	'deriving'     shift, and enter state 260
-	'|'            shift, and enter state 461
+	'|'            shift, and enter state 464
 
-	deriving       goto state 460
+	deriving       goto state 463
 
-State 370
+State 373
 
 	constrs -> constr .                                 (rule 129)
 
@@ -10449,43 +10488,43 @@ State 370
 	'|'            reduce using rule 129
 
 
-State 371
+State 374
 
 	constr -> borbatype . conop borbatype               (rule 131)
 
-	'`'            shift, and enter state 459
+	'`'            shift, and enter state 462
 	TCONSYM        shift, and enter state 148
 
-	conop          goto state 458
+	conop          goto state 461
 	consym         goto state 182
 
-State 372
+State 375
 
 	constr -> con . seq_banopt_atype                    (rule 130)
 	constr -> con . '{' cseq_fielddecl '}'              (rule 132)
 
 	'('            shift, and enter state 216
 	'['            shift, and enter state 206
-	'{'            shift, and enter state 456
+	'{'            shift, and enter state 459
 	'as'           shift, and enter state 55
 	'hiding'       shift, and enter state 56
 	'qualified'    shift, and enter state 57
 	'safe'         shift, and enter state 58
 	'unsafe'       shift, and enter state 59
-	'!'            shift, and enter state 457
+	'!'            shift, and enter state 460
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	atype          goto state 453
+	atype          goto state 456
 	gtycon         goto state 199
-	seq_banopt_atypegoto state 454
-	banopt_atype   goto state 455
+	seq_banopt_atypegoto state 457
+	banopt_atype   goto state 458
 	varid          goto state 201
 	qconid         goto state 215
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 373
+State 376
 
 	atype -> '(' . cseq1_type ',' type ')'              (rule 102)
 	atype -> '(' . type ')'                             (rule 104)
@@ -10508,19 +10547,19 @@ State 373
 	TCONSYM        shift, and enter state 148
 	TQCONID        shift, and enter state 67
 
-	type           goto state 411
-	cseq1_type     goto state 412
+	type           goto state 414
+	cseq1_type     goto state 415
 	btype          goto state 197
 	atype          goto state 198
 	gtycon         goto state 199
 	commas         goto state 342
 	varid          goto state 201
-	consym         goto state 452
+	consym         goto state 455
 	qconid         goto state 215
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 374
+State 377
 
 	borbatype -> '!' . atype                            (rule 138)
 
@@ -10534,14 +10573,14 @@ State 374
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	atype          goto state 451
+	atype          goto state 454
 	gtycon         goto state 199
 	varid          goto state 201
 	qconid         goto state 215
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 375
+State 378
 
 	deriving -> 'deriving' dclass .                     (rule 147)
 
@@ -10551,7 +10590,7 @@ State 375
 	vccurly        reduce using rule 147
 
 
-State 376
+State 379
 
 	dclass -> qtycls .                                  (rule 154)
 
@@ -10563,7 +10602,7 @@ State 376
 	vccurly        reduce using rule 154
 
 
-State 377
+State 380
 
 	deriving -> 'deriving' '(' . cseq_dclass ')'        (rule 148)
 
@@ -10571,23 +10610,23 @@ State 377
 	TCONID         shift, and enter state 65
 	TQCONID        shift, and enter state 67
 
-	cseq_dclass    goto state 448
-	cseq1_dclass   goto state 449
-	dclass         goto state 450
+	cseq_dclass    goto state 451
+	cseq1_dclass   goto state 452
+	dclass         goto state 453
 	conid          goto state 109
 	qconid         goto state 100
-	qtycls         goto state 376
+	qtycls         goto state 379
 
-State 378
+State 381
 
 	topdecl -> 'class' cl_hdr tyvar 'where' . cdecls    (rule 47)
 
-	'{'            shift, and enter state 446
-	vocurly        shift, and enter state 447
+	'{'            shift, and enter state 449
+	vocurly        shift, and enter state 450
 
-	cdecls         goto state 445
+	cdecls         goto state 448
 
-State 379
+State 382
 
 	lexp -> 'case' exp 'of' '{' . alts '}'              (rule 199)
 
@@ -10622,9 +10661,9 @@ State 379
 	fexp           goto state 20
 	aexp           goto state 21
 	aexp1          goto state 22
-	alts           goto state 444
-	alt            goto state 442
-	pat            goto state 443
+	alts           goto state 447
+	alt            goto state 445
+	pat            goto state 446
 	gcon           goto state 24
 	qvar           goto state 26
 	qcon           goto state 27
@@ -10638,7 +10677,7 @@ State 379
 	string         goto state 35
 	literal        goto state 36
 
-State 380
+State 383
 
 	lexp -> 'case' exp 'of' vocurly . alts close        (rule 200)
 
@@ -10673,9 +10712,9 @@ State 380
 	fexp           goto state 20
 	aexp           goto state 21
 	aexp1          goto state 22
-	alts           goto state 441
-	alt            goto state 442
-	pat            goto state 443
+	alts           goto state 444
+	alt            goto state 445
+	pat            goto state 446
 	gcon           goto state 24
 	qvar           goto state 26
 	qcon           goto state 27
@@ -10689,7 +10728,7 @@ State 380
 	string         goto state 35
 	literal        goto state 36
 
-State 381
+State 384
 
 	qual -> exp .                                       (rule 241)
 	pat -> exp .                                        (rule 258)
@@ -10699,16 +10738,16 @@ State 381
 	'<-'           reduce using rule 258
 
 
-State 382
+State 385
 
 	aexp1 -> '[' exp '|' seq1_qual . ']'                (rule 226)
 	seq1_qual -> seq1_qual . ',' qual                   (rule 233)
 
-	','            shift, and enter state 439
-	']'            shift, and enter state 440
+	','            shift, and enter state 442
+	']'            shift, and enter state 443
 
 
-State 383
+State 386
 
 	seq1_qual -> qual .                                 (rule 234)
 
@@ -10716,14 +10755,14 @@ State 383
 	']'            reduce using rule 234
 
 
-State 384
+State 387
 
 	qual -> pat . '<-' exp                              (rule 239)
 
-	'<-'           shift, and enter state 438
+	'<-'           shift, and enter state 441
 
 
-State 385
+State 388
 
 	lexp -> 'let' . decls 'in' exp                      (rule 197)
 	qual -> 'let' . decls                               (rule 240)
@@ -10731,16 +10770,16 @@ State 385
 	'{'            shift, and enter state 104
 	vocurly        shift, and enter state 105
 
-	decls          goto state 437
+	decls          goto state 440
 
-State 386
+State 389
 
 	aexp1 -> '[' exp '..' exp . ']'                     (rule 223)
 
-	']'            shift, and enter state 436
+	']'            shift, and enter state 439
 
 
-State 387
+State 390
 
 	aexp1 -> '[' exp '..' ']' .                         (rule 222)
 
@@ -10795,15 +10834,15 @@ State 387
 	TLITCHAR       reduce using rule 222
 
 
-State 388
+State 391
 
 	aexp1 -> '[' exp ',' exp . '..' ']'                 (rule 224)
 	aexp1 -> '[' exp ',' exp . '..' exp ']'             (rule 225)
 
-	'..'           shift, and enter state 435
+	'..'           shift, and enter state 438
 
 
-State 389
+State 392
 
 	seq1_exp -> seq1_exp ',' exp .                      (rule 231)
 
@@ -10811,7 +10850,7 @@ State 389
 	']'            reduce using rule 231
 
 
-State 390
+State 393
 
 	funlhs -> '(' funlhs ')' seq1_apat .                (rule 178)
 	seq1_apat -> seq1_apat . apat                       (rule 208)
@@ -10854,7 +10893,7 @@ State 390
 	string         goto state 35
 	literal        goto state 36
 
-State 391
+State 394
 
 	aexp1 -> '(' infixexp qop ')' .                     (rule 227)
 
@@ -10909,16 +10948,16 @@ State 391
 	TLITCHAR       reduce using rule 227
 
 
-State 392
+State 395
 
 	aexp1 -> '(' seq1_exp ',' exp . ')'                 (rule 220)
 	seq1_exp -> seq1_exp ',' exp .                      (rule 231)
 
-	')'            shift, and enter state 434
+	')'            shift, and enter state 437
 	','            reduce using rule 231
 
 
-State 393
+State 396
 
 	aexp1 -> '(' qop_no_minus infixexp ')' .            (rule 228)
 
@@ -10973,7 +11012,7 @@ State 393
 	TLITCHAR       reduce using rule 228
 
 
-State 394
+State 397
 
 	qop_no_minus -> '`' qvarid '`' .                    (rule 298)
 
@@ -11002,7 +11041,7 @@ State 394
 	TLITCHAR       reduce using rule 298
 
 
-State 395
+State 398
 
 	seq1_fbind -> seq1_fbind ',' . fbind                (rule 237)
 
@@ -11015,12 +11054,12 @@ State 395
 	TVARID         shift, and enter state 64
 	TQVARID        shift, and enter state 66
 
-	fbind          goto state 433
+	fbind          goto state 436
 	qvar           goto state 225
 	varid          goto state 84
 	qvarid         goto state 30
 
-State 396
+State 399
 
 	aexp1 -> qcon '{' seq_fbind '}' .                   (rule 229)
 
@@ -11075,7 +11114,7 @@ State 396
 	TLITCHAR       reduce using rule 229
 
 
-State 397
+State 400
 
 	rhs -> gdrhs 'where' decls .                        (rule 181)
 
@@ -11085,7 +11124,7 @@ State 397
 	vccurly        reduce using rule 181
 
 
-State 398
+State 401
 
 	gdrhs -> guards '=' exp . gdrhs                     (rule 183)
 	gdrhs -> guards '=' exp .                           (rule 184)
@@ -11097,19 +11136,19 @@ State 398
 	'where'        reduce using rule 184
 	'|'            shift, and enter state 161
 
-	gdrhs          goto state 432
+	gdrhs          goto state 435
 	guards         goto state 156
 
-State 399
+State 402
 
 	rhs -> '=' exp 'where' . decls                      (rule 179)
 
 	'{'            shift, and enter state 104
 	vocurly        shift, and enter state 105
 
-	decls          goto state 431
+	decls          goto state 434
 
-State 400
+State 403
 
 	guard -> 'let' decls .                              (rule 188)
 	lexp -> 'let' decls . 'in' exp                      (rule 197)
@@ -11143,7 +11182,7 @@ State 400
 	TLITCHAR       reduce using rule 188
 
 
-State 401
+State 404
 
 	guard -> pat '<-' . infixexp                        (rule 187)
 
@@ -11171,7 +11210,7 @@ State 401
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	infixexp       goto state 430
+	infixexp       goto state 433
 	lexp           goto state 19
 	fexp           goto state 20
 	aexp           goto state 21
@@ -11189,7 +11228,7 @@ State 401
 	string         goto state 35
 	literal        goto state 36
 
-State 402
+State 405
 
 	guards -> '|' guards guard .                        (rule 185)
 
@@ -11221,14 +11260,14 @@ State 402
 	TLITCHAR       reduce using rule 185
 
 
-State 403
+State 406
 
 	qvar -> '(' qvarsym . ')'                           (rule 271)
 
 	')'            shift, and enter state 241
 
 
-State 404
+State 407
 
 	fbind -> qvar '=' . exp                             (rule 257)
 
@@ -11256,7 +11295,7 @@ State 404
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 429
+	exp            goto state 432
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
@@ -11275,7 +11314,7 @@ State 404
 	string         goto state 35
 	literal        goto state 36
 
-State 405
+State 408
 
 	aexp1 -> aexp '{' seq1_fbind '}' .                  (rule 230)
 
@@ -11330,7 +11369,7 @@ State 405
 	TLITCHAR       reduce using rule 230
 
 
-State 406
+State 409
 
 	qconop -> '`' qconid '`' .                          (rule 289)
 
@@ -11360,7 +11399,7 @@ State 406
 	TLITCHAR       reduce using rule 289
 
 
-State 407
+State 410
 
 	qvarop -> '`' qvarid '`' .                          (rule 283)
 
@@ -11390,7 +11429,7 @@ State 407
 	TLITCHAR       reduce using rule 283
 
 
-State 408
+State 411
 
 	qconop -> '`' conid '`' .                           (rule 291)
 
@@ -11420,7 +11459,7 @@ State 408
 	TLITCHAR       reduce using rule 291
 
 
-State 409
+State 412
 
 	qvarop -> '`' varid '`' .                           (rule 285)
 
@@ -11450,7 +11489,7 @@ State 409
 	TLITCHAR       reduce using rule 285
 
 
-State 410
+State 413
 
 	exp -> infixexp '::' context '=>' . type            (rule 190)
 
@@ -11464,7 +11503,7 @@ State 410
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	type           goto state 428
+	type           goto state 431
 	btype          goto state 197
 	atype          goto state 198
 	gtycon         goto state 199
@@ -11473,24 +11512,24 @@ State 410
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 411
+State 414
 
 	cseq1_type -> type .                                (rule 97)
 	atype -> '(' type . ')'                             (rule 104)
 
-	')'            shift, and enter state 427
+	')'            shift, and enter state 430
 	','            reduce using rule 97
 
 
-State 412
+State 415
 
 	cseq1_type -> cseq1_type . ',' type                 (rule 96)
 	atype -> '(' cseq1_type . ',' type ')'              (rule 102)
 
-	','            shift, and enter state 426
+	','            shift, and enter state 429
 
 
-State 413
+State 416
 
 	ops -> ops ',' op .                                 (rule 85)
 
@@ -11501,7 +11540,7 @@ State 413
 	vccurly        reduce using rule 85
 
 
-State 414
+State 417
 
 	conop -> '`' conid '`' .                            (rule 287)
 
@@ -11522,7 +11561,7 @@ State 414
 	TQCONID        reduce using rule 287
 
 
-State 415
+State 418
 
 	varop -> '`' varid '`' .                            (rule 281)
 
@@ -11557,21 +11596,21 @@ State 415
 	TLITCHAR       reduce using rule 281
 
 
-State 416
+State 419
 
 	var -> '(' varsym . ')'                             (rule 269)
 
-	')'            shift, and enter state 425
+	')'            shift, and enter state 428
 
 
-State 417
+State 420
 
 	atype -> '[' type . ']'                             (rule 103)
 
-	']'            shift, and enter state 424
+	']'            shift, and enter state 427
 
 
-State 418
+State 421
 
 	gendecl -> vars '::' context '=>' . type            (rule 80)
 
@@ -11585,7 +11624,7 @@ State 418
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	type           goto state 423
+	type           goto state 426
 	btype          goto state 197
 	atype          goto state 198
 	gtycon         goto state 199
@@ -11594,7 +11633,7 @@ State 418
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 419
+State 422
 
 	btype -> btype atype .                              (rule 98)
 
@@ -11618,7 +11657,7 @@ State 419
 	TQCONID        reduce using rule 98
 
 
-State 420
+State 423
 
 	type -> btype '->' . atype                          (rule 92)
 
@@ -11632,21 +11671,21 @@ State 420
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	atype          goto state 422
+	atype          goto state 425
 	gtycon         goto state 199
 	varid          goto state 201
 	qconid         goto state 215
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 421
+State 424
 
 	body -> vocurly impdecls ';' topdecls close .       (rule 4)
 
 	%eof           reduce using rule 4
 
 
-State 422
+State 425
 
 	type -> btype '->' atype .                          (rule 92)
 
@@ -11700,7 +11739,7 @@ State 422
 	TLITCHAR       reduce using rule 92
 
 
-State 423
+State 426
 
 	gendecl -> vars '::' context '=>' type .            (rule 80)
 
@@ -11710,7 +11749,7 @@ State 423
 	vccurly        reduce using rule 80
 
 
-State 424
+State 427
 
 	atype -> '[' type ']' .                             (rule 103)
 
@@ -11765,7 +11804,7 @@ State 424
 	TLITCHAR       reduce using rule 103
 
 
-State 425
+State 428
 
 	var -> '(' varsym ')' .                             (rule 269)
 
@@ -11774,7 +11813,7 @@ State 425
 	'::'           reduce using rule 269
 
 
-State 426
+State 429
 
 	cseq1_type -> cseq1_type ',' . type                 (rule 96)
 	atype -> '(' cseq1_type ',' . type ')'              (rule 102)
@@ -11789,7 +11828,7 @@ State 426
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	type           goto state 546
+	type           goto state 555
 	btype          goto state 197
 	atype          goto state 198
 	gtycon         goto state 199
@@ -11798,7 +11837,7 @@ State 426
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 427
+State 430
 
 	atype -> '(' type ')' .                             (rule 104)
 
@@ -11853,7 +11892,7 @@ State 427
 	TLITCHAR       reduce using rule 104
 
 
-State 428
+State 431
 
 	exp -> infixexp '::' context '=>' type .            (rule 190)
 
@@ -11907,7 +11946,7 @@ State 428
 	TLITCHAR       reduce using rule 190
 
 
-State 429
+State 432
 
 	fbind -> qvar '=' exp .                             (rule 257)
 
@@ -11915,7 +11954,7 @@ State 429
 	'}'            reduce using rule 257
 
 
-State 430
+State 433
 
 	guard -> pat '<-' infixexp .                        (rule 187)
 
@@ -11947,7 +11986,7 @@ State 430
 	TLITCHAR       reduce using rule 187
 
 
-State 431
+State 434
 
 	rhs -> '=' exp 'where' decls .                      (rule 179)
 
@@ -11957,7 +11996,7 @@ State 431
 	vccurly        reduce using rule 179
 
 
-State 432
+State 435
 
 	gdrhs -> guards '=' exp gdrhs .                     (rule 183)
 
@@ -11968,7 +12007,7 @@ State 432
 	'where'        reduce using rule 183
 
 
-State 433
+State 436
 
 	seq1_fbind -> seq1_fbind ',' fbind .                (rule 237)
 
@@ -11976,7 +12015,7 @@ State 433
 	'}'            reduce using rule 237
 
 
-State 434
+State 437
 
 	aexp1 -> '(' seq1_exp ',' exp ')' .                 (rule 220)
 
@@ -12031,14 +12070,14 @@ State 434
 	TLITCHAR       reduce using rule 220
 
 
-State 435
+State 438
 
 	aexp1 -> '[' exp ',' exp '..' . ']'                 (rule 224)
 	aexp1 -> '[' exp ',' exp '..' . exp ']'             (rule 225)
 
 	'('            shift, and enter state 85
 	'['            shift, and enter state 38
-	']'            shift, and enter state 545
+	']'            shift, and enter state 554
 	'case'         shift, and enter state 39
 	'do'           shift, and enter state 43
 	'if'           shift, and enter state 45
@@ -12061,7 +12100,7 @@ State 435
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 544
+	exp            goto state 553
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
@@ -12080,7 +12119,7 @@ State 435
 	string         goto state 35
 	literal        goto state 36
 
-State 436
+State 439
 
 	aexp1 -> '[' exp '..' exp ']' .                     (rule 223)
 
@@ -12135,7 +12174,7 @@ State 436
 	TLITCHAR       reduce using rule 223
 
 
-State 437
+State 440
 
 	lexp -> 'let' decls . 'in' exp                      (rule 197)
 	qual -> 'let' decls .                               (rule 240)
@@ -12145,7 +12184,7 @@ State 437
 	'in'           shift, and enter state 291
 
 
-State 438
+State 441
 
 	qual -> pat '<-' . exp                              (rule 239)
 
@@ -12173,7 +12212,7 @@ State 438
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 543
+	exp            goto state 552
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
@@ -12192,7 +12231,7 @@ State 438
 	string         goto state 35
 	literal        goto state 36
 
-State 439
+State 442
 
 	seq1_qual -> seq1_qual ',' . qual                   (rule 233)
 
@@ -12201,7 +12240,7 @@ State 439
 	'case'         shift, and enter state 39
 	'do'           shift, and enter state 43
 	'if'           shift, and enter state 45
-	'let'          shift, and enter state 385
+	'let'          shift, and enter state 388
 	'_'            shift, and enter state 54
 	'as'           shift, and enter state 55
 	'hiding'       shift, and enter state 56
@@ -12221,14 +12260,14 @@ State 439
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 381
+	exp            goto state 384
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
 	aexp           goto state 21
 	aexp1          goto state 22
-	qual           goto state 542
-	pat            goto state 384
+	qual           goto state 551
+	pat            goto state 387
 	gcon           goto state 24
 	qvar           goto state 26
 	qcon           goto state 27
@@ -12242,7 +12281,7 @@ State 439
 	string         goto state 35
 	literal        goto state 36
 
-State 440
+State 443
 
 	aexp1 -> '[' exp '|' seq1_qual ']' .                (rule 226)
 
@@ -12297,18 +12336,18 @@ State 440
 	TLITCHAR       reduce using rule 226
 
 
-State 441
+State 444
 
 	lexp -> 'case' exp 'of' vocurly alts . close        (rule 200)
 	alts -> alts . ';' alt                              (rule 242)
 
 	error          shift, and enter state 189
-	';'            shift, and enter state 536
+	';'            shift, and enter state 545
 	vccurly        shift, and enter state 190
 
-	close          goto state 541
+	close          goto state 550
 
-State 442
+State 445
 
 	alts -> alt .                                       (rule 243)
 
@@ -12318,7 +12357,7 @@ State 442
 	vccurly        reduce using rule 243
 
 
-State 443
+State 446
 
 	alt -> pat . '->' exp                               (rule 244)
 	alt -> pat . '->' exp 'where' decls                 (rule 245)
@@ -12326,21 +12365,21 @@ State 443
 	alt -> pat . gdpat 'where' decls                    (rule 247)
 
 	'|'            shift, and enter state 161
-	'->'           shift, and enter state 540
+	'->'           shift, and enter state 549
 
-	guards         goto state 538
-	gdpat          goto state 539
+	guards         goto state 547
+	gdpat          goto state 548
 
-State 444
+State 447
 
 	lexp -> 'case' exp 'of' '{' alts . '}'              (rule 199)
 	alts -> alts . ';' alt                              (rule 242)
 
-	';'            shift, and enter state 536
-	'}'            shift, and enter state 537
+	';'            shift, and enter state 545
+	'}'            shift, and enter state 546
 
 
-State 445
+State 448
 
 	topdecl -> 'class' cl_hdr tyvar 'where' cdecls .    (rule 47)
 
@@ -12350,7 +12389,7 @@ State 445
 	vccurly        reduce using rule 47
 
 
-State 446
+State 449
 
 	cdecls -> '{' . sseq1_cdecl '}'                     (rule 66)
 
@@ -12384,12 +12423,12 @@ State 446
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	sseq1_cdecl    goto state 535
-	cdecl          goto state 531
-	gendecl        goto state 532
+	sseq1_cdecl    goto state 544
+	cdecl          goto state 540
+	gendecl        goto state 541
 	vars           goto state 14
 	fixity         goto state 15
-	funlhs         goto state 533
+	funlhs         goto state 542
 	exp            goto state 17
 	infixexp       goto state 18
 	lexp           goto state 19
@@ -12398,7 +12437,7 @@ State 446
 	aexp1          goto state 22
 	pat            goto state 130
 	gcon           goto state 24
-	var            goto state 534
+	var            goto state 543
 	qvar           goto state 26
 	qcon           goto state 27
 	varid          goto state 28
@@ -12411,7 +12450,7 @@ State 446
 	string         goto state 35
 	literal        goto state 36
 
-State 447
+State 450
 
 	cdecls -> vocurly . sseq1_cdecl close               (rule 67)
 
@@ -12446,12 +12485,12 @@ State 447
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	sseq1_cdecl    goto state 530
-	cdecl          goto state 531
-	gendecl        goto state 532
+	sseq1_cdecl    goto state 539
+	cdecl          goto state 540
+	gendecl        goto state 541
 	vars           goto state 14
 	fixity         goto state 15
-	funlhs         goto state 533
+	funlhs         goto state 542
 	exp            goto state 17
 	infixexp       goto state 18
 	lexp           goto state 19
@@ -12460,7 +12499,7 @@ State 447
 	aexp1          goto state 22
 	pat            goto state 130
 	gcon           goto state 24
-	var            goto state 534
+	var            goto state 543
 	qvar           goto state 26
 	qcon           goto state 27
 	varid          goto state 28
@@ -12473,23 +12512,23 @@ State 447
 	string         goto state 35
 	literal        goto state 36
 
-State 448
+State 451
 
 	deriving -> 'deriving' '(' cseq_dclass . ')'        (rule 148)
 
-	')'            shift, and enter state 529
+	')'            shift, and enter state 538
 
 
-State 449
+State 452
 
 	cseq_dclass -> cseq1_dclass .                       (rule 150)
 	cseq1_dclass -> cseq1_dclass . ',' dclass           (rule 152)
 
 	')'            reduce using rule 150
-	','            shift, and enter state 528
+	','            shift, and enter state 537
 
 
-State 450
+State 453
 
 	cseq1_dclass -> dclass .                            (rule 153)
 
@@ -12497,7 +12536,7 @@ State 450
 	','            reduce using rule 153
 
 
-State 451
+State 454
 
 	borbatype -> '!' atype .                            (rule 138)
 
@@ -12511,14 +12550,14 @@ State 451
 	TCONSYM        reduce using rule 138
 
 
-State 452
+State 455
 
 	con -> '(' consym . ')'                             (rule 275)
 
-	')'            shift, and enter state 527
+	')'            shift, and enter state 536
 
 
-State 453
+State 456
 
 	banopt_atype -> atype .                             (rule 142)
 
@@ -12540,7 +12579,7 @@ State 453
 	TQCONID        reduce using rule 142
 
 
-State 454
+State 457
 
 	constr -> con seq_banopt_atype .                    (rule 130)
 	seq_banopt_atype -> seq_banopt_atype . banopt_atype    (rule 139)
@@ -12558,19 +12597,19 @@ State 454
 	'safe'         shift, and enter state 58
 	'unsafe'       shift, and enter state 59
 	'|'            reduce using rule 130
-	'!'            shift, and enter state 457
+	'!'            shift, and enter state 460
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	atype          goto state 453
+	atype          goto state 456
 	gtycon         goto state 199
-	banopt_atype   goto state 526
+	banopt_atype   goto state 535
 	varid          goto state 201
 	qconid         goto state 215
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 455
+State 458
 
 	seq_banopt_atype -> banopt_atype .                  (rule 140)
 
@@ -12592,7 +12631,7 @@ State 455
 	TQCONID        reduce using rule 140
 
 
-State 456
+State 459
 
 	constr -> con '{' . cseq_fielddecl '}'              (rule 132)
 
@@ -12605,14 +12644,14 @@ State 456
 	'unsafe'       shift, and enter state 59
 	TVARID         shift, and enter state 64
 
-	vars           goto state 521
-	cseq_fielddecl goto state 522
-	cseq1_fielddeclgoto state 523
-	fielddecl      goto state 524
-	var            goto state 525
+	vars           goto state 530
+	cseq_fielddecl goto state 531
+	cseq1_fielddeclgoto state 532
+	fielddecl      goto state 533
+	var            goto state 534
 	varid          goto state 208
 
-State 457
+State 460
 
 	banopt_atype -> '!' . atype                         (rule 141)
 
@@ -12626,14 +12665,14 @@ State 457
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	atype          goto state 520
+	atype          goto state 529
 	gtycon         goto state 199
 	varid          goto state 201
 	qconid         goto state 215
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 458
+State 461
 
 	constr -> borbatype conop . borbatype               (rule 131)
 
@@ -12644,20 +12683,20 @@ State 458
 	'qualified'    shift, and enter state 57
 	'safe'         shift, and enter state 58
 	'unsafe'       shift, and enter state 59
-	'!'            shift, and enter state 374
+	'!'            shift, and enter state 377
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	btype          goto state 367
-	atype          goto state 368
+	btype          goto state 370
+	atype          goto state 371
 	gtycon         goto state 199
-	borbatype      goto state 519
+	borbatype      goto state 528
 	varid          goto state 201
 	qconid         goto state 215
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 459
+State 462
 
 	conop -> '`' . conid '`'                            (rule 287)
 
@@ -12665,7 +12704,7 @@ State 459
 
 	conid          goto state 211
 
-State 460
+State 463
 
 	topdecl -> 'data' ty_hdr '=' constrs deriving .     (rule 43)
 
@@ -12675,35 +12714,35 @@ State 460
 	vccurly        reduce using rule 43
 
 
-State 461
+State 464
 
 	constrs -> constrs '|' . constr                     (rule 128)
 
-	'('            shift, and enter state 373
+	'('            shift, and enter state 376
 	'['            shift, and enter state 206
 	'as'           shift, and enter state 55
 	'hiding'       shift, and enter state 56
 	'qualified'    shift, and enter state 57
 	'safe'         shift, and enter state 58
 	'unsafe'       shift, and enter state 59
-	'!'            shift, and enter state 374
+	'!'            shift, and enter state 377
 	TVARID         shift, and enter state 64
 	TCONID         shift, and enter state 65
 	TQCONID        shift, and enter state 67
 
-	btype          goto state 367
-	atype          goto state 368
+	btype          goto state 370
+	atype          goto state 371
 	gtycon         goto state 199
-	constr         goto state 518
-	borbatype      goto state 371
-	con            goto state 372
+	constr         goto state 527
+	borbatype      goto state 374
+	con            goto state 375
 	varid          goto state 201
 	conid          goto state 328
 	qconid         goto state 215
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 462
+State 465
 
 	cseq1_type -> cseq1_type ',' type .                 (rule 96)
 
@@ -12711,14 +12750,14 @@ State 462
 	','            reduce using rule 96
 
 
-State 463
+State 466
 
 	stmt -> pat '<-' exp . ';'                          (rule 254)
 
-	';'            shift, and enter state 517
+	';'            shift, and enter state 526
 
 
-State 464
+State 467
 
 	stmt -> 'let' decls ';' .                           (rule 255)
 
@@ -12751,14 +12790,14 @@ State 464
 	TLITCHAR       reduce using rule 255
 
 
-State 465
+State 468
 
 	stmts -> seq_stmt exp semi_opt .                    (rule 250)
 
 	'}'            reduce using rule 250
 
 
-State 466
+State 469
 
 	semi_opt -> ';' .                                   (rule 206)
 	stmt -> exp ';' .                                   (rule 253)
@@ -12791,44 +12830,46 @@ State 466
 	TLITCHAR       reduce using rule 253
 
 
-State 467
+State 470
 
-	fdecl -> 'import' callconv safety impent . var '::' ftype    (rule 164)
+	fspec -> string var . '::' ftype                    (rule 166)
 
-	'('            shift, and enter state 209
-	'as'           shift, and enter state 55
-	'hiding'       shift, and enter state 56
-	'qualified'    shift, and enter state 57
-	'safe'         shift, and enter state 58
-	'unsafe'       shift, and enter state 59
-	TVARID         shift, and enter state 64
-
-	var            goto state 516
-	varid          goto state 208
-
-State 468
-
-	impent -> string .                                  (rule 166)
-
-	'('            reduce using rule 166
-	'as'           reduce using rule 166
-	'hiding'       reduce using rule 166
-	'qualified'    reduce using rule 166
-	'safe'         reduce using rule 166
-	'unsafe'       reduce using rule 166
-	TVARID         reduce using rule 166
+	'::'           shift, and enter state 525
 
 
-State 469
+State 471
+
+	fspec -> var '::' . ftype                           (rule 167)
+
+	'('            shift, and enter state 524
+	TQCONID        shift, and enter state 67
+
+	ftype          goto state 520
+	frtype         goto state 521
+	fatype         goto state 522
+	qconid         goto state 215
+	qtycon         goto state 523
+
+State 472
+
+	fdecl -> 'import' callconv safety fspec .           (rule 164)
+
+	error          reduce using rule 164
+	';'            reduce using rule 164
+	'}'            reduce using rule 164
+	vccurly        reduce using rule 164
+
+
+State 473
 
 	lexp -> 'if' exp semi_opt 'then' exp . semi_opt 'else' exp    (rule 198)
 
 	';'            shift, and enter state 274
 	'else'         reduce using rule 207
 
-	semi_opt       goto state 515
+	semi_opt       goto state 519
 
-State 470
+State 474
 
 	as_modid_opt -> 'as' modid .                        (rule 27)
 
@@ -12840,7 +12881,7 @@ State 470
 	'hiding'       reduce using rule 27
 
 
-State 471
+State 475
 
 	impspec -> exports .                                (rule 31)
 
@@ -12850,7 +12891,7 @@ State 471
 	vccurly        reduce using rule 31
 
 
-State 472
+State 476
 
 	impdecl -> 'import' qual_opt modid as_modid_opt impspec_opt .    (rule 24)
 
@@ -12860,7 +12901,7 @@ State 472
 	vccurly        reduce using rule 24
 
 
-State 473
+State 477
 
 	impspec_opt -> impspec .                            (rule 29)
 
@@ -12870,15 +12911,15 @@ State 473
 	vccurly        reduce using rule 29
 
 
-State 474
+State 478
 
 	impspec -> 'hiding' . exports                       (rule 32)
 
 	'('            shift, and enter state 79
 
-	exports        goto state 514
+	exports        goto state 518
 
-State 475
+State 479
 
 	cseq1_simpleclass -> cseq1_simpleclass ',' simpleclass .    (rule 124)
 
@@ -12886,7 +12927,7 @@ State 475
 	','            reduce using rule 124
 
 
-State 476
+State 480
 
 	topdecl -> 'instance' cl_hdr inst 'where' idecls .    (rule 49)
 
@@ -12896,7 +12937,7 @@ State 476
 	vccurly        reduce using rule 49
 
 
-State 477
+State 481
 
 	idecls -> '{' . sseq_idecl '}'                      (rule 73)
 
@@ -12927,9 +12968,9 @@ State 477
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	sseq_idecl     goto state 513
-	idecl          goto state 510
-	funlhs         goto state 511
+	sseq_idecl     goto state 517
+	idecl          goto state 514
+	funlhs         goto state 515
 	exp            goto state 17
 	infixexp       goto state 18
 	lexp           goto state 19
@@ -12938,7 +12979,7 @@ State 477
 	aexp1          goto state 22
 	pat            goto state 130
 	gcon           goto state 24
-	var            goto state 512
+	var            goto state 516
 	qvar           goto state 26
 	qcon           goto state 27
 	varid          goto state 28
@@ -12951,7 +12992,7 @@ State 477
 	string         goto state 35
 	literal        goto state 36
 
-State 478
+State 482
 
 	idecls -> vocurly . sseq_idecl close                (rule 74)
 
@@ -12983,9 +13024,9 @@ State 478
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	sseq_idecl     goto state 509
-	idecl          goto state 510
-	funlhs         goto state 511
+	sseq_idecl     goto state 513
+	idecl          goto state 514
+	funlhs         goto state 515
 	exp            goto state 17
 	infixexp       goto state 18
 	lexp           goto state 19
@@ -12994,7 +13035,7 @@ State 478
 	aexp1          goto state 22
 	pat            goto state 130
 	gcon           goto state 24
-	var            goto state 512
+	var            goto state 516
 	qvar           goto state 26
 	qcon           goto state 27
 	varid          goto state 28
@@ -13007,7 +13048,7 @@ State 478
 	string         goto state 35
 	literal        goto state 36
 
-State 479
+State 483
 
 	gtycon -> '(' '->' ')' .                            (rule 110)
 
@@ -13062,7 +13103,7 @@ State 479
 	TLITCHAR       reduce using rule 110
 
 
-State 480
+State 484
 
 	inst -> '(' tyvar '->' . tyvar ')'                  (rule 159)
 
@@ -13074,9 +13115,9 @@ State 480
 	TVARID         shift, and enter state 64
 
 	varid          goto state 201
-	tyvar          goto state 508
+	tyvar          goto state 512
 
-State 481
+State 485
 
 	gtycon -> '(' commas ')' .                          (rule 111)
 
@@ -13131,7 +13172,7 @@ State 481
 	TLITCHAR       reduce using rule 111
 
 
-State 482
+State 486
 
 	inst -> '(' cseq1_tyvar ',' . tyvar ')'             (rule 157)
 	cseq1_tyvar -> cseq1_tyvar ',' . tyvar              (rule 162)
@@ -13144,14 +13185,14 @@ State 482
 	TVARID         shift, and enter state 64
 
 	varid          goto state 201
-	tyvar          goto state 507
+	tyvar          goto state 511
 
-State 483
+State 487
 
 	inst -> '(' gtycon seq_tyvar . ')'                  (rule 156)
 	seq_tyvar -> seq_tyvar . tyvar                      (rule 160)
 
-	')'            shift, and enter state 506
+	')'            shift, and enter state 510
 	'as'           shift, and enter state 55
 	'hiding'       shift, and enter state 56
 	'qualified'    shift, and enter state 57
@@ -13162,7 +13203,7 @@ State 483
 	varid          goto state 201
 	tyvar          goto state 325
 
-State 484
+State 488
 
 	inst -> '[' tyvar ']' .                             (rule 158)
 
@@ -13173,7 +13214,7 @@ State 484
 	'where'        reduce using rule 158
 
 
-State 485
+State 489
 
 	sseq1_decl -> sseq1_decl ';' decl .                 (rule 61)
 
@@ -13183,7 +13224,7 @@ State 485
 	vccurly        reduce using rule 61
 
 
-State 486
+State 490
 
 	cseq1_class -> cseq1_class ',' class .              (rule 116)
 
@@ -13191,13 +13232,13 @@ State 486
 	','            reduce using rule 116
 
 
-State 487
+State 491
 
 	seq_atype -> seq_atype . atype                      (rule 105)
 	class -> qtycls '(' tyvar seq_atype . ')'           (rule 119)
 
 	'('            shift, and enter state 216
-	')'            shift, and enter state 505
+	')'            shift, and enter state 509
 	'['            shift, and enter state 206
 	'as'           shift, and enter state 55
 	'hiding'       shift, and enter state 56
@@ -13207,14 +13248,14 @@ State 487
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	atype          goto state 504
+	atype          goto state 508
 	gtycon         goto state 199
 	varid          goto state 201
 	qconid         goto state 215
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 488
+State 492
 
 	newconstr -> con atype .                            (rule 143)
 
@@ -13225,7 +13266,7 @@ State 488
 	'deriving'     reduce using rule 143
 
 
-State 489
+State 493
 
 	newconstr -> con '{' . var '::' type '}'            (rule 144)
 
@@ -13237,10 +13278,10 @@ State 489
 	'unsafe'       shift, and enter state 59
 	TVARID         shift, and enter state 64
 
-	var            goto state 503
+	var            goto state 507
 	varid          goto state 208
 
-State 490
+State 494
 
 	topdecl -> 'newtype' ty_hdr '=' newconstr deriving .    (rule 45)
 
@@ -13250,7 +13291,7 @@ State 490
 	vccurly        reduce using rule 45
 
 
-State 491
+State 495
 
 	cseq1_export -> cseq1_export ',' export .           (rule 17)
 
@@ -13258,7 +13299,7 @@ State 491
 	','            reduce using rule 17
 
 
-State 492
+State 496
 
 	exports -> '(' cseq1_export ',' ')' .               (rule 13)
 
@@ -13269,23 +13310,23 @@ State 492
 	'where'        reduce using rule 13
 
 
-State 493
+State 497
 
 	export -> qtycon '(' cseq_cname . ')'               (rule 22)
 
-	')'            shift, and enter state 502
+	')'            shift, and enter state 506
 
 
-State 494
+State 498
 
 	cseq_cname -> cseq1_cname .                         (rule 33)
 	cseq1_cname -> cseq1_cname . ',' cname              (rule 35)
 
 	')'            reduce using rule 33
-	','            shift, and enter state 501
+	','            shift, and enter state 505
 
 
-State 495
+State 499
 
 	cseq1_cname -> cname .                              (rule 36)
 
@@ -13293,7 +13334,7 @@ State 495
 	','            reduce using rule 36
 
 
-State 496
+State 500
 
 	cname -> var .                                      (rule 37)
 
@@ -13301,7 +13342,7 @@ State 496
 	','            reduce using rule 37
 
 
-State 497
+State 501
 
 	cname -> con .                                      (rule 38)
 
@@ -13309,7 +13350,7 @@ State 497
 	','            reduce using rule 38
 
 
-State 498
+State 502
 
 	var -> '(' . varsym ')'                             (rule 269)
 	con -> '(' . consym ')'                             (rule 275)
@@ -13319,17 +13360,17 @@ State 498
 	TVARSYM        shift, and enter state 164
 	TCONSYM        shift, and enter state 148
 
-	varsym         goto state 416
-	consym         goto state 452
+	varsym         goto state 419
+	consym         goto state 455
 
-State 499
+State 503
 
 	export -> qtycon '(' '..' . ')'                     (rule 21)
 
-	')'            shift, and enter state 500
+	')'            shift, and enter state 504
 
 
-State 500
+State 504
 
 	export -> qtycon '(' '..' ')' .                     (rule 21)
 
@@ -13337,11 +13378,11 @@ State 500
 	','            reduce using rule 21
 
 
-State 501
+State 505
 
 	cseq1_cname -> cseq1_cname ',' . cname              (rule 35)
 
-	'('            shift, and enter state 498
+	'('            shift, and enter state 502
 	'as'           shift, and enter state 55
 	'hiding'       shift, and enter state 56
 	'qualified'    shift, and enter state 57
@@ -13350,13 +13391,13 @@ State 501
 	TVARID         shift, and enter state 64
 	TCONID         shift, and enter state 65
 
-	cname          goto state 572
-	var            goto state 496
-	con            goto state 497
+	cname          goto state 584
+	var            goto state 500
+	con            goto state 501
 	varid          goto state 208
 	conid          goto state 328
 
-State 502
+State 506
 
 	export -> qtycon '(' cseq_cname ')' .               (rule 22)
 
@@ -13364,14 +13405,14 @@ State 502
 	','            reduce using rule 22
 
 
-State 503
+State 507
 
 	newconstr -> con '{' var . '::' type '}'            (rule 144)
 
-	'::'           shift, and enter state 571
+	'::'           shift, and enter state 583
 
 
-State 504
+State 508
 
 	seq_atype -> seq_atype atype .                      (rule 105)
 
@@ -13392,7 +13433,7 @@ State 504
 	TQCONID        reduce using rule 105
 
 
-State 505
+State 509
 
 	class -> qtycls '(' tyvar seq_atype ')' .           (rule 119)
 
@@ -13401,7 +13442,7 @@ State 505
 	'=>'           reduce using rule 119
 
 
-State 506
+State 510
 
 	inst -> '(' gtycon seq_tyvar ')' .                  (rule 156)
 
@@ -13412,34 +13453,34 @@ State 506
 	'where'        reduce using rule 156
 
 
-State 507
+State 511
 
 	inst -> '(' cseq1_tyvar ',' tyvar . ')'             (rule 157)
 	cseq1_tyvar -> cseq1_tyvar ',' tyvar .              (rule 162)
 
-	')'            shift, and enter state 570
+	')'            shift, and enter state 582
 	','            reduce using rule 162
 
 
-State 508
+State 512
 
 	inst -> '(' tyvar '->' tyvar . ')'                  (rule 159)
 
-	')'            shift, and enter state 569
+	')'            shift, and enter state 581
 
 
-State 509
+State 513
 
 	idecls -> vocurly sseq_idecl . close                (rule 74)
 	sseq_idecl -> sseq_idecl . ';' idecl                (rule 75)
 
 	error          shift, and enter state 189
-	';'            shift, and enter state 564
+	';'            shift, and enter state 576
 	vccurly        shift, and enter state 190
 
-	close          goto state 568
+	close          goto state 580
 
-State 510
+State 514
 
 	sseq_idecl -> idecl .                               (rule 76)
 
@@ -13449,18 +13490,18 @@ State 510
 	vccurly        reduce using rule 76
 
 
-State 511
+State 515
 
 	idecl -> funlhs . rhs                               (rule 77)
 
 	'='            shift, and enter state 160
 	'|'            shift, and enter state 161
 
-	rhs            goto state 567
+	rhs            goto state 579
 	gdrhs          goto state 155
 	guards         goto state 156
 
-State 512
+State 516
 
 	idecl -> var . rhs                                  (rule 78)
 	funlhs -> var . seq1_apat                           (rule 176)
@@ -13486,7 +13527,7 @@ State 512
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	rhs            goto state 566
+	rhs            goto state 578
 	gdrhs          goto state 155
 	guards         goto state 156
 	seq1_apat      goto state 153
@@ -13506,16 +13547,16 @@ State 512
 	string         goto state 35
 	literal        goto state 36
 
-State 513
+State 517
 
 	idecls -> '{' sseq_idecl . '}'                      (rule 73)
 	sseq_idecl -> sseq_idecl . ';' idecl                (rule 75)
 
-	';'            shift, and enter state 564
-	'}'            shift, and enter state 565
+	';'            shift, and enter state 576
+	'}'            shift, and enter state 577
 
 
-State 514
+State 518
 
 	impspec -> 'hiding' exports .                       (rule 32)
 
@@ -13525,21 +13566,87 @@ State 514
 	vccurly        reduce using rule 32
 
 
-State 515
+State 519
 
 	lexp -> 'if' exp semi_opt 'then' exp semi_opt . 'else' exp    (rule 198)
 
-	'else'         shift, and enter state 563
+	'else'         shift, and enter state 575
 
 
-State 516
+State 520
 
-	fdecl -> 'import' callconv safety impent var . '::' ftype    (rule 164)
+	fspec -> var '::' ftype .                           (rule 167)
 
-	'::'           shift, and enter state 562
+	error          reduce using rule 167
+	';'            reduce using rule 167
+	'}'            reduce using rule 167
+	vccurly        reduce using rule 167
 
 
-State 517
+State 521
+
+	ftype -> frtype .                                   (rule 171)
+
+	error          reduce using rule 171
+	';'            reduce using rule 171
+	'}'            reduce using rule 171
+	vccurly        reduce using rule 171
+
+
+State 522
+
+	ftype -> fatype . '->' ftype                        (rule 172)
+	frtype -> fatype .                                  (rule 173)
+
+	error          reduce using rule 173
+	';'            reduce using rule 173
+	'}'            reduce using rule 173
+	vccurly        reduce using rule 173
+	'->'           shift, and enter state 574
+
+
+State 523
+
+	fatype -> qtycon . seq_atype                        (rule 175)
+
+	error          reduce using rule 106
+	'('            reduce using rule 106
+	';'            reduce using rule 106
+	'['            reduce using rule 106
+	'}'            reduce using rule 106
+	vccurly        reduce using rule 106
+	'as'           reduce using rule 106
+	'hiding'       reduce using rule 106
+	'qualified'    reduce using rule 106
+	'safe'         reduce using rule 106
+	'unsafe'       reduce using rule 106
+	'->'           reduce using rule 106
+	TVARID         reduce using rule 106
+	TQCONID        reduce using rule 106
+
+	seq_atype      goto state 573
+
+State 524
+
+	frtype -> '(' . ')'                                 (rule 174)
+
+	')'            shift, and enter state 572
+
+
+State 525
+
+	fspec -> string var '::' . ftype                    (rule 166)
+
+	'('            shift, and enter state 524
+	TQCONID        shift, and enter state 67
+
+	ftype          goto state 571
+	frtype         goto state 521
+	fatype         goto state 522
+	qconid         goto state 215
+	qtycon         goto state 523
+
+State 526
 
 	stmt -> pat '<-' exp ';' .                          (rule 254)
 
@@ -13572,7 +13679,7 @@ State 517
 	TLITCHAR       reduce using rule 254
 
 
-State 518
+State 527
 
 	constrs -> constrs '|' constr .                     (rule 128)
 
@@ -13584,7 +13691,7 @@ State 518
 	'|'            reduce using rule 128
 
 
-State 519
+State 528
 
 	constr -> borbatype conop borbatype .               (rule 131)
 
@@ -13596,7 +13703,7 @@ State 519
 	'|'            reduce using rule 131
 
 
-State 520
+State 529
 
 	banopt_atype -> '!' atype .                         (rule 141)
 
@@ -13618,33 +13725,33 @@ State 520
 	TQCONID        reduce using rule 141
 
 
-State 521
+State 530
 
 	vars -> vars . ',' var                              (rule 87)
 	fielddecl -> vars . '::' type                       (rule 145)
 	fielddecl -> vars . '::' '!' atype                  (rule 146)
 
 	','            shift, and enter state 185
-	'::'           shift, and enter state 561
+	'::'           shift, and enter state 570
 
 
-State 522
+State 531
 
 	constr -> con '{' cseq_fielddecl . '}'              (rule 132)
 
-	'}'            shift, and enter state 560
+	'}'            shift, and enter state 569
 
 
-State 523
+State 532
 
 	cseq_fielddecl -> cseq1_fielddecl .                 (rule 133)
 	cseq1_fielddecl -> cseq1_fielddecl . ',' fielddecl    (rule 135)
 
-	','            shift, and enter state 559
+	','            shift, and enter state 568
 	'}'            reduce using rule 133
 
 
-State 524
+State 533
 
 	cseq1_fielddecl -> fielddecl .                      (rule 136)
 
@@ -13652,7 +13759,7 @@ State 524
 	'}'            reduce using rule 136
 
 
-State 525
+State 534
 
 	vars -> var .                                       (rule 88)
 
@@ -13660,7 +13767,7 @@ State 525
 	'::'           reduce using rule 88
 
 
-State 526
+State 535
 
 	seq_banopt_atype -> seq_banopt_atype banopt_atype .    (rule 139)
 
@@ -13682,7 +13789,7 @@ State 526
 	TQCONID        reduce using rule 139
 
 
-State 527
+State 536
 
 	con -> '(' consym ')' .                             (rule 275)
 
@@ -13701,19 +13808,19 @@ State 527
 	TQCONID        reduce using rule 275
 
 
-State 528
+State 537
 
 	cseq1_dclass -> cseq1_dclass ',' . dclass           (rule 152)
 
 	TCONID         shift, and enter state 65
 	TQCONID        shift, and enter state 67
 
-	dclass         goto state 558
+	dclass         goto state 567
 	conid          goto state 109
 	qconid         goto state 100
-	qtycls         goto state 376
+	qtycls         goto state 379
 
-State 529
+State 538
 
 	deriving -> 'deriving' '(' cseq_dclass ')' .        (rule 148)
 
@@ -13723,18 +13830,18 @@ State 529
 	vccurly        reduce using rule 148
 
 
-State 530
+State 539
 
 	cdecls -> vocurly sseq1_cdecl . close               (rule 67)
 	sseq1_cdecl -> sseq1_cdecl . ';' cdecl              (rule 68)
 
 	error          shift, and enter state 189
-	';'            shift, and enter state 553
+	';'            shift, and enter state 562
 	vccurly        shift, and enter state 190
 
-	close          goto state 557
+	close          goto state 566
 
-State 531
+State 540
 
 	sseq1_cdecl -> cdecl .                              (rule 69)
 
@@ -13744,7 +13851,7 @@ State 531
 	vccurly        reduce using rule 69
 
 
-State 532
+State 541
 
 	cdecl -> gendecl .                                  (rule 70)
 
@@ -13754,18 +13861,18 @@ State 532
 	vccurly        reduce using rule 70
 
 
-State 533
+State 542
 
 	cdecl -> funlhs . rhs                               (rule 71)
 
 	'='            shift, and enter state 160
 	'|'            shift, and enter state 161
 
-	rhs            goto state 556
+	rhs            goto state 565
 	gdrhs          goto state 155
 	guards         goto state 156
 
-State 534
+State 543
 
 	cdecl -> var . rhs                                  (rule 72)
 	vars -> var .                                       (rule 88)
@@ -13794,7 +13901,7 @@ State 534
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	rhs            goto state 555
+	rhs            goto state 564
 	gdrhs          goto state 155
 	guards         goto state 156
 	seq1_apat      goto state 153
@@ -13814,16 +13921,16 @@ State 534
 	string         goto state 35
 	literal        goto state 36
 
-State 535
+State 544
 
 	cdecls -> '{' sseq1_cdecl . '}'                     (rule 66)
 	sseq1_cdecl -> sseq1_cdecl . ';' cdecl              (rule 68)
 
-	';'            shift, and enter state 553
-	'}'            shift, and enter state 554
+	';'            shift, and enter state 562
+	'}'            shift, and enter state 563
 
 
-State 536
+State 545
 
 	alts -> alts ';' . alt                              (rule 242)
 
@@ -13858,8 +13965,8 @@ State 536
 	fexp           goto state 20
 	aexp           goto state 21
 	aexp1          goto state 22
-	alt            goto state 552
-	pat            goto state 443
+	alt            goto state 561
+	pat            goto state 446
 	gcon           goto state 24
 	qvar           goto state 26
 	qcon           goto state 27
@@ -13873,7 +13980,7 @@ State 536
 	string         goto state 35
 	literal        goto state 36
 
-State 537
+State 546
 
 	lexp -> 'case' exp 'of' '{' alts '}' .              (rule 199)
 
@@ -13927,15 +14034,15 @@ State 537
 	TLITCHAR       reduce using rule 199
 
 
-State 538
+State 547
 
 	gdpat -> guards . '->' exp                          (rule 248)
 	gdpat -> guards . '->' exp gdpat                    (rule 249)
 
-	'->'           shift, and enter state 551
+	'->'           shift, and enter state 560
 
 
-State 539
+State 548
 
 	alt -> pat gdpat .                                  (rule 246)
 	alt -> pat gdpat . 'where' decls                    (rule 247)
@@ -13944,10 +14051,10 @@ State 539
 	';'            reduce using rule 246
 	'}'            reduce using rule 246
 	vccurly        reduce using rule 246
-	'where'        shift, and enter state 550
+	'where'        shift, and enter state 559
 
 
-State 540
+State 549
 
 	alt -> pat '->' . exp                               (rule 244)
 	alt -> pat '->' . exp 'where' decls                 (rule 245)
@@ -13976,7 +14083,7 @@ State 540
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 549
+	exp            goto state 558
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
@@ -13995,7 +14102,7 @@ State 540
 	string         goto state 35
 	literal        goto state 36
 
-State 541
+State 550
 
 	lexp -> 'case' exp 'of' vocurly alts close .        (rule 200)
 
@@ -14049,7 +14156,7 @@ State 541
 	TLITCHAR       reduce using rule 200
 
 
-State 542
+State 551
 
 	seq1_qual -> seq1_qual ',' qual .                   (rule 233)
 
@@ -14057,7 +14164,7 @@ State 542
 	']'            reduce using rule 233
 
 
-State 543
+State 552
 
 	qual -> pat '<-' exp .                              (rule 239)
 
@@ -14065,14 +14172,14 @@ State 543
 	']'            reduce using rule 239
 
 
-State 544
+State 553
 
 	aexp1 -> '[' exp ',' exp '..' exp . ']'             (rule 225)
 
-	']'            shift, and enter state 548
+	']'            shift, and enter state 557
 
 
-State 545
+State 554
 
 	aexp1 -> '[' exp ',' exp '..' ']' .                 (rule 224)
 
@@ -14127,16 +14234,16 @@ State 545
 	TLITCHAR       reduce using rule 224
 
 
-State 546
+State 555
 
 	cseq1_type -> cseq1_type ',' type .                 (rule 96)
 	atype -> '(' cseq1_type ',' type . ')'              (rule 102)
 
-	')'            shift, and enter state 547
+	')'            shift, and enter state 556
 	','            reduce using rule 96
 
 
-State 547
+State 556
 
 	atype -> '(' cseq1_type ',' type ')' .              (rule 102)
 
@@ -14191,7 +14298,7 @@ State 547
 	TLITCHAR       reduce using rule 102
 
 
-State 548
+State 557
 
 	aexp1 -> '[' exp ',' exp '..' exp ']' .             (rule 225)
 
@@ -14246,7 +14353,7 @@ State 548
 	TLITCHAR       reduce using rule 225
 
 
-State 549
+State 558
 
 	alt -> pat '->' exp .                               (rule 244)
 	alt -> pat '->' exp . 'where' decls                 (rule 245)
@@ -14255,19 +14362,19 @@ State 549
 	';'            reduce using rule 244
 	'}'            reduce using rule 244
 	vccurly        reduce using rule 244
-	'where'        shift, and enter state 587
+	'where'        shift, and enter state 595
 
 
-State 550
+State 559
 
 	alt -> pat gdpat 'where' . decls                    (rule 247)
 
 	'{'            shift, and enter state 104
 	vocurly        shift, and enter state 105
 
-	decls          goto state 586
+	decls          goto state 594
 
-State 551
+State 560
 
 	gdpat -> guards '->' . exp                          (rule 248)
 	gdpat -> guards '->' . exp gdpat                    (rule 249)
@@ -14296,7 +14403,7 @@ State 551
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 585
+	exp            goto state 593
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
@@ -14315,7 +14422,7 @@ State 551
 	string         goto state 35
 	literal        goto state 36
 
-State 552
+State 561
 
 	alts -> alts ';' alt .                              (rule 242)
 
@@ -14325,7 +14432,7 @@ State 552
 	vccurly        reduce using rule 242
 
 
-State 553
+State 562
 
 	sseq1_cdecl -> sseq1_cdecl ';' . cdecl              (rule 68)
 
@@ -14361,11 +14468,11 @@ State 553
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	cdecl          goto state 584
-	gendecl        goto state 532
+	cdecl          goto state 592
+	gendecl        goto state 541
 	vars           goto state 14
 	fixity         goto state 15
-	funlhs         goto state 533
+	funlhs         goto state 542
 	exp            goto state 17
 	infixexp       goto state 18
 	lexp           goto state 19
@@ -14374,7 +14481,7 @@ State 553
 	aexp1          goto state 22
 	pat            goto state 130
 	gcon           goto state 24
-	var            goto state 534
+	var            goto state 543
 	qvar           goto state 26
 	qcon           goto state 27
 	varid          goto state 28
@@ -14387,7 +14494,7 @@ State 553
 	string         goto state 35
 	literal        goto state 36
 
-State 554
+State 563
 
 	cdecls -> '{' sseq1_cdecl '}' .                     (rule 66)
 
@@ -14397,7 +14504,7 @@ State 554
 	vccurly        reduce using rule 66
 
 
-State 555
+State 564
 
 	cdecl -> var rhs .                                  (rule 72)
 
@@ -14407,7 +14514,7 @@ State 555
 	vccurly        reduce using rule 72
 
 
-State 556
+State 565
 
 	cdecl -> funlhs rhs .                               (rule 71)
 
@@ -14417,7 +14524,7 @@ State 556
 	vccurly        reduce using rule 71
 
 
-State 557
+State 566
 
 	cdecls -> vocurly sseq1_cdecl close .               (rule 67)
 
@@ -14427,7 +14534,7 @@ State 557
 	vccurly        reduce using rule 67
 
 
-State 558
+State 567
 
 	cseq1_dclass -> cseq1_dclass ',' dclass .           (rule 152)
 
@@ -14435,7 +14542,7 @@ State 558
 	','            reduce using rule 152
 
 
-State 559
+State 568
 
 	cseq1_fielddecl -> cseq1_fielddecl ',' . fielddecl    (rule 135)
 
@@ -14447,12 +14554,12 @@ State 559
 	'unsafe'       shift, and enter state 59
 	TVARID         shift, and enter state 64
 
-	vars           goto state 521
-	fielddecl      goto state 583
-	var            goto state 525
+	vars           goto state 530
+	fielddecl      goto state 591
+	var            goto state 534
 	varid          goto state 208
 
-State 560
+State 569
 
 	constr -> con '{' cseq_fielddecl '}' .              (rule 132)
 
@@ -14464,7 +14571,7 @@ State 560
 	'|'            reduce using rule 132
 
 
-State 561
+State 570
 
 	fielddecl -> vars '::' . type                       (rule 145)
 	fielddecl -> vars '::' . '!' atype                  (rule 146)
@@ -14476,11 +14583,11 @@ State 561
 	'qualified'    shift, and enter state 57
 	'safe'         shift, and enter state 58
 	'unsafe'       shift, and enter state 59
-	'!'            shift, and enter state 582
+	'!'            shift, and enter state 590
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	type           goto state 581
+	type           goto state 589
 	btype          goto state 197
 	atype          goto state 198
 	gtycon         goto state 199
@@ -14489,20 +14596,67 @@ State 561
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 562
+State 571
 
-	fdecl -> 'import' callconv safety impent var '::' . ftype    (rule 164)
+	fspec -> string var '::' ftype .                    (rule 166)
 
-	'('            shift, and enter state 580
+	error          reduce using rule 166
+	';'            reduce using rule 166
+	'}'            reduce using rule 166
+	vccurly        reduce using rule 166
+
+
+State 572
+
+	frtype -> '(' ')' .                                 (rule 174)
+
+	error          reduce using rule 174
+	';'            reduce using rule 174
+	'}'            reduce using rule 174
+	vccurly        reduce using rule 174
+
+
+State 573
+
+	seq_atype -> seq_atype . atype                      (rule 105)
+	fatype -> qtycon seq_atype .                        (rule 175)
+
+	error          reduce using rule 175
+	'('            shift, and enter state 216
+	';'            reduce using rule 175
+	'['            shift, and enter state 206
+	'}'            reduce using rule 175
+	vccurly        reduce using rule 175
+	'as'           shift, and enter state 55
+	'hiding'       shift, and enter state 56
+	'qualified'    shift, and enter state 57
+	'safe'         shift, and enter state 58
+	'unsafe'       shift, and enter state 59
+	'->'           reduce using rule 175
+	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	ftype          goto state 576
-	frtype         goto state 577
-	fatype         goto state 578
+	atype          goto state 508
+	gtycon         goto state 199
+	varid          goto state 201
 	qconid         goto state 215
-	qtycon         goto state 579
+	qtycon         goto state 203
+	tyvar          goto state 204
 
-State 563
+State 574
+
+	ftype -> fatype '->' . ftype                        (rule 172)
+
+	'('            shift, and enter state 524
+	TQCONID        shift, and enter state 67
+
+	ftype          goto state 588
+	frtype         goto state 521
+	fatype         goto state 522
+	qconid         goto state 215
+	qtycon         goto state 523
+
+State 575
 
 	lexp -> 'if' exp semi_opt 'then' exp semi_opt 'else' . exp    (rule 198)
 
@@ -14530,7 +14684,7 @@ State 563
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	exp            goto state 575
+	exp            goto state 587
 	infixexp       goto state 18
 	lexp           goto state 19
 	fexp           goto state 20
@@ -14549,7 +14703,7 @@ State 563
 	string         goto state 35
 	literal        goto state 36
 
-State 564
+State 576
 
 	sseq_idecl -> sseq_idecl ';' . idecl                (rule 75)
 
@@ -14582,8 +14736,8 @@ State 564
 	TLITSTR        shift, and enter state 70
 	TLITCHAR       shift, and enter state 71
 
-	idecl          goto state 574
-	funlhs         goto state 511
+	idecl          goto state 586
+	funlhs         goto state 515
 	exp            goto state 17
 	infixexp       goto state 18
 	lexp           goto state 19
@@ -14592,7 +14746,7 @@ State 564
 	aexp1          goto state 22
 	pat            goto state 130
 	gcon           goto state 24
-	var            goto state 512
+	var            goto state 516
 	qvar           goto state 26
 	qcon           goto state 27
 	varid          goto state 28
@@ -14605,7 +14759,7 @@ State 564
 	string         goto state 35
 	literal        goto state 36
 
-State 565
+State 577
 
 	idecls -> '{' sseq_idecl '}' .                      (rule 73)
 
@@ -14615,7 +14769,7 @@ State 565
 	vccurly        reduce using rule 73
 
 
-State 566
+State 578
 
 	idecl -> var rhs .                                  (rule 78)
 
@@ -14625,7 +14779,7 @@ State 566
 	vccurly        reduce using rule 78
 
 
-State 567
+State 579
 
 	idecl -> funlhs rhs .                               (rule 77)
 
@@ -14635,7 +14789,7 @@ State 567
 	vccurly        reduce using rule 77
 
 
-State 568
+State 580
 
 	idecls -> vocurly sseq_idecl close .                (rule 74)
 
@@ -14645,7 +14799,7 @@ State 568
 	vccurly        reduce using rule 74
 
 
-State 569
+State 581
 
 	inst -> '(' tyvar '->' tyvar ')' .                  (rule 159)
 
@@ -14656,7 +14810,7 @@ State 569
 	'where'        reduce using rule 159
 
 
-State 570
+State 582
 
 	inst -> '(' cseq1_tyvar ',' tyvar ')' .             (rule 157)
 
@@ -14667,7 +14821,7 @@ State 570
 	'where'        reduce using rule 157
 
 
-State 571
+State 583
 
 	newconstr -> con '{' var '::' . type '}'            (rule 144)
 
@@ -14681,7 +14835,7 @@ State 571
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	type           goto state 573
+	type           goto state 585
 	btype          goto state 197
 	atype          goto state 198
 	gtycon         goto state 199
@@ -14690,7 +14844,7 @@ State 571
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 572
+State 584
 
 	cseq1_cname -> cseq1_cname ',' cname .              (rule 35)
 
@@ -14698,14 +14852,14 @@ State 572
 	','            reduce using rule 35
 
 
-State 573
+State 585
 
 	newconstr -> con '{' var '::' type . '}'            (rule 144)
 
-	'}'            shift, and enter state 594
+	'}'            shift, and enter state 599
 
 
-State 574
+State 586
 
 	sseq_idecl -> sseq_idecl ';' idecl .                (rule 75)
 
@@ -14715,7 +14869,7 @@ State 574
 	vccurly        reduce using rule 75
 
 
-State 575
+State 587
 
 	lexp -> 'if' exp semi_opt 'then' exp semi_opt 'else' exp .    (rule 198)
 
@@ -14769,67 +14923,17 @@ State 575
 	TLITCHAR       reduce using rule 198
 
 
-State 576
+State 588
 
-	fdecl -> 'import' callconv safety impent var '::' ftype .    (rule 164)
+	ftype -> fatype '->' ftype .                        (rule 172)
 
-	error          reduce using rule 164
-	';'            reduce using rule 164
-	'}'            reduce using rule 164
-	vccurly        reduce using rule 164
-
-
-State 577
-
-	ftype -> frtype .                                   (rule 171)
-
-	error          reduce using rule 171
-	';'            reduce using rule 171
-	'}'            reduce using rule 171
-	vccurly        reduce using rule 171
+	error          reduce using rule 172
+	';'            reduce using rule 172
+	'}'            reduce using rule 172
+	vccurly        reduce using rule 172
 
 
-State 578
-
-	ftype -> fatype . '->' ftype                        (rule 172)
-	frtype -> fatype .                                  (rule 173)
-
-	error          reduce using rule 173
-	';'            reduce using rule 173
-	'}'            reduce using rule 173
-	vccurly        reduce using rule 173
-	'->'           shift, and enter state 593
-
-
-State 579
-
-	fatype -> qtycon . seq_atype                        (rule 175)
-
-	error          reduce using rule 106
-	'('            reduce using rule 106
-	';'            reduce using rule 106
-	'['            reduce using rule 106
-	'}'            reduce using rule 106
-	vccurly        reduce using rule 106
-	'as'           reduce using rule 106
-	'hiding'       reduce using rule 106
-	'qualified'    reduce using rule 106
-	'safe'         reduce using rule 106
-	'unsafe'       reduce using rule 106
-	'->'           reduce using rule 106
-	TVARID         reduce using rule 106
-	TQCONID        reduce using rule 106
-
-	seq_atype      goto state 592
-
-State 580
-
-	frtype -> '(' . ')'                                 (rule 174)
-
-	')'            shift, and enter state 591
-
-
-State 581
+State 589
 
 	fielddecl -> vars '::' type .                       (rule 145)
 
@@ -14837,7 +14941,7 @@ State 581
 	'}'            reduce using rule 145
 
 
-State 582
+State 590
 
 	fielddecl -> vars '::' '!' . atype                  (rule 146)
 
@@ -14851,14 +14955,14 @@ State 582
 	TVARID         shift, and enter state 64
 	TQCONID        shift, and enter state 67
 
-	atype          goto state 590
+	atype          goto state 598
 	gtycon         goto state 199
 	varid          goto state 201
 	qconid         goto state 215
 	qtycon         goto state 203
 	tyvar          goto state 204
 
-State 583
+State 591
 
 	cseq1_fielddecl -> cseq1_fielddecl ',' fielddecl .    (rule 135)
 
@@ -14866,7 +14970,7 @@ State 583
 	'}'            reduce using rule 135
 
 
-State 584
+State 592
 
 	sseq1_cdecl -> sseq1_cdecl ';' cdecl .              (rule 68)
 
@@ -14876,7 +14980,7 @@ State 584
 	vccurly        reduce using rule 68
 
 
-State 585
+State 593
 
 	gdpat -> guards '->' exp .                          (rule 248)
 	gdpat -> guards '->' exp . gdpat                    (rule 249)
@@ -14888,10 +14992,10 @@ State 585
 	'where'        reduce using rule 248
 	'|'            shift, and enter state 161
 
-	guards         goto state 538
-	gdpat          goto state 589
+	guards         goto state 547
+	gdpat          goto state 597
 
-State 586
+State 594
 
 	alt -> pat gdpat 'where' decls .                    (rule 247)
 
@@ -14901,16 +15005,16 @@ State 586
 	vccurly        reduce using rule 247
 
 
-State 587
+State 595
 
 	alt -> pat '->' exp 'where' . decls                 (rule 245)
 
 	'{'            shift, and enter state 104
 	vocurly        shift, and enter state 105
 
-	decls          goto state 588
+	decls          goto state 596
 
-State 588
+State 596
 
 	alt -> pat '->' exp 'where' decls .                 (rule 245)
 
@@ -14920,7 +15024,7 @@ State 588
 	vccurly        reduce using rule 245
 
 
-State 589
+State 597
 
 	gdpat -> guards '->' exp gdpat .                    (rule 249)
 
@@ -14931,7 +15035,7 @@ State 589
 	'where'        reduce using rule 249
 
 
-State 590
+State 598
 
 	fielddecl -> vars '::' '!' atype .                  (rule 146)
 
@@ -14939,57 +15043,7 @@ State 590
 	'}'            reduce using rule 146
 
 
-State 591
-
-	frtype -> '(' ')' .                                 (rule 174)
-
-	error          reduce using rule 174
-	';'            reduce using rule 174
-	'}'            reduce using rule 174
-	vccurly        reduce using rule 174
-
-
-State 592
-
-	seq_atype -> seq_atype . atype                      (rule 105)
-	fatype -> qtycon seq_atype .                        (rule 175)
-
-	error          reduce using rule 175
-	'('            shift, and enter state 216
-	';'            reduce using rule 175
-	'['            shift, and enter state 206
-	'}'            reduce using rule 175
-	vccurly        reduce using rule 175
-	'as'           shift, and enter state 55
-	'hiding'       shift, and enter state 56
-	'qualified'    shift, and enter state 57
-	'safe'         shift, and enter state 58
-	'unsafe'       shift, and enter state 59
-	'->'           reduce using rule 175
-	TVARID         shift, and enter state 64
-	TQCONID        shift, and enter state 67
-
-	atype          goto state 504
-	gtycon         goto state 199
-	varid          goto state 201
-	qconid         goto state 215
-	qtycon         goto state 203
-	tyvar          goto state 204
-
-State 593
-
-	ftype -> fatype '->' . ftype                        (rule 172)
-
-	'('            shift, and enter state 580
-	TQCONID        shift, and enter state 67
-
-	ftype          goto state 595
-	frtype         goto state 577
-	fatype         goto state 578
-	qconid         goto state 215
-	qtycon         goto state 579
-
-State 594
+State 599
 
 	newconstr -> con '{' var '::' type '}' .            (rule 144)
 
@@ -15000,20 +15054,10 @@ State 594
 	'deriving'     reduce using rule 144
 
 
-State 595
-
-	ftype -> fatype '->' ftype .                        (rule 172)
-
-	error          reduce using rule 172
-	';'            reduce using rule 172
-	'}'            reduce using rule 172
-	vccurly        reduce using rule 172
-
-
 -----------------------------------------------------------------------------
 Grammar Totals
 -----------------------------------------------------------------------------
 Number of rules: 334
 Number of terminals: 64
 Number of non-terminals: 134
-Number of states: 596
+Number of states: 600
