@@ -81,55 +81,49 @@ module: 'module' modid exports_opt 'where' body { mkModule $2 }
       | body                                    {}
 
 body: '{'     impdecls ';' topdecls '}'         {}
-  |   vocurly impdecls ';' topdecls close       {}
-  |   '{'     impdecls '}'                      {}
-  |   vocurly impdecls close                    {}
-  |   '{'     topdecls '}'                      {}
-  |   vocurly topdecls close                    {}
+    | vocurly impdecls ';' topdecls close       {}
+    | '{'     impdecls '}'                      {}
+    | vocurly impdecls close                    {}
+    | '{'     topdecls '}'                      {}
+    | vocurly topdecls close                    {}
 
 impdecls: impdecls ';' impdecl                  {}
-  |       impdecl                               {}
+        | impdecl                               {}
 
 exports_opt: exports                            {}
-  |          {- empty -}                        {}
+           | {- empty -}                        {}
 
 exports: '(' cseq_export ',' ')'                {}
-  |      '(' cseq_export     ')'                {}
+       | '(' cseq_export     ')'                {}
 
 cseq_export: cseq1_export                       {}
-  |          {- empry -}                        {}
+           | {- empry -}                        {}
 
 cseq1_export: cseq1_export ',' export           {}
-  |           export                            {}
+            | export                            {}
 
 export: qvar                                    {}
-  |     qtycon                                  {}
-  |     qtycon '(' '..' ')'                     {}
-  |     qtycon '(' cseq_cname ')'               {}
-  |     'module' modid                          {}
+      | qtycon                                  {}
+      | qtycon '(' '..' ')'                     {}
+      | qtycon '(' cseq_cname ')'               {}
+      | 'module' modid                          {}
 
-impdecl: 'import' qual_opt modid as_modid_opt
-         impspec_opt                            {}
+impdecl: 'import' qual_opt modid as_modid_opt impspec_opt
+                                                {}
 
 qual_opt: 'qualified'                           {}
-  |       {- empty -}                           {}
+        | {- empty -}                           {}
 
 as_modid_opt: 'as' modid                        {}
-  |           {- empty -}                       {}
+            | {- empty -}                       {}
 
 impspec_opt: impspec                            {}
-  |          {- empty -}                        {}
+           | {- empty -}                        {}
 
-impspec: '(' cseq_import ',' ')'                {}
-  |      '(' cseq_import     ')'                {}
-  |      'hiding' '(' cseq_import ',' ')'       {}
-  |      'hiding' '(' cseq_import     ')'       {}
-
-cseq_import: cseq1_import                       {}
-  |          {- empty -}                        {}
-
-cseq1_import: cseq1_import ',' import           {}
-  |           import                            {}
+impspec: '(' cseq_export ',' ')'                {}
+       | '(' cseq_export     ')'                {}
+       | 'hiding' '(' cseq_export ',' ')'       {}
+       | 'hiding' '(' cseq_export     ')'       {}
 
 import: var                                     {}
   |     tycon                                   {}
