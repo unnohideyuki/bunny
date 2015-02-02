@@ -125,11 +125,6 @@ impspec: '(' cseq_export ',' ')'                {}
        | 'hiding' '(' cseq_export ',' ')'       {}
        | 'hiding' '(' cseq_export     ')'       {}
 
-import: var                                     {}
-  |     tycon                                   {}
-  |     tycon '(' '..' ')'                      {}
-  |     tycon '(' cseq_cname ')'                {}
-
 cseq_cname: cseq1_cname                         {}
   |         {- empty -}                         {}
 
