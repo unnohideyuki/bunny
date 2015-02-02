@@ -126,13 +126,13 @@ impspec: '(' cseq_export ',' ')'                {}
        | 'hiding' '(' cseq_export     ')'       {}
 
 cseq_cname: cseq1_cname                         {}
-  |         {- empty -}                         {}
+          | {- empty -}                         {}
 
 cseq1_cname: cseq1_cname ',' cname              {}
-  |          cname                              {}
+           | cname                              {}
 
 cname: var                                      {}
-  |    con                                      {}
+     | con                                      {}
 
 topdecls: sseq1_topdecl                         {}
 
@@ -140,11 +140,11 @@ sseq1_topdecl: sseq1_topdecl ';' topdecl        {}
   |            topdecl                          {}
 
 topdecl: 'type' simpletype '=' type             {}
-  |      'data' ctx_opt simpletype
+  |      'data' ty_hdr
          '=' constrs deriving_opt               {}
-  |      'data' ctx_opt simpletype
+  |      'data' ty_hdr
                      deriving_opt               {}
-  |      'newtype' ctx_opt simpletype
+  |      'newtype' ty_hdr
          '=' newconstr deriving_opt             {}
   |      'class' sctx_opt tycls tyvar           {}
   |      'class' sctx_opt tycls tyvar
@@ -156,8 +156,8 @@ topdecl: 'type' simpletype '=' type             {}
   |      'foreign' fdecl                        {}
   |      decl                                   {}
 
-ctx_opt: context '=>'                           {}
-  |      {- empty -}                            {}
+ty_hdr: context '=>' simpletype                 {}
+  |                  simpletype                 {}
 
 sctx_opt: scontext '=>'                         {}
   |       {- empty -}                           {}
