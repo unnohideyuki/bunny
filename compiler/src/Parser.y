@@ -146,11 +146,11 @@ topdecl: 'type' simpletype '=' type             {}
                      deriving_opt               {}
   |      'newtype' ty_hdr
          '=' newconstr deriving_opt             {}
-  |      'class' sctx_opt tycls tyvar           {}
-  |      'class' sctx_opt tycls tyvar
+  |      'class' cl_hdr tyvar           {}
+  |      'class' cl_hdr tyvar
          'where' cdecls                         {}
-  |      'instance' sctx_opt qtycls inst        {}
-  |      'instance' sctx_opt qtycls inst
+  |      'instance' cl_hdrq inst        {}
+  |      'instance' cl_hdrq inst
          'where' idecls                         {}
   |      'default' '(' cseq_type ')'            {}
   |      'foreign' fdecl                        {}
@@ -158,6 +158,12 @@ topdecl: 'type' simpletype '=' type             {}
 
 ty_hdr: context '=>' simpletype                 {}
   |                  simpletype                 {}
+
+cl_hdr: scontext '=>' tycls                     {}
+      |               tycls                     {}
+
+cl_hdrq: scontext '=>' qtycls                   {}
+       |               qtycls                   {}
 
 sctx_opt: scontext '=>'                         {}
   |       {- empty -}                           {}
