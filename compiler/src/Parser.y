@@ -186,13 +186,11 @@ cdecl: gendecl                                  {}
      | funlhs rhs                               {}
      | var    rhs                               {}
 
-idecls: '{'     sseq1_idecl '}'                 {}
-      | '{'                 '}'                 {}
-      | vocurly sseq1_idecl close               {}
-      | vocurly             close               {}
+idecls: '{'     sseq_idecl '}'                  {}
+      | vocurly sseq_idecl close                {}
 
-sseq1_idecl: sseq1_idecl ';' idecl              {}
-           | idecl                              {}
+sseq_idecl: sseq_idecl ';' idecl                {}
+          | idecl                               {}
 
 idecl: funlhs rhs                               {}
      | var    rhs                               {}
