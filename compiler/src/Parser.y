@@ -429,7 +429,7 @@ aexp: qvar                                      {}
   |   '[' exp ',' exp '..' exp ']'              {}
   |   '[' exp '|' seq1_qual ']'                 {}
   |   '(' infixexp qop ')'                      {}
-  |   '(' qop_ infixexp ')'                     {}
+  |   '(' qop_no_minus infixexp ')'             {}
   |   qcon '{' seq_fbind '}'                    {}
   |   aexp '{' seq1_fbind '}'                   {}
 
@@ -503,40 +503,44 @@ seq_fpat: seq_fpat fpat                         {}
 fpat: qvar '=' pat                              {}
 
 gcon: '(' ')'                                   {}
-  |   '[' ']'                                   {}
-  |   '(' ',' seq_commas ')'                    {}
-  |   qcon                                      {}
+    | '[' ']'                                   {}
+    | '(' commas ')'                            {}
+    | qcon                                      {}
 
-seq_commas: seq_commas ','                      {}
-  |         {- empty -}                         {}
+commas: commas ','                              {}
+      | ','                                     {}
 
 var: varid                                      {}
-  |  '(' varsym ')'                             {}
+   | '(' varsym ')'                             {}
 
 qvar: qvarid                                    {}
-  |  '(' qvarsym ')'                            {}
-  |   var                                       {}
+    | '(' qvarsym ')'                           {}
+    | varid                                     {}
+    | '(' varsym ')'                            {}
 
 con: conid                                      {}
-  |  '(' consym ')'                             {}
+   | '(' consym ')'                             {}
 
 qcon : qconid                                   {}
-  |    '(' gconsym ')'                          {}
-  |    con                                      {}
+     | '(' gconsym ')'                          {}
+     | conid                                    {}
+     | '(' consym ')'                           {}
 
 varop : varsym                                  {}
-  |     '`' varid '`'                           {}
+      | '`' varid '`'                           {}
 
 qvarop: qvarsym                                 {}
-  |     '`' qvarid '`'                          {}
-  |     varop                                   {}
+      | '`' qvarid '`'                          {}
+      | varsym                                  {}
+      | '`' varid '`'                           {}
 
 conop: consym                                   {}
-  |    '`' conid '`'                            {}
+     | '`' conid '`'                            {}
 
 qconop: gconsym                                 {}
-  |     '`' qconid '`'                          {}
-  |     conop                                   {}
+      | '`' qconid '`'                          {}
+      | consym                                  {}
+      | '`' conid '`'                           {}
 
 op: varop                                       {}
   | conop                                       {}
@@ -545,38 +549,38 @@ qop: qvarop                                     {}
   |  qconop                                     {}
 
 -- qop<->
-qop_: varsym_                                   {}
-  |   '`' varid '`'                             {}
-  |   qvarsym                                   {}
-  |   '`' qvarid '`'                            {}
-  |   qconop                                    {}
+qop_no_minus: varsym_no_minus                   {}
+            | qvarsym                           {}
+            | '`' qvarid '`'                    {}
+            | qconop                            {}
 
 gconsym: ':'                                    {}
-  | qconsym                                     {}
+       | qconsym                                {}
 
 
-modid:  qconid                  { $1 }
-  |     conid                   { $1 }
+modid: TCONID                                   {}
+     | TQCONID                                  {}
 
 varid: TVARID                                   { mkName $1 }
-  |    'as'                                     { mkName ("as", $1) }
-  |    'hiding'                                 { mkName ("hiding", $1) }
-  |    'qualified'                              { mkName ("qualified", $1) }
-  |    'safe'                                   { mkName ("safe", $1) }
-  |    'unsafe'                                 { mkName ("unsafe", $1) }
+     | 'as'                                     { mkName ("as", $1) }
+     | 'hiding'                                 { mkName ("hiding", $1) }
+     | 'qualified'                              { mkName ("qualified", $1) }
+     | 'safe'                                   { mkName ("safe", $1) }
+     | 'unsafe'                                 { mkName ("unsafe", $1) }
 
 conid: TCONID                                   { mkName $1 }
 
 varsym: TVARSYM                                 { mkName $1 }
-  |     '-'                                     { mkName ("-", $1) }
-  |     '!'                                     { mkName ("!", $1) }
+      | '-'                                     { mkName ("-", $1) }
+      | '!'                                     { mkName ("!", $1) }
 
-varsym_: TVARSYM                                {}
-  |      '!'                                    {}
+varsym_no_minus: TVARSYM                        {}
+               | '!'                            {}
 
 consym: TCONSYM                                 {}
 
 qvarid: TQVARID                                 { mkName $1 }
+
 qconid: TQCONID                                 { mkName $1 }
 qvarsym: TQVARSYM                               {}
 qconsym: TQCONSYM                               {}
