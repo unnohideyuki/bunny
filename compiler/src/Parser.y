@@ -141,105 +141,96 @@ sseq1_topdecl: sseq1_topdecl ';' topdecl        {}
 
 topdecl: 'type' simpletype '=' type             {}
   |      'data' ty_hdr
-         '=' constrs deriving_opt               {}
+         '=' constrs deriving                   {}
   |      'data' ty_hdr
-                     deriving_opt               {}
+                     deriving                   {}
   |      'newtype' ty_hdr
-         '=' newconstr deriving_opt             {}
+         '=' newconstr deriving                 {}
   |      'class' cl_hdr tyvar           {}
   |      'class' cl_hdr tyvar
          'where' cdecls                         {}
-  |      'instance' cl_hdrq inst        {}
-  |      'instance' cl_hdrq inst
+  |      'instance' cl_hdr inst        {}
+  |      'instance' cl_hdr inst
          'where' idecls                         {}
   |      'default' '(' cseq_type ')'            {}
   |      'foreign' fdecl                        {}
   |      decl                                   {}
 
 ty_hdr: context '=>' simpletype                 {}
-  |                  simpletype                 {}
+      |              simpletype                 {}
 
-cl_hdr: scontext '=>' tycls                     {}
-      |               tycls                     {}
-
-cl_hdrq: scontext '=>' qtycls                   {}
-       |               qtycls                   {}
-
-sctx_opt: scontext '=>'                         {}
-  |       {- empty -}                           {}
-
-deriving_opt: deriving                          {}
-  |           {- empty -}                       {}
+cl_hdr: scontext '=>' qtycls                    {}
+      |               qtycls                    {}
 
 decls: '{'     sseq1_decl '}'                   {}
-  |    '{'                '}'                   {}
-  |    vocurly sseq1_decl close                 {}
-  |    vocurly            close                 {}
+     | '{'                '}'                   {}
+     | vocurly sseq1_decl close                 {}
+     | vocurly            close                 {}
 
 sseq1_decl: sseq1_decl ';' decl                 {}
-  |         decl                                {}
+          | decl                                {}
 
 decl: gendecl                                   {}
-  |   funlhs rhs                                {}
-  |   pat    rhs                                {}
+    | funlhs rhs                                {}
+    | pat    rhs                                {}
 
 cdecls: '{'     sseq1_cdecl '}'                 {}
-  |     '{'                 '}'                 {}
-  |     vocurly sseq1_cdecl close               {}
-  |     vocurly             close               {}
+      | '{'                 '}'                 {}
+      | vocurly sseq1_cdecl close               {}
+      | vocurly             close               {}
 
 sseq1_cdecl: sseq1_cdecl ';' cdecl              {}
-  |          cdecl                              {}
+           | cdecl                              {}
 
 cdecl: gendecl                                  {}
-  |    funlhs rhs                               {}
-  |    var    rhs                               {}
+     | funlhs rhs                               {}
+     | var    rhs                               {}
 
 idecls: '{'     sseq1_idecl '}'                 {}
-  |     '{'                 '}'                 {}
-  |     vocurly sseq1_idecl close               {}
-  |     vocurly             close               {}
+      | '{'                 '}'                 {}
+      | vocurly sseq1_idecl close               {}
+      | vocurly             close               {}
 
 sseq1_idecl: sseq1_idecl ';' idecl              {}
-  |          idecl                              {}
+           | idecl                              {}
 
 idecl: funlhs rhs                               {}
-  |    var    rhs                               {}
-  |    {- empty -}                              {}
+     | var    rhs                               {}
+     | {- empty -}                              {}
 
 gendecl: vars '::' context '=>' type            {}
-  |      vars '::'              type            {}
-  |      fixity integer ops                     {}
-  |      fixity         ops                     {}
-  |      {- empty -}                            {}
+       | vars '::'              type            {}
+       | fixity integer ops                     {}
+       | fixity         ops                     {}
+       | {- empty -}                            {}
 
 ops: ops ',' op                                 {}
-  |  op                                         {}
+   | op                                         {}
 
 vars: vars ',' var                              {}
-  |   var                                       {}
+    | var                                       {}
 
 fixity: 'infixl'                                {}
-  |     'infixr'                                {}
-  |     'infix'                                 {}
+      | 'infixr'                                {}
+      | 'infix'                                 {}
 
 type: btype '->' atype                          {}
-  |              atype                          {}
+    |            atype                          {}
 
 cseq_type: cseq1_type                           {}
-  |        {- empty -}                          {}
+         | {- empty -}                          {}
 
 cseq1_type: cseq1_type ',' type                 {}
-  |         type                                {}
+          | type                                {}
 
 btype: btype atype                              {}
-  |          atype                              {}
+     |       atype                              {}
 
 atype: gtycon                                   {}
-  |    tyvar                                    {}
-  |    '(' cseq1_type ',' type ')'              {}
-  |    '[' type ']'                             {}
-  |    '(' type ')'                             {}
+     | tyvar                                    {}
+     | '(' cseq1_type ',' type ')'              {}
+     | '[' type ']'                             {}
+     | '(' type ')'                             {}
 
 seq_atype: seq_atype atype                      {}
   |        {- empty -}                          {}
@@ -248,10 +239,7 @@ gtycon: qtycon                                  {}
   |     '(' ')'                                 {}
   |     '[' ']'                                 {}
   |     '(' '->' ')'                            {}
-  |     '(' seq1_commas ')'                     {}
-
-seq1_commas: seq1_commas ','                    {}
-  |          ','                                {}
+  |     '(' commas ')'                          {}
 
 context: class                                  {}
   |      '(' cseq_class ')'                     {}
@@ -308,7 +296,8 @@ fielddecl: vars '::' type                       {}
   |        vars '::' '!' atype                  {}
 
 deriving: 'deriving' dclass                     {}
-  |       'deriving' '(' cseq_dclass ')'        {}
+        | 'deriving' '(' cseq_dclass ')'        {}
+        | {- empty -}                           {}
 
 cseq_dclass: cseq1_dclass                       {}
   |          {- empty -}                        {}
@@ -349,9 +338,9 @@ frtype: fatype                                  {}
   |     '(' ')'                                 {}
 fatype: qtycon seq_atype                        {}
 
-funlhs: var apat seq_apat                       {}
+funlhs: var seq1_apat                           {}
   |     pat varop pat                           {}
-  |     '(' funlhs ')' apat seq_apat            {}
+  |     '(' funlhs ')' seq1_apat                {}
 
 rhs: '=' exp 'where' decls                      {}
   |  '=' exp                                    {}
@@ -383,7 +372,7 @@ lexp: '\\' seq1_apat '->' exp                   {}
       'else' exp                                {}
   |   'case' exp 'of' '{' alts '}'              {}
   |   'case' exp 'of' vocurly alts close        {}
-  |   'do' '{' stmt '}'                         {}
+  |   'do' '{' stmts '}'                        {}
   |   'do' vocurly stmt close                   {}
   |   fexp                                      {}
 
@@ -462,9 +451,6 @@ lpat: apat                                      {}
   |   '-' integer                               {}
   |   '-' float                                 {}
   |   gcon seq1_apat                            {}
-
-seq_apat: seq_apat apat                         {}
-  |       {- empty -}                           {}
 
 apat: var                                       {}
   |   var '@' apat                              {}
