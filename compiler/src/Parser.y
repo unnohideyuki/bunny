@@ -378,14 +378,18 @@ close: vccurly                                  {}
 semi_opt: ';'                                   {}
   |    {- empty -}                              {}
 
-
 seq1_apat: seq1_apat apat                       {}
   |        apat                                 {}
 
 fexp: fexp aexp                                 {}
   |   aexp                                      {}
 
-aexp: qvar                                      {}
+aexp: qvar '@' aexp                             {}
+    | '~' aexp                                  {}
+    | '_'                                       {}
+    | aexp1                                     {}
+
+aexp1: qvar                                     {}
   |   gcon                                      {}
   |   literal                                   {}
   |   '(' exp ')'                               {}
@@ -440,32 +444,11 @@ stmt: exp ';'                                   {}
 
 fbind: qvar '=' exp                             {}
 
-pat: lpat qconop pat                            {}
-  |  lpat                                       {}
+pat: exp                                        {}
+   | '!' aexp                                   {}
 
-lpat: apat                                      {}
-  |   '-' integer                               {}
-  |   '-' float                                 {}
-  |   gcon seq1_apat                            {}
-
-apat: var                                       {}
-  |   var '@' apat                              {}
-  |   gcon                                      {}
-  |   qcon '{' seq_fpat '}'                     {}
-  |   literal                                   {}
-  |   '_'                                       {}
-  |   '(' pat ')'                               {}
-  |   '(' seq1_pat ',' pat ')'                  {}
-  |   '[' seq1_pat ']'                          {}
-  |   '~' apat                                  {}
-
-seq1_pat: seq1_pat pat                          {}
-  |       pat                                   {}
-
-seq_fpat: seq_fpat fpat                         {}
-  |       {- empty -}                           {}
-
-fpat: qvar '=' pat                              {}
+apat: aexp                                      {}
+    | '!' aexp                                  {}
 
 gcon: '(' ')'                                   {}
     | '[' ']'                                   {}
