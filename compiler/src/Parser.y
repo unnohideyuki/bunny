@@ -78,7 +78,7 @@ TLITCHAR    { TChar       $$ }
 
 %%
 module: 'module' modid exports_opt 'where' body { mkModule $2 }
-  |     body                                    {}
+      | body                                    {}
 
 body: '{'     impdecls ';' topdecls '}'         {}
   |   vocurly impdecls ';' topdecls close       {}
@@ -106,9 +106,6 @@ export: qvar                                    {}
   |     qtycon                                  {}
   |     qtycon '(' '..' ')'                     {}
   |     qtycon '(' cseq_cname ')'               {}
-  |     qtycls                                  {}
-  |     qtycls '(' '..' ')'                     {}
-  |     qtycls '(' cseq_var ')'                 {}
   |     'module' modid                          {}
 
 impdecl: 'import' qual_opt modid as_modid_opt
@@ -138,15 +135,6 @@ import: var                                     {}
   |     tycon                                   {}
   |     tycon '(' '..' ')'                      {}
   |     tycon '(' cseq_cname ')'                {}
-  |     tycls                                   {}
-  |     tycls '(' '..' ')'                      {}
-  |     tycls '(' cseq_var ')'                  {}
-
-cseq_var: cseq1_var                             {}
-  |       {- empty -}                           {}
-
-cseq1_var: cseq1_var ',' var                    {}
-  |        var                                  {}
 
 cseq_cname: cseq1_cname                         {}
   |         {- empty -}                         {}
@@ -556,7 +544,6 @@ qop_no_minus: varsym_no_minus                   {}
 
 gconsym: ':'                                    {}
        | qconsym                                {}
-
 
 modid: TCONID                                   {}
      | TQCONID                                  {}
