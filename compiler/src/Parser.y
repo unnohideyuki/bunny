@@ -175,9 +175,7 @@ decl: gendecl                                   {}
     | pat    rhs                                {}
 
 cdecls: '{'     sseq1_cdecl '}'                 {}
-      | '{'                 '}'                 {}
       | vocurly sseq1_cdecl close               {}
-      | vocurly             close               {}
 
 sseq1_cdecl: sseq1_cdecl ';' cdecl              {}
            | cdecl                              {}
