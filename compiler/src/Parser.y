@@ -207,8 +207,8 @@ fixity: 'infixl'                                {}
       | 'infixr'                                {}
       | 'infix'                                 {}
 
-type: btype '->' atype                          {}
-    |            atype                          {}
+type: btype '->' type                           {}
+    | btype                                     {}
 
 cseq_type: cseq1_type                           {}
          | {- empty -}                          {}
@@ -312,10 +312,8 @@ seq_tyvar: seq_tyvar tyvar                      {}
 cseq1_tyvar: cseq1_tyvar ',' tyvar              {}
   |          tyvar                              {}
 
-fdecl: 'import' callconv safety fspec
-                                                {}
-     | 'import' callconv        fspec
-                                                {}
+fdecl: 'import' callconv safety fspec           {}
+     | 'import' callconv        fspec           {}
 
 fspec: string var '::' ftype                    {}
      |        var '::' ftype                    {}
