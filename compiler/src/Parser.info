@@ -35,8 +35,6 @@ state 428 contains 2 shift/reduce conflicts.
 state 455 contains 1 shift/reduce conflicts.
 state 456 contains 2 shift/reduce conflicts.
 
-rule 343 is unused
-
 -----------------------------------------------------------------------------
 Grammar
 -----------------------------------------------------------------------------
@@ -383,17 +381,16 @@ Grammar
 	qtycon -> qconid                                   (340)
 	tyvar -> varid                                     (341)
 	tycon -> conid                                     (342)
-	tycls -> conid                                     (343)
-	qtycls -> qconid                                   (344)
-	qtycls -> conid                                    (345)
-	integer -> TLITINT                                 (346)
-	float -> TLITFLOAT                                 (347)
-	char -> TLITCHAR                                   (348)
-	string -> TLITSTR                                  (349)
-	literal -> integer                                 (350)
-	literal -> float                                   (351)
-	literal -> char                                    (352)
-	literal -> string                                  (353)
+	qtycls -> qconid                                   (343)
+	qtycls -> conid                                    (344)
+	integer -> TLITINT                                 (345)
+	float -> TLITFLOAT                                 (346)
+	char -> TLITCHAR                                   (347)
+	string -> TLITSTR                                  (348)
+	literal -> integer                                 (349)
+	literal -> float                                   (350)
+	literal -> char                                    (351)
+	literal -> string                                  (352)
 
 -----------------------------------------------------------------------------
 Terminals
@@ -598,13 +595,12 @@ Non-terminals
 	qtycon          rule  340
 	tyvar           rule  341
 	tycon           rule  342
-	tycls           rule  343
-	qtycls          rules 344, 345
-	integer         rule  346
-	float           rule  347
-	char            rule  348
-	string          rule  349
-	literal         rules 350, 351, 352, 353
+	qtycls          rules 343, 344
+	integer         rule  345
+	float           rule  346
+	char            rule  347
+	string          rule  348
+	literal         rules 349, 350, 351, 352
 
 -----------------------------------------------------------------------------
 States
@@ -1313,7 +1309,62 @@ State 25
 
 State 26
 
-	literal -> integer .                                (rule 350)
+	literal -> integer .                                (rule 349)
+
+	error          reduce using rule 349
+	'('            reduce using rule 349
+	')'            reduce using rule 349
+	','            reduce using rule 349
+	';'            reduce using rule 349
+	'['            reduce using rule 349
+	']'            reduce using rule 349
+	'`'            reduce using rule 349
+	'{'            reduce using rule 349
+	'}'            reduce using rule 349
+	vccurly        reduce using rule 349
+	'case'         reduce using rule 349
+	'do'           reduce using rule 349
+	'else'         reduce using rule 349
+	'if'           reduce using rule 349
+	'let'          reduce using rule 349
+	'of'           reduce using rule 349
+	'then'         reduce using rule 349
+	'where'        reduce using rule 349
+	'_'            reduce using rule 349
+	'as'           reduce using rule 349
+	'hiding'       reduce using rule 349
+	'qualified'    reduce using rule 349
+	'safe'         reduce using rule 349
+	'unsafe'       reduce using rule 349
+	'..'           reduce using rule 349
+	':'            reduce using rule 349
+	'::'           reduce using rule 349
+	'='            reduce using rule 349
+	'\\'           reduce using rule 349
+	'|'            reduce using rule 349
+	'<-'           reduce using rule 349
+	'->'           reduce using rule 349
+	'~'            reduce using rule 349
+	'=>'           reduce using rule 349
+	'-'            reduce using rule 349
+	'!'            reduce using rule 349
+	TVARID         reduce using rule 349
+	TCONID         reduce using rule 349
+	TVARSYM        reduce using rule 349
+	TCONSYM        reduce using rule 349
+	TQVARID        reduce using rule 349
+	TQCONID        reduce using rule 349
+	TQVARSYM       reduce using rule 349
+	TQCONSYM       reduce using rule 349
+	TLITINT        reduce using rule 349
+	TLITFLOAT      reduce using rule 349
+	TLITSTR        reduce using rule 349
+	TLITCHAR       reduce using rule 349
+
+
+State 27
+
+	literal -> float .                                  (rule 350)
 
 	error          reduce using rule 350
 	'('            reduce using rule 350
@@ -1366,9 +1417,9 @@ State 26
 	TLITCHAR       reduce using rule 350
 
 
-State 27
+State 28
 
-	literal -> float .                                  (rule 351)
+	literal -> char .                                   (rule 351)
 
 	error          reduce using rule 351
 	'('            reduce using rule 351
@@ -1421,9 +1472,9 @@ State 27
 	TLITCHAR       reduce using rule 351
 
 
-State 28
+State 29
 
-	literal -> char .                                   (rule 352)
+	literal -> string .                                 (rule 352)
 
 	error          reduce using rule 352
 	'('            reduce using rule 352
@@ -1474,61 +1525,6 @@ State 28
 	TLITFLOAT      reduce using rule 352
 	TLITSTR        reduce using rule 352
 	TLITCHAR       reduce using rule 352
-
-
-State 29
-
-	literal -> string .                                 (rule 353)
-
-	error          reduce using rule 353
-	'('            reduce using rule 353
-	')'            reduce using rule 353
-	','            reduce using rule 353
-	';'            reduce using rule 353
-	'['            reduce using rule 353
-	']'            reduce using rule 353
-	'`'            reduce using rule 353
-	'{'            reduce using rule 353
-	'}'            reduce using rule 353
-	vccurly        reduce using rule 353
-	'case'         reduce using rule 353
-	'do'           reduce using rule 353
-	'else'         reduce using rule 353
-	'if'           reduce using rule 353
-	'let'          reduce using rule 353
-	'of'           reduce using rule 353
-	'then'         reduce using rule 353
-	'where'        reduce using rule 353
-	'_'            reduce using rule 353
-	'as'           reduce using rule 353
-	'hiding'       reduce using rule 353
-	'qualified'    reduce using rule 353
-	'safe'         reduce using rule 353
-	'unsafe'       reduce using rule 353
-	'..'           reduce using rule 353
-	':'            reduce using rule 353
-	'::'           reduce using rule 353
-	'='            reduce using rule 353
-	'\\'           reduce using rule 353
-	'|'            reduce using rule 353
-	'<-'           reduce using rule 353
-	'->'           reduce using rule 353
-	'~'            reduce using rule 353
-	'=>'           reduce using rule 353
-	'-'            reduce using rule 353
-	'!'            reduce using rule 353
-	TVARID         reduce using rule 353
-	TCONID         reduce using rule 353
-	TVARSYM        reduce using rule 353
-	TCONSYM        reduce using rule 353
-	TQVARID        reduce using rule 353
-	TQCONID        reduce using rule 353
-	TQVARSYM       reduce using rule 353
-	TQCONSYM       reduce using rule 353
-	TLITINT        reduce using rule 353
-	TLITFLOAT      reduce using rule 353
-	TLITSTR        reduce using rule 353
-	TLITCHAR       reduce using rule 353
 
 
 State 30
@@ -2344,7 +2340,62 @@ State 54
 
 State 55
 
-	integer -> TLITINT .                                (rule 346)
+	integer -> TLITINT .                                (rule 345)
+
+	error          reduce using rule 345
+	'('            reduce using rule 345
+	')'            reduce using rule 345
+	','            reduce using rule 345
+	';'            reduce using rule 345
+	'['            reduce using rule 345
+	']'            reduce using rule 345
+	'`'            reduce using rule 345
+	'{'            reduce using rule 345
+	'}'            reduce using rule 345
+	vccurly        reduce using rule 345
+	'case'         reduce using rule 345
+	'do'           reduce using rule 345
+	'else'         reduce using rule 345
+	'if'           reduce using rule 345
+	'let'          reduce using rule 345
+	'of'           reduce using rule 345
+	'then'         reduce using rule 345
+	'where'        reduce using rule 345
+	'_'            reduce using rule 345
+	'as'           reduce using rule 345
+	'hiding'       reduce using rule 345
+	'qualified'    reduce using rule 345
+	'safe'         reduce using rule 345
+	'unsafe'       reduce using rule 345
+	'..'           reduce using rule 345
+	':'            reduce using rule 345
+	'::'           reduce using rule 345
+	'='            reduce using rule 345
+	'\\'           reduce using rule 345
+	'|'            reduce using rule 345
+	'<-'           reduce using rule 345
+	'->'           reduce using rule 345
+	'~'            reduce using rule 345
+	'=>'           reduce using rule 345
+	'-'            reduce using rule 345
+	'!'            reduce using rule 345
+	TVARID         reduce using rule 345
+	TCONID         reduce using rule 345
+	TVARSYM        reduce using rule 345
+	TCONSYM        reduce using rule 345
+	TQVARID        reduce using rule 345
+	TQCONID        reduce using rule 345
+	TQVARSYM       reduce using rule 345
+	TQCONSYM       reduce using rule 345
+	TLITINT        reduce using rule 345
+	TLITFLOAT      reduce using rule 345
+	TLITSTR        reduce using rule 345
+	TLITCHAR       reduce using rule 345
+
+
+State 56
+
+	float -> TLITFLOAT .                                (rule 346)
 
 	error          reduce using rule 346
 	'('            reduce using rule 346
@@ -2397,119 +2448,9 @@ State 55
 	TLITCHAR       reduce using rule 346
 
 
-State 56
-
-	float -> TLITFLOAT .                                (rule 347)
-
-	error          reduce using rule 347
-	'('            reduce using rule 347
-	')'            reduce using rule 347
-	','            reduce using rule 347
-	';'            reduce using rule 347
-	'['            reduce using rule 347
-	']'            reduce using rule 347
-	'`'            reduce using rule 347
-	'{'            reduce using rule 347
-	'}'            reduce using rule 347
-	vccurly        reduce using rule 347
-	'case'         reduce using rule 347
-	'do'           reduce using rule 347
-	'else'         reduce using rule 347
-	'if'           reduce using rule 347
-	'let'          reduce using rule 347
-	'of'           reduce using rule 347
-	'then'         reduce using rule 347
-	'where'        reduce using rule 347
-	'_'            reduce using rule 347
-	'as'           reduce using rule 347
-	'hiding'       reduce using rule 347
-	'qualified'    reduce using rule 347
-	'safe'         reduce using rule 347
-	'unsafe'       reduce using rule 347
-	'..'           reduce using rule 347
-	':'            reduce using rule 347
-	'::'           reduce using rule 347
-	'='            reduce using rule 347
-	'\\'           reduce using rule 347
-	'|'            reduce using rule 347
-	'<-'           reduce using rule 347
-	'->'           reduce using rule 347
-	'~'            reduce using rule 347
-	'=>'           reduce using rule 347
-	'-'            reduce using rule 347
-	'!'            reduce using rule 347
-	TVARID         reduce using rule 347
-	TCONID         reduce using rule 347
-	TVARSYM        reduce using rule 347
-	TCONSYM        reduce using rule 347
-	TQVARID        reduce using rule 347
-	TQCONID        reduce using rule 347
-	TQVARSYM       reduce using rule 347
-	TQCONSYM       reduce using rule 347
-	TLITINT        reduce using rule 347
-	TLITFLOAT      reduce using rule 347
-	TLITSTR        reduce using rule 347
-	TLITCHAR       reduce using rule 347
-
-
 State 57
 
-	string -> TLITSTR .                                 (rule 349)
-
-	error          reduce using rule 349
-	'('            reduce using rule 349
-	')'            reduce using rule 349
-	','            reduce using rule 349
-	';'            reduce using rule 349
-	'['            reduce using rule 349
-	']'            reduce using rule 349
-	'`'            reduce using rule 349
-	'{'            reduce using rule 349
-	'}'            reduce using rule 349
-	vccurly        reduce using rule 349
-	'case'         reduce using rule 349
-	'do'           reduce using rule 349
-	'else'         reduce using rule 349
-	'if'           reduce using rule 349
-	'let'          reduce using rule 349
-	'of'           reduce using rule 349
-	'then'         reduce using rule 349
-	'where'        reduce using rule 349
-	'_'            reduce using rule 349
-	'as'           reduce using rule 349
-	'hiding'       reduce using rule 349
-	'qualified'    reduce using rule 349
-	'safe'         reduce using rule 349
-	'unsafe'       reduce using rule 349
-	'..'           reduce using rule 349
-	':'            reduce using rule 349
-	'::'           reduce using rule 349
-	'='            reduce using rule 349
-	'\\'           reduce using rule 349
-	'|'            reduce using rule 349
-	'<-'           reduce using rule 349
-	'->'           reduce using rule 349
-	'~'            reduce using rule 349
-	'=>'           reduce using rule 349
-	'-'            reduce using rule 349
-	'!'            reduce using rule 349
-	TVARID         reduce using rule 349
-	TCONID         reduce using rule 349
-	TVARSYM        reduce using rule 349
-	TCONSYM        reduce using rule 349
-	TQVARID        reduce using rule 349
-	TQCONID        reduce using rule 349
-	TQVARSYM       reduce using rule 349
-	TQCONSYM       reduce using rule 349
-	TLITINT        reduce using rule 349
-	TLITFLOAT      reduce using rule 349
-	TLITSTR        reduce using rule 349
-	TLITCHAR       reduce using rule 349
-
-
-State 58
-
-	char -> TLITCHAR .                                  (rule 348)
+	string -> TLITSTR .                                 (rule 348)
 
 	error          reduce using rule 348
 	'('            reduce using rule 348
@@ -2560,6 +2501,61 @@ State 58
 	TLITFLOAT      reduce using rule 348
 	TLITSTR        reduce using rule 348
 	TLITCHAR       reduce using rule 348
+
+
+State 58
+
+	char -> TLITCHAR .                                  (rule 347)
+
+	error          reduce using rule 347
+	'('            reduce using rule 347
+	')'            reduce using rule 347
+	','            reduce using rule 347
+	';'            reduce using rule 347
+	'['            reduce using rule 347
+	']'            reduce using rule 347
+	'`'            reduce using rule 347
+	'{'            reduce using rule 347
+	'}'            reduce using rule 347
+	vccurly        reduce using rule 347
+	'case'         reduce using rule 347
+	'do'           reduce using rule 347
+	'else'         reduce using rule 347
+	'if'           reduce using rule 347
+	'let'          reduce using rule 347
+	'of'           reduce using rule 347
+	'then'         reduce using rule 347
+	'where'        reduce using rule 347
+	'_'            reduce using rule 347
+	'as'           reduce using rule 347
+	'hiding'       reduce using rule 347
+	'qualified'    reduce using rule 347
+	'safe'         reduce using rule 347
+	'unsafe'       reduce using rule 347
+	'..'           reduce using rule 347
+	':'            reduce using rule 347
+	'::'           reduce using rule 347
+	'='            reduce using rule 347
+	'\\'           reduce using rule 347
+	'|'            reduce using rule 347
+	'<-'           reduce using rule 347
+	'->'           reduce using rule 347
+	'~'            reduce using rule 347
+	'=>'           reduce using rule 347
+	'-'            reduce using rule 347
+	'!'            reduce using rule 347
+	TVARID         reduce using rule 347
+	TCONID         reduce using rule 347
+	TVARSYM        reduce using rule 347
+	TCONSYM        reduce using rule 347
+	TQVARID        reduce using rule 347
+	TQCONID        reduce using rule 347
+	TQVARSYM       reduce using rule 347
+	TQCONSYM       reduce using rule 347
+	TLITINT        reduce using rule 347
+	TLITFLOAT      reduce using rule 347
+	TLITSTR        reduce using rule 347
+	TLITCHAR       reduce using rule 347
 
 
 State 59
@@ -3064,54 +3060,54 @@ State 82
 State 83
 
 	tycon -> conid .                                    (rule 342)
-	qtycls -> conid .                                   (rule 345)
+	qtycls -> conid .                                   (rule 344)
 
 	error          reduce using rule 342
-	'('            reduce using rule 345
+	'('            reduce using rule 344
 	';'            reduce using rule 342
 	'}'            reduce using rule 342
 	vccurly        reduce using rule 342
 	'deriving'     reduce using rule 342
-	'as'           reduce using rule 345
+	'as'           reduce using rule 344
 			(reduce using rule 342)
 
-	'hiding'       reduce using rule 345
+	'hiding'       reduce using rule 344
 			(reduce using rule 342)
 
-	'qualified'    reduce using rule 345
+	'qualified'    reduce using rule 344
 			(reduce using rule 342)
 
-	'safe'         reduce using rule 345
+	'safe'         reduce using rule 344
 			(reduce using rule 342)
 
-	'unsafe'       reduce using rule 345
+	'unsafe'       reduce using rule 344
 			(reduce using rule 342)
 
 	'='            reduce using rule 342
-	TVARID         reduce using rule 345
+	TVARID         reduce using rule 344
 			(reduce using rule 342)
 
 
 
 State 84
 
-	qtycls -> qconid .                                  (rule 344)
+	qtycls -> qconid .                                  (rule 343)
 
-	error          reduce using rule 344
-	'('            reduce using rule 344
-	')'            reduce using rule 344
-	','            reduce using rule 344
-	';'            reduce using rule 344
-	'['            reduce using rule 344
-	'}'            reduce using rule 344
-	vccurly        reduce using rule 344
-	'as'           reduce using rule 344
-	'hiding'       reduce using rule 344
-	'qualified'    reduce using rule 344
-	'safe'         reduce using rule 344
-	'unsafe'       reduce using rule 344
-	TVARID         reduce using rule 344
-	TQCONID        reduce using rule 344
+	error          reduce using rule 343
+	'('            reduce using rule 343
+	')'            reduce using rule 343
+	','            reduce using rule 343
+	';'            reduce using rule 343
+	'['            reduce using rule 343
+	'}'            reduce using rule 343
+	vccurly        reduce using rule 343
+	'as'           reduce using rule 343
+	'hiding'       reduce using rule 343
+	'qualified'    reduce using rule 343
+	'safe'         reduce using rule 343
+	'unsafe'       reduce using rule 343
+	TVARID         reduce using rule 343
+	TQCONID        reduce using rule 343
 
 
 State 85
@@ -3175,23 +3171,23 @@ State 89
 
 State 90
 
-	qtycls -> conid .                                   (rule 345)
+	qtycls -> conid .                                   (rule 344)
 
-	error          reduce using rule 345
-	'('            reduce using rule 345
-	')'            reduce using rule 345
-	','            reduce using rule 345
-	';'            reduce using rule 345
-	'['            reduce using rule 345
-	'}'            reduce using rule 345
-	vccurly        reduce using rule 345
-	'as'           reduce using rule 345
-	'hiding'       reduce using rule 345
-	'qualified'    reduce using rule 345
-	'safe'         reduce using rule 345
-	'unsafe'       reduce using rule 345
-	TVARID         reduce using rule 345
-	TQCONID        reduce using rule 345
+	error          reduce using rule 344
+	'('            reduce using rule 344
+	')'            reduce using rule 344
+	','            reduce using rule 344
+	';'            reduce using rule 344
+	'['            reduce using rule 344
+	'}'            reduce using rule 344
+	vccurly        reduce using rule 344
+	'as'           reduce using rule 344
+	'hiding'       reduce using rule 344
+	'qualified'    reduce using rule 344
+	'safe'         reduce using rule 344
+	'unsafe'       reduce using rule 344
+	TVARID         reduce using rule 344
+	TQCONID        reduce using rule 344
 
 
 State 91
@@ -5122,10 +5118,10 @@ State 162
 State 163
 
 	qtycon -> qconid .                                  (rule 340)
-	qtycls -> qconid .                                  (rule 344)
+	qtycls -> qconid .                                  (rule 343)
 
 	error          reduce using rule 340
-	'('            reduce using rule 344
+	'('            reduce using rule 343
 			(reduce using rule 340)
 
 	')'            reduce using rule 340
@@ -5134,23 +5130,23 @@ State 163
 	'['            reduce using rule 340
 	'}'            reduce using rule 340
 	vccurly        reduce using rule 340
-	'as'           reduce using rule 344
+	'as'           reduce using rule 343
 			(reduce using rule 340)
 
-	'hiding'       reduce using rule 344
+	'hiding'       reduce using rule 343
 			(reduce using rule 340)
 
-	'qualified'    reduce using rule 344
+	'qualified'    reduce using rule 343
 			(reduce using rule 340)
 
-	'safe'         reduce using rule 344
+	'safe'         reduce using rule 343
 			(reduce using rule 340)
 
-	'unsafe'       reduce using rule 344
+	'unsafe'       reduce using rule 343
 			(reduce using rule 340)
 
 	'->'           reduce using rule 340
-	TVARID         reduce using rule 344
+	TVARID         reduce using rule 343
 			(reduce using rule 340)
 
 	TQCONID        reduce using rule 340
@@ -9839,26 +9835,124 @@ State 349
 State 350
 
 	lpat -> '-' integer .                               (rule 263)
-	literal -> integer .                                (rule 350)
+	literal -> integer .                                (rule 349)
+
+	'('            reduce using rule 349
+			(reduce using rule 263)
+
+	')'            reduce using rule 349
+			(reduce using rule 263)
+
+	','            reduce using rule 349
+			(reduce using rule 263)
+
+	';'            reduce using rule 349
+	'['            reduce using rule 349
+			(reduce using rule 263)
+
+	']'            reduce using rule 349
+			(reduce using rule 263)
+
+	'`'            reduce using rule 349
+			(reduce using rule 263)
+
+	'{'            reduce using rule 349
+	'}'            reduce using rule 349
+	'case'         reduce using rule 349
+	'do'           reduce using rule 349
+	'if'           reduce using rule 349
+	'let'          reduce using rule 349
+	'_'            reduce using rule 349
+			(reduce using rule 263)
+
+	'as'           reduce using rule 349
+			(reduce using rule 263)
+
+	'hiding'       reduce using rule 349
+			(reduce using rule 263)
+
+	'qualified'    reduce using rule 349
+			(reduce using rule 263)
+
+	'safe'         reduce using rule 349
+			(reduce using rule 263)
+
+	'unsafe'       reduce using rule 349
+			(reduce using rule 263)
+
+	'..'           reduce using rule 349
+	':'            reduce using rule 349
+			(reduce using rule 263)
+
+	'::'           reduce using rule 349
+	'='            reduce using rule 349
+	'\\'           reduce using rule 349
+	'|'            reduce using rule 349
+	'<-'           reduce using rule 263
+	'->'           reduce using rule 349
+	'~'            reduce using rule 349
+			(reduce using rule 263)
+
+	'=>'           reduce using rule 349
+	'-'            reduce using rule 349
+			(reduce using rule 263)
+
+	'!'            reduce using rule 349
+	TVARID         reduce using rule 349
+			(reduce using rule 263)
+
+	TCONID         reduce using rule 349
+			(reduce using rule 263)
+
+	TVARSYM        reduce using rule 349
+	TCONSYM        reduce using rule 349
+			(reduce using rule 263)
+
+	TQVARID        reduce using rule 349
+	TQCONID        reduce using rule 349
+			(reduce using rule 263)
+
+	TQVARSYM       reduce using rule 349
+	TQCONSYM       reduce using rule 349
+			(reduce using rule 263)
+
+	TLITINT        reduce using rule 349
+			(reduce using rule 263)
+
+	TLITFLOAT      reduce using rule 349
+			(reduce using rule 263)
+
+	TLITSTR        reduce using rule 349
+			(reduce using rule 263)
+
+	TLITCHAR       reduce using rule 349
+			(reduce using rule 263)
+
+
+
+State 351
+
+	lpat -> '-' float .                                 (rule 264)
+	literal -> float .                                  (rule 350)
 
 	'('            reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	')'            reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	','            reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	';'            reduce using rule 350
 	'['            reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	']'            reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	'`'            reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	'{'            reduce using rule 350
 	'}'            reduce using rule 350
@@ -9867,167 +9961,69 @@ State 350
 	'if'           reduce using rule 350
 	'let'          reduce using rule 350
 	'_'            reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	'as'           reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	'hiding'       reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	'qualified'    reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	'safe'         reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	'unsafe'       reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	'..'           reduce using rule 350
 	':'            reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	'::'           reduce using rule 350
 	'='            reduce using rule 350
 	'\\'           reduce using rule 350
 	'|'            reduce using rule 350
-	'<-'           reduce using rule 263
+	'<-'           reduce using rule 264
 	'->'           reduce using rule 350
 	'~'            reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	'=>'           reduce using rule 350
 	'-'            reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	'!'            reduce using rule 350
 	TVARID         reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	TCONID         reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	TVARSYM        reduce using rule 350
 	TCONSYM        reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	TQVARID        reduce using rule 350
 	TQCONID        reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	TQVARSYM       reduce using rule 350
 	TQCONSYM       reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	TLITINT        reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	TLITFLOAT      reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	TLITSTR        reduce using rule 350
-			(reduce using rule 263)
+			(reduce using rule 264)
 
 	TLITCHAR       reduce using rule 350
-			(reduce using rule 263)
-
-
-
-State 351
-
-	lpat -> '-' float .                                 (rule 264)
-	literal -> float .                                  (rule 351)
-
-	'('            reduce using rule 351
-			(reduce using rule 264)
-
-	')'            reduce using rule 351
-			(reduce using rule 264)
-
-	','            reduce using rule 351
-			(reduce using rule 264)
-
-	';'            reduce using rule 351
-	'['            reduce using rule 351
-			(reduce using rule 264)
-
-	']'            reduce using rule 351
-			(reduce using rule 264)
-
-	'`'            reduce using rule 351
-			(reduce using rule 264)
-
-	'{'            reduce using rule 351
-	'}'            reduce using rule 351
-	'case'         reduce using rule 351
-	'do'           reduce using rule 351
-	'if'           reduce using rule 351
-	'let'          reduce using rule 351
-	'_'            reduce using rule 351
-			(reduce using rule 264)
-
-	'as'           reduce using rule 351
-			(reduce using rule 264)
-
-	'hiding'       reduce using rule 351
-			(reduce using rule 264)
-
-	'qualified'    reduce using rule 351
-			(reduce using rule 264)
-
-	'safe'         reduce using rule 351
-			(reduce using rule 264)
-
-	'unsafe'       reduce using rule 351
-			(reduce using rule 264)
-
-	'..'           reduce using rule 351
-	':'            reduce using rule 351
-			(reduce using rule 264)
-
-	'::'           reduce using rule 351
-	'='            reduce using rule 351
-	'\\'           reduce using rule 351
-	'|'            reduce using rule 351
-	'<-'           reduce using rule 264
-	'->'           reduce using rule 351
-	'~'            reduce using rule 351
-			(reduce using rule 264)
-
-	'=>'           reduce using rule 351
-	'-'            reduce using rule 351
-			(reduce using rule 264)
-
-	'!'            reduce using rule 351
-	TVARID         reduce using rule 351
-			(reduce using rule 264)
-
-	TCONID         reduce using rule 351
-			(reduce using rule 264)
-
-	TVARSYM        reduce using rule 351
-	TCONSYM        reduce using rule 351
-			(reduce using rule 264)
-
-	TQVARID        reduce using rule 351
-	TQCONID        reduce using rule 351
-			(reduce using rule 264)
-
-	TQVARSYM       reduce using rule 351
-	TQCONSYM       reduce using rule 351
-			(reduce using rule 264)
-
-	TLITINT        reduce using rule 351
-			(reduce using rule 264)
-
-	TLITFLOAT      reduce using rule 351
-			(reduce using rule 264)
-
-	TLITSTR        reduce using rule 351
-			(reduce using rule 264)
-
-	TLITCHAR       reduce using rule 351
 			(reduce using rule 264)
 
 
@@ -16406,7 +16402,7 @@ State 641
 -----------------------------------------------------------------------------
 Grammar Totals
 -----------------------------------------------------------------------------
-Number of rules: 354
+Number of rules: 353
 Number of terminals: 64
-Number of non-terminals: 139
+Number of non-terminals: 138
 Number of states: 642

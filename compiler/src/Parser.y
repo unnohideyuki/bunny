@@ -556,7 +556,6 @@ qtycon: qconid                                  {}
 
 tyvar: varid                                    {}
 tycon: conid                                    {}
-tycls: conid                                    {}
 qtycls: qconid                                  {}
   |     conid                                   {}
 
