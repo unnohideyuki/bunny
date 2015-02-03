@@ -77,22 +77,18 @@ TLITSTR     { TString     $$ }
 TLITCHAR    { TChar       $$ }
 
 %%
--------------------------------------------------------------------------------
--- Module Header
+-- Module Header --------------------------------------------------------------
 module: 'module' modid exports_opt 'where' body {}
       | body                                    {}
 
 body: '{'     top '}'                           {}
     | vocurly top close                         {}
-      
-top: impdecls                                   {}      
-   | impdecls ';' cvtopdecls                    {}
-   | cvtopdecls                                 {}
 
-cvtopdecls: topdecls                            {}
-      
--------------------------------------------------------------------------------
--- Export List
+top: impdecls                                   {}
+   | impdecls ';' topdecls                      {}
+   | topdecls                                   {}
+
+-- Export List ----------------------------------------------------------------
 exports_opt: '(' exportlist ')'                 {}
            | {- empty -}                        {}
 
@@ -114,9 +110,8 @@ qcname_ext: qcname                              {}
 
 qcname: qvar                                    {}
       | qcon                                    {}
-        
--------------------------------------------------------------------------------
--- Import Declarations
+
+-- Import Declarations --------------------------------------------------------
 impdecls: impdecls ';' impdecl                  {}
         | impdecls ';'                          {}
         | impdecl                               {}
@@ -137,9 +132,8 @@ impspec_opt: impspec                            {}
 impspec: '(' exportlist ')'                     {}
        | 'hiding' '(' exportlist ')'            {}
 
--------------------------------------------------------------------------------
--- Fixity Declarations
-prec: {- empty -}                               { 9 }
+-- Fixity Declarations --------------------------------------------------------
+prec: {- empty -}                               { {- 9 -} }
     | TLITINT                                   {}
 
 fixity: 'infixl'                                {}
@@ -149,9 +143,7 @@ fixity: 'infixl'                                {}
 ops: ops ',' op                                 {}
    | op                                         {}
 
--------------------------------------------------------------------------------
--- Top-Level Declarations
-
+-- Top-Level Declarations -----------------------------------------------------
 topdecls: topdecls ';' topdecl                  {}
         | topdecls ';'                          {}
         | topdecl                               {}
@@ -175,14 +167,13 @@ tycl_hdr: context '=>' type                     {}
         | type                                  {}
 
 -- Class body
---
 decl_cls: decl                                  {}
 
 decls_cls : decls_cls ';' decl_cls              {}
           | decls_cls ';'                       {}
           | decl_cls                            {}
           | {- empty -}                         {}
-                                                
+
 decllist_cls
   : '{'     decls_cls '}'                       {}
   | vocurly decls_cls close                     {}
@@ -191,7 +182,6 @@ where_cls: 'where' decllist_cls                 {}
          | {- empty -}                          {}
 
 -- Instance body
---         
 decl_inst: decl                                 {}
 
 decls_inst: decls_inst ';' decl_inst            {}
@@ -207,7 +197,6 @@ where_inst: 'where' decllist_inst               {}
           | {- empty -}                         {}
 
 -- Declarations
---
 decls: decls ';' decl                           {}
      | decls ';'                                {}
      | decl                                     {}
@@ -218,14 +207,12 @@ decllist
   | vocurly decls close                         {}
 
 -- Binding groups
---
 binds: decllist                                 {}
 
 wherebinds: 'where' binds                       {}
           | {- empty -}                         {}
 
--------------------------------------------------------------------------------
--- Foreign import/export declarations
+-- Foreign import/export declarations -----------------------------------------
 fdecl: 'import' callconv safety fspec           {}
      | 'import' callconv        fspec           {}
 
@@ -237,8 +224,7 @@ safety: 'unsafe'                                {}
 fspec: TLITSTR var '::' sigtypedoc              {}
      |        var '::' sigtypedoc               {}
 
--------------------------------------------------------------------------------
--- Type signatures
+-- Type signatures ------------------------------------------------------------
 opt_sig: '::' sigtype                           {}
        | {- empty -}                            {}
 
@@ -251,7 +237,7 @@ sig_vars: sig_vars ',' var                      {}
 
 ctypedoc: context '=>' ctypedoc                 {}
         | typedoc                               {}
-          
+
 -- There is a note for 'context' in the GHC's source.
 context: btype '~' btype                        {}
        | btype                                  {}
@@ -281,29 +267,27 @@ inst_types1: inst_type                          {}
 
 comma_types0: comma_types1                      {}
             | {- empty -}                       {}
-                                                
+
 comma_types1: ctype                             {}
             | ctype ',' comma_types1            {}
-              
-fds: {- empty -}                                {}              
+
+fds: {- empty -}                                {}
    | '|' fds1                                   {}
-     
+
 fds1: fds1 ',' fd                               {}
     | fd                                        {}
-      
+
 fd: varids0 '->' varids0                        {}
 
 varids0: {- empty -}                            {}
        | varids0 tyvar                          {}
 
--------------------------------------------------------------------------------
--- Datatype declarations
-
+-- Datatype declarations ------------------------------------------------------
 constrs: '=' constrs1                           {}
 
 constrs1: constrs1 '|' constr                   {}
         | constr                                {}
-          
+
 constr: constr_stuff                            {}
 
 constr_stuff
@@ -312,11 +296,11 @@ constr_stuff
 
 fielddecls: {- empty -}                         {}
           | fielddecls1                         {}
-            
+
 fielddecls1
  : fielddecl ',' fielddecls1                    {}
  | fielddecl                                    {}
-   
+
 fielddecl: sig_vars '::' ctype                  {}
 
 deriving: 'deriving' qtycon                     {}
@@ -324,19 +308,17 @@ deriving: 'deriving' qtycon                     {}
         | 'deriving' '(' inst_types1 ')'        {}
         | {- empty -}                           {}
 
--------------------------------------------------------------------------------
--- Value definitions
-
+-- Value definitions ----------------------------------------------------------
 decl: sigdecl                                   {}
     | '!' aexp rhs                              {}
     | infixexp opt_sig rhs                      {}
 
 rhs: '=' exp wherebinds                         {}
    | gdrhs wherebinds                           {}
-     
+
 gdrhs: gdrhs gdrh                               {}
      | gdrh                                     {}
-       
+
 gdrh: '|' guardquals '=' exp                    {}
 
 sigdecl
@@ -344,9 +326,7 @@ sigdecl
   | var ',' sig_vars '::' sigtypedoc            {}
   | fixity prec ops                             {}
 
--------------------------------------------------------------------------------
--- Expressions
-
+-- Expressions ----------------------------------------------------------------
 exp: infixexp '::' sigtype                      {}
    | infixexp                                   {}
 
@@ -356,9 +336,8 @@ infixexp: exp10                                 {}
 exp10
   : '\\' apat apats '->' exp                    {}
   | 'let' binds 'in' exp                        {}
-  | 'if' exp semi_opt
-    'then' exp semi_opt
-    'else' exp                                  {}
+  | 'if' exp semi_opt 'then' exp semi_opt 'else' exp
+                                                {}
   | 'case' exp 'of' altslist                    {}
   | '-' fexp                                    {}
   | 'do' stmtlist                               {}
@@ -373,10 +352,10 @@ fexp: fexp aexp                                 {}
 aexp: qvar '@' aexp                             {}
     | '~' aexp                                  {}
     | aexp1                                     {}
-      
+
 aexp1: aexp1 '{' fbinds '}'                     {}
      | aexp2                                    {}
-      
+
 aexp2
   : qcname                                      {}
   | literal                                     {}
@@ -385,9 +364,7 @@ aexp2
   | '[' list ']'                                {}
   | '_'                                         {}
 
--------------------------------------------------------------------------------
--- Tuple expressions
-
+-- Tuple expressions ----------------------------------------------------------
 texp: exp                                       {}
     | infixexp qop                              {}
     | qopm infixexp                             {}
@@ -402,9 +379,7 @@ tup_tail: texp commas_tup_tail                  {}
         | texp                                  {}
         | {- empty -}                           {}
 
--------------------------------------------------------------------------------
--- List expressions
-
+-- List expressions -----------------------------------------------------------
 list: texp                                      {}
     | lexps                                     {}
     | texp '..'                                 {}
@@ -412,106 +387,87 @@ list: texp                                      {}
     | texp '..' exp                             {}
     | texp ',' exp '..' exp                     {}
     | texp '|' squals                           {}
-      
+
 lexps: lexps ',' texp                           {}
      | texp ',' texp                            {}
 
--------------------------------------------------------------------------------
--- List Comprehensions
-
+-- List Comprehensions --------------------------------------------------------
 squals: squals ',' qual                         {}
       | qual                                    {}
 
--------------------------------------------------------------------------------
--- Guards
-
+-- Guards ---------------------------------------------------------------------
 guardquals: guardquals1                         {}
 
 guardquals1
   : guardquals1 ',' qual                        {}
   | qual                                        {}
-    
--------------------------------------------------------------------------------
--- Case alternatives
 
+-- Case alternatives ----------------------------------------------------------
 altslist
   : '{'     alts '}'                            {}
   | vocurly alts close                          {}
-    
+
 alts: alts1                                     {}
     | ';' alts                                  {}
-      
+
 alts1: alts1 ';' alt                            {}
      | alts1 ';'                                {}
      | alt                                      {}
-       
+
 alt: pat opt_sig alt_rhs                        {}
 
 alt_rhs: ralt wherebinds                        {}
 
 ralt: '->' exp                                  {}
     | gdpats                                    {}
-      
+
 gdpats: gdpats gdpat                            {}
       | gdpat                                   {}
-        
+
 gdpat: '|' guardquals '->' exp                  {}
 
 pat: exp                                        {}
    | '!' aexp                                   {}
-    
+
 apat: aexp                                      {}
     | '!' aexp                                  {}
 
 apats: apat apats                               {}
      | {- empty -}                              {}
-                                                
--------------------------------------------------------------------------------
--- Statement sequences
 
+-- Statement sequences --------------------------------------------------------
 stmtlist
   : '{'     stmts '}'                           {}
   | vocurly stmts close                         {}
-    
+
 stmts: stmt stmts_help                          {}
      | ';' stmts                                {}
      | {- empty -}                              {}
-                                                
+
 stmts_help: ';' stmts                           {}
           | {- empty -}                         {}
-                                                
+
 stmt: qual                                      {}
 
 qual: pat '<-' exp                              {}
     | exp                                       {}
     | 'let' binds                               {}
 
--------------------------------------------------------------------------------
--- Record Field Updata/Construction
-
+-- Record Field Updata/Construction -------------------------------------------
 fbinds: fbinds1                                 {}
       | {- empty -}                             {}
-                                                
+
 fbinds1: fbind ',' fbinds1                      {}
        | fbind                                  {}
        | '..'                                   {}
-         
-fbind: qvar '=' exp                             {}         
 
--------------------------------------------------------------------------------
--- Data constructors
+fbind: qvar '=' exp                             {}
 
+-- Data constructors ----------------------------------------------------------
 qcon: qconid                                    {}
     | '(' qconsym ')'                           {}
     | sysdcon                                   {}
 
-con: conid                                      {}
-   | '(' consym ')'                             {}
-   | sysdcon                                    {}
-     
-con_list: con                                   {}
-        | con ',' con_list                      {}
-          
 sysdcon
   : '(' ')'                                     {}
   | '(' commas ')'                              {}
@@ -522,39 +478,31 @@ conop: consym                                   {}
 
 qconop: qconsym                                 {}
       | '`' qconid '`'                          {}
-        
--------------------------------------------------------------------------------
--- Type constructors
 
+-- Type constructors ----------------------------------------------------------
 gtycon -- A "general" qualified tycon
   : oqtycon                                     {}
   | '(' ')'                                     {}
   | '(' commas ')'                              {}
   | '(' '->' ')'                                {}
   | '[' ']'                                     {}
-    
+
 oqtycon -- An "ordinary" qualified tycon
   : qtycon                                      {}
   | '(' qtyconsym ')'                           {}
   | '(' '~' ')'                                 {}
-    
-qtyconop
-  : qtyconsym                                   {}
-  | '`' qtycon '`'                              {}
-    
+
 qtycon: TQCONID                                 {}
       | tycon                                   {}
-        
+
 tycon: TCONID                                   {}
 
 qtyconsym: TQCONSYM                             {}
          | tyconsym                             {}
-           
-tyconsym: TQCONSYM                              {}
 
--------------------------------------------------------------------------------
--- Operators
+tyconsym: TCONSYM                               {}
 
+-- Operators ------------------------------------------------------------------
 op: varop                                       {}
   | conop                                       {}
 
@@ -566,35 +514,28 @@ qop: qvarop                                     {}
 
 qopm: qvaropm                                   {}
     | qconop                                    {}
-      
+
 qvarop: qvarsym                                 {}
       | '`' qvarid '`'                          {}
-        
+
 qvaropm: qvarsym_no_minus                       {}
        | '`' qvarid '`'                         {}
 
--------------------------------------------------------------------------------
--- Type variables
-
+-- Type variables -------------------------------------------------------------
 tyvar: tyvarid                                  {}
      | '(' tyvarsym ')'                         {}
-       
-tyvarop: '`' tyvarid '`'                        {}
-       | tyvarsym                               {}
-         
+
 tyvarid
   : TVARID                                      {}
   | 'as'                                        {}
-  | 'hiding'                                    { mkName ("hiding", $1) }
-  | 'qualified'                                 { mkName ("qualified", $1) }
-  | 'safe'                                      { mkName ("safe", $1) }
-  | 'unsafe'                                    { mkName ("unsafe", $1) }
+  | 'hiding'                                    {}
+  | 'qualified'                                 {}
+  | 'safe'                                      {}
+  | 'unsafe'                                    {}
 
-tyvarsym: TVARSYM                               { mkName $1 }
+tyvarsym: TVARSYM                               {}
 
--------------------------------------------------------------------------------
--- Variables
-
+-- Variables ------------------------------------------------------------------
 var: varid                                      {}
    | '(' varsym ')'                             {}
 
@@ -603,15 +544,15 @@ qvar: qvarid                                    {}
     | '(' qvarsym1 ')'                          {}
 
 qvarid: varid                                   {}
-      | TQVARID                                 { mkName $1 }
+      | TQVARID                                 {}
 
 varid
   : TVARID                                      {}
   | 'as'                                        {}
-  | 'hiding'                                    { mkName ("hiding", $1) }
-  | 'qualified'                                 { mkName ("qualified", $1) }
-  | 'safe'                                      { mkName ("safe", $1) }
-  | 'unsafe'                                    { mkName ("unsafe", $1) }
+  | 'hiding'                                    {}
+  | 'qualified'                                 {}
+  | 'safe'                                      {}
+  | 'unsafe'                                    {}
 
 qvarsym: varsym                                 {}
        | qvarsym1                               {}
@@ -628,13 +569,11 @@ varsym: varsym_no_minus                         {}
 varsym_no_minus: TVARSYM                        {}
                | '!'                            {}
 
--------------------------------------------------------------------------------
--- Data constructors
-
+-- Data constructors ----------------------------------------------------------
 qconid: conid                                   {}
-      | TQCONID                                 { mkName $1 }
+      | TQCONID                                 {}
 
-conid: TCONID                                   { mkName $1 }
+conid: TCONID                                   {}
 
 qconsym: consym                                 {}
        | TQCONSYM                               {}
@@ -642,23 +581,17 @@ qconsym: consym                                 {}
 consym: TCONSYM                                 {}
       | ':'                                     {}
 
--------------------------------------------------------------------------------
--- Literals
-
+-- Literals -------------------------------------------------------------------
 literal: TLITCHAR                               {}
   |      TLITSTR                                {}
   |      TLITINT                                {}
   |      TLITFLOAT                              {}
 
--------------------------------------------------------------------------------
--- Layout 
-
+-- Layout ---------------------------------------------------------------------
 close: vccurly                                  {}
      | error                                    { {- pop context -} }
 
--------------------------------------------------------------------------------
--- Misc
-
+-- Misc -----------------------------------------------------------------------
 commas: commas ','                              {}
       | ','                                     {}
 
