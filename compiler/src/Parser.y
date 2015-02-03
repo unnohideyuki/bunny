@@ -77,472 +77,594 @@ TLITSTR     { TString     $$ }
 TLITCHAR    { TChar       $$ }
 
 %%
-module: 'module' modid exports_opt 'where' body { mkModule $2 }
+-------------------------------------------------------------------------------
+-- Module Header
+module: 'module' modid exports_opt 'where' body {}
       | body                                    {}
 
-body: '{'     impdecls ';' topdecls '}'         {}
-    | vocurly impdecls ';' topdecls close       {}
-    | '{'     impdecls '}'                      {}
-    | vocurly impdecls close                    {}
-    | '{'     topdecls '}'                      {}
-    | vocurly topdecls close                    {}
+body: '{'     top '}'                           {}
+    | vocurly top close                         {}
+      
+top: impdecls                                   {}      
+   | impdecls ';' cvtopdecls                    {}
+   | cvtopdecls                                 {}
 
-impdecls: impdecls ';' impdecl                  {}
-        | impdecl                               {}
-
-exports_opt: exports                            {}
+cvtopdecls: topdecls                            {}
+      
+-------------------------------------------------------------------------------
+-- Export List
+exports_opt: '(' exportlist ')'                 {}
            | {- empty -}                        {}
 
-exports: '(' cseq1_export ',' ')'               {}
-       | '(' cseq1_export     ')'               {}
-       | '('              ',' ')'               {}
-       | '('                  ')'               {}
-
-cseq1_export: cseq1_export ',' export           {}
-            | export                            {}
+exportlist: export ',' exportlist               {}
+          | export                              {}
 
 export: qvar                                    {}
-      | qtycon                                  {}
-      | qtycon '(' '..' ')'                     {}
-      | qtycon '(' cseq_cname ')'               {}
+      | oqtycon                                 {}
+      | oqtycon '(' '..' ')'                    {}
+      | oqtycon '(' ')'                         {}
+      | oqtycon '(' qcnames ')'                 {}
       | 'module' modid                          {}
 
-impdecl: 'import' qual_opt modid as_modid_opt impspec_opt
+qcnames: qcnames ',' qcname_ext                 {}
+       | qcname_ext                             {}
+
+qcname_ext: qcname                              {}
+          | 'type' qcon                         {}
+
+qcname: qvar                                    {}
+      | qcon                                    {}
+        
+-------------------------------------------------------------------------------
+-- Import Declarations
+impdecls: impdecls ';' impdecl                  {}
+        | impdecls ';'                          {}
+        | impdecl                               {}
+        | {- empty -}                           {}
+
+impdecl: 'import' qual_opt modid as_opt impspec_opt
                                                 {}
 
 qual_opt: 'qualified'                           {}
         | {- empty -}                           {}
 
-as_modid_opt: 'as' modid                        {}
-            | {- empty -}                       {}
+as_opt: 'as' modid                              {}
+      | {- empty -}                             {}
 
 impspec_opt: impspec                            {}
            | {- empty -}                        {}
 
-impspec: exports                                {}
-       | 'hiding' exports                       {}
+impspec: '(' exportlist ')'                     {}
+       | 'hiding' '(' exportlist ')'            {}
 
-cseq_cname: cseq1_cname                         {}
-          | {- empty -}                         {}
-
-cseq1_cname: cseq1_cname ',' cname              {}
-           | cname                              {}
-
-cname: var                                      {}
-     | con                                      {}
-
-topdecls: sseq1_topdecl                         {}
-
-sseq1_topdecl: sseq1_topdecl ';' topdecl        {}
-  |            topdecl                          {}
-
-topdecl: 'type' simpletype '=' type             {}
-  |      'data' ty_hdr
-         '=' constrs deriving                   {}
-  |      'data' ty_hdr
-                     deriving                   {}
-  |      'newtype' ty_hdr
-         '=' newconstr deriving                 {}
-  |      'class' cl_hdr tyvar           {}
-  |      'class' cl_hdr tyvar
-         'where' cdecls                         {}
-  |      'instance' cl_hdr inst        {}
-  |      'instance' cl_hdr inst
-         'where' idecls                         {}
-  |      'default' '(' cseq_type ')'            {}
-  |      'foreign' fdecl                        {}
-  |      decl                                   {}
-
-ty_hdr: context '=>' simpletype                 {}
-      |              simpletype                 {}
-
-cl_hdr: scontext '=>' qtycls                    {}
-      |               qtycls                    {}
-
-decls: '{'     sseq1_decl '}'                   {}
-     | '{'                '}'                   {}
-     | vocurly sseq1_decl close                 {}
-     | vocurly            close                 {}
-
-sseq1_decl: sseq1_decl ';' decl                 {}
-          | decl                                {}
-
-decl: gendecl                                   {}
-    | funlhs rhs                                {}
-    | pat    rhs                                {}
-
-cdecls: '{'     sseq1_cdecl '}'                 {}
-      | vocurly sseq1_cdecl close               {}
-
-sseq1_cdecl: sseq1_cdecl ';' cdecl              {}
-           | cdecl                              {}
-
-cdecl: gendecl                                  {}
-     | funlhs rhs                               {}
-     | var    rhs                               {}
-
-idecls: '{'     sseq_idecl '}'                  {}
-      | vocurly sseq_idecl close                {}
-
-sseq_idecl: sseq_idecl ';' idecl                {}
-          | idecl                               {}
-
-idecl: funlhs rhs                               {}
-     | var    rhs                               {}
-     | {- empty -}                              {}
-
-gendecl: vars '::' context '=>' type            {}
-       | vars '::'              type            {}
-       | fixity integer ops                     {}
-       | fixity         ops                     {}
-       | {- empty -}                            {}
-
-ops: ops ',' op                                 {}
-   | op                                         {}
-
-vars: vars ',' var                              {}
-    | var                                       {}
+-------------------------------------------------------------------------------
+-- Fixity Declarations
+prec: {- empty -}                               { 9 }
+    | TLITINT                                   {}
 
 fixity: 'infixl'                                {}
       | 'infixr'                                {}
       | 'infix'                                 {}
 
-type: btype '->' type                           {}
-    | btype                                     {}
+ops: ops ',' op                                 {}
+   | op                                         {}
 
-cseq_type: cseq1_type                           {}
+-------------------------------------------------------------------------------
+-- Top-Level Declarations
+
+topdecls: topdecls ';' topdecl                  {}
+        | topdecls ';'                          {}
+        | topdecl                               {}
+
+topdecl: cl_decl                                {}
+       | ty_decl                                {}
+       | 'instance' inst_type where_inst        {}
+       | 'default' '(' comma_types0 ')'         {}
+       | 'foreign' fdecl                        {}
+       | decl                                   {}
+
+cl_decl: 'class' tycl_hdr fds where_cls         {}
+
+ty_decl: 'type' type '=' ctypedoc               {}
+       | data_or_newtype tycl_hdr constrs deriving
+                                                {}
+data_or_newtype: 'data'                         {}
+               | 'newtype'                      {}
+
+tycl_hdr: context '=>' type                     {}
+        | type                                  {}
+
+-- Class body
+--
+decl_cls: decl                                  {}
+
+decls_cls : decls_cls ';' decl_cls              {}
+          | decls_cls ';'                       {}
+          | decl_cls                            {}
+          | {- empty -}                         {}
+                                                
+decllist_cls
+  : '{'     decls_cls '}'                       {}
+  | vocurly decls_cls close                     {}
+
+where_cls: 'where' decllist_cls                 {}
          | {- empty -}                          {}
 
-cseq1_type: cseq1_type ',' type                 {}
-          | type                                {}
+-- Instance body
+--         
+decl_inst: decl                                 {}
+
+decls_inst: decls_inst ';' decl_inst            {}
+          | decls_inst ';'                      {}
+          | decl_inst                           {}
+          | {- empty -}                         {}
+
+decllist_inst
+  : '{'     decls_inst '}'                      {}
+  | vocurly decls_inst close                    {}
+
+where_inst: 'where' decllist_inst               {}
+          | {- empty -}                         {}
+
+-- Declarations
+--
+decls: decls ';' decl                           {}
+     | decls ';'                                {}
+     | decl                                     {}
+     | {- empty -}                              {}
+
+decllist
+  : '{'     decls '}'                           {}
+  | vocurly decls close                         {}
+
+-- Binding groups
+--
+binds: decllist                                 {}
+
+wherebinds: 'where' binds                       {}
+          | {- empty -}                         {}
+
+-------------------------------------------------------------------------------
+-- Foreign import/export declarations
+fdecl: 'import' callconv safety fspec           {}
+     | 'import' callconv        fspec           {}
+
+callconv: {- tbd -}                             {}
+
+safety: 'unsafe'                                {}
+      |     'safe'                              {}
+
+fspec: TLITSTR var '::' sigtypedoc              {}
+     |        var '::' sigtypedoc               {}
+
+-------------------------------------------------------------------------------
+-- Type signatures
+opt_sig: '::' sigtype                           {}
+       | {- empty -}                            {}
+
+sigtype: ctype                                  {}
+
+sigtypedoc: ctypedoc                            {}
+
+sig_vars: sig_vars ',' var                      {}
+        | var                                   {}
+
+ctypedoc: context '=>' ctypedoc                 {}
+        | typedoc                               {}
+          
+-- There is a note for 'context' in the GHC's source.
+context: btype '~' btype                        {}
+       | btype                                  {}
+
+ctype: type                                     {}
+
+type: btype                                     {}
+    | btype '->' type                           {}
+
+typedoc: type                                   {}
 
 btype: btype atype                              {}
      |       atype                              {}
 
 atype: gtycon                                   {}
      | tyvar                                    {}
-     | '(' cseq1_type ',' type ')'              {}
-     | '[' type ']'                             {}
-     | '(' type ')'                             {}
+     | '!' atype                                {} -- constructor sigs only
+     | '{' fielddecls '}'                       {} -- constructor sigs only
+     | '(' ctype ',' comma_types1 ')'           {}
+     | '[' ctype ']'                            {}
+     | '(' ctype ')'                            {}
 
-seq_atype: seq_atype atype                      {}
-  |        {- empty -}                          {}
+inst_type: ctype                                {}
 
-gtycon: qtycon                                  {}
-  |     '(' ')'                                 {}
-  |     '[' ']'                                 {}
-  |     '(' '->' ')'                            {}
-  |     '(' commas ')'                          {}
+inst_types1: inst_type                          {}
+           | inst_type ',' inst_types1          {}
 
-context: class                                  {}
-  |      '(' cseq_class ')'                     {}
+comma_types0: comma_types1                      {}
+            | {- empty -}                       {}
+                                                
+comma_types1: ctype                             {}
+            | ctype ',' comma_types1            {}
+              
+fds: {- empty -}                                {}              
+   | '|' fds1                                   {}
+     
+fds1: fds1 ',' fd                               {}
+    | fd                                        {}
+      
+fd: varids0 '->' varids0                        {}
 
-cseq_class: cseq1_class                         {}
-  |         {- empty -}                         {}
+varids0: {- empty -}                            {}
+       | varids0 tyvar                          {}
 
-cseq1_class: cseq1_class ',' class              {}
-  |          class                              {}
+-------------------------------------------------------------------------------
+-- Datatype declarations
 
-class: qtycls tyvar                             {}
-  |    qtycls '(' tyvar seq_atype ')'           {}
+constrs: '=' constrs1                           {}
 
-scontext: simpleclass                           {}
-  |       '(' cseq_simpleclass ')'              {}
+constrs1: constrs1 '|' constr                   {}
+        | constr                                {}
+          
+constr: constr_stuff                            {}
 
-cseq_simpleclass: cseq1_simpleclass             {}
-   |              {- empty -}                   {}
+constr_stuff
+ : btype                                        {}
+ | btype conop btype                            {}
 
-cseq1_simpleclass: cseq1_simpleclass ',' simpleclass
-                                                {}
-   |               simpleclass                  {}
+fielddecls: {- empty -}                         {}
+          | fielddecls1                         {}
+            
+fielddecls1
+ : fielddecl ',' fielddecls1                    {}
+ | fielddecl                                    {}
+   
+fielddecl: sig_vars '::' ctype                  {}
 
-simpleclass: qtycls tyvar                       {}
-
-simpletype: tycon seq_tyvar                     {}
-
-constrs: constrs '|' constr                     {}
-  |      constr                                 {}
-
-constr: con seq_banopt_atype                    {}
-  |     borbatype conop borbatype               {}
-  |     con '{' cseq_fielddecl '}'              {}
-
-cseq_fielddecl: cseq1_fielddecl                 {}
-  |             {- empty -}                     {}
-
-cseq1_fielddecl: cseq1_fielddecl ',' fielddecl  {}
-  |              fielddecl                      {}
-
-borbatype: btype                                {}
-  |        '!' atype                            {}
-
-seq_banopt_atype: seq_banopt_atype banopt_atype {}
-  |               banopt_atype                  {}
-
-banopt_atype: '!' atype                         {}
-  |               atype                         {}
-
-newconstr: con atype                            {}
-  |        con '{' var '::' type '}'            {}
-
-fielddecl: vars '::' type                       {}
-  |        vars '::' '!' atype                  {}
-
-deriving: 'deriving' dclass                     {}
-        | 'deriving' '(' cseq_dclass ')'        {}
+deriving: 'deriving' qtycon                     {}
+        | 'deriving' '(' ')'                    {}
+        | 'deriving' '(' inst_types1 ')'        {}
         | {- empty -}                           {}
 
-cseq_dclass: cseq1_dclass                       {}
-  |          {- empty -}                        {}
+-------------------------------------------------------------------------------
+-- Value definitions
 
-cseq1_dclass: cseq1_dclass ',' dclass           {}
-  |           dclass                            {}
+decl: sigdecl                                   {}
+    | '!' aexp rhs                              {}
+    | infixexp opt_sig rhs                      {}
 
-dclass: qtycls                                  {}
+rhs: '=' exp wherebinds                         {}
+   | gdrhs wherebinds                           {}
+     
+gdrhs: gdrhs gdrh                               {}
+     | gdrh                                     {}
+       
+gdrh: '|' guardquals '=' exp                    {}
 
-inst: gtycon                                    {}
-  |   '(' gtycon seq_tyvar ')'                  {}
-  |   '(' cseq1_tyvar ',' tyvar ')'             {}
-  |   '[' tyvar ']'                             {}
-  |   '(' tyvar '->' tyvar ')'                  {}
+sigdecl
+  : infixexp '::' sigtypedoc                    {}
+  | var ',' sig_vars '::' sigtypedoc            {}
+  | fixity prec ops                             {}
 
-seq_tyvar: seq_tyvar tyvar                      {}
-  |       {- empty -}                           {}
+-------------------------------------------------------------------------------
+-- Expressions
 
-cseq1_tyvar: cseq1_tyvar ',' tyvar              {}
-  |          tyvar                              {}
+exp: infixexp '::' sigtype                      {}
+   | infixexp                                   {}
 
-fdecl: 'import' callconv safety fspec           {}
-     | 'import' callconv        fspec           {}
+infixexp: exp10                                 {}
+        | infixexp qop exp10                    {}
 
-fspec: string var '::' ftype                    {}
-     |        var '::' ftype                    {}
-
-callconv: {- tbd -}                             {}
-
-safety: 'unsafe'                                {}
-  |     'safe'                                  {}
-
-ftype: frtype                                   {}
-  |    fatype '->' ftype                        {}
-
-frtype: fatype                                  {}
-  |     '(' ')'                                 {}
-fatype: qtycon seq_atype                        {}
-
-funlhs: var seq1_apat                           {}
-  |     pat varop pat                           {}
-  |     '(' funlhs ')' seq1_apat                {}
-
-rhs: '=' exp 'where' decls                      {}
-  |  '=' exp                                    {}
-  |  gdrhs   'where' decls                      {}
-  |  gdrhs                                      {}
-
-gdrhs: guards '=' exp gdrhs                     {}
-  |    guards '=' exp                           {}
-
-guards: '|' guards guard                        {}
-  |     '|' guard                               {}
-
-guard: pat '<-' infixexp                        {}
-  |    'let' decls                              {}
-  |    infixexp                                 {}
-
-exp: infixexp '::' context '=>' type            {}
-  |  infixexp              '=>' type            {}
-  |  infixexp                                   {}
-
-infixexp: lexp qop infixexp                     {}
-  |       '-' infixexp                          {}
-  |       lexp                                  {}
-
-lexp: '\\' seq1_apat '->' exp                   {}
-  |   'let' decls 'in' exp                      {}
-  |   'if'   exp semi_opt
-      'then' exp semi_opt
-      'else' exp                                {}
-  |   'case' exp 'of' '{' alts '}'              {}
-  |   'case' exp 'of' vocurly alts close        {}
-  |   'do' '{' stmts '}'                        {}
-  |   'do' vocurly stmt close                   {}
-  |   fexp                                      {}
-
-close: vccurly                                  {}
-     | error                                    { {- pop context -} }
+exp10
+  : '\\' apat apats '->' exp                    {}
+  | 'let' binds 'in' exp                        {}
+  | 'if' exp semi_opt
+    'then' exp semi_opt
+    'else' exp                                  {}
+  | 'case' exp 'of' altslist                    {}
+  | '-' fexp                                    {}
+  | 'do' stmtlist                               {}
+  | fexp                                        {}
 
 semi_opt: ';'                                   {}
-  |    {- empty -}                              {}
-
-seq1_apat: seq1_apat apat                       {}
-  |        apat                                 {}
+        | {- empty -}                           {}
 
 fexp: fexp aexp                                 {}
-  |   aexp                                      {}
+    | aexp                                      {}
 
 aexp: qvar '@' aexp                             {}
     | '~' aexp                                  {}
-    | '_'                                       {}
     | aexp1                                     {}
+      
+aexp1: aexp1 '{' fbinds '}'                     {}
+     | aexp2                                    {}
+      
+aexp2
+  : qcname                                      {}
+  | literal                                     {}
+  | '(' texp ')'                                {}
+  | '(' tup_exprs ')'                           {}
+  | '[' list ']'                                {}
+  | '_'                                         {}
 
-aexp1: qvar                                     {}
-  |   gcon                                      {}
-  |   literal                                   {}
-  |   '(' exp ')'                               {}
-  |   '(' seq1_exp ',' exp ')'                  {}
-  |   '[' seq1_exp ']'                          {}
-  |   '[' exp         '..'     ']'              {}
-  |   '[' exp         '..' exp ']'              {}
-  |   '[' exp ',' exp '..'     ']'              {}
-  |   '[' exp ',' exp '..' exp ']'              {}
-  |   '[' exp '|' seq1_qual ']'                 {}
-  |   '(' infixexp qop ')'                      {}
-  |   '(' qop_no_minus infixexp ')'             {}
-  |   qcon '{' seq_fbind '}'                    {}
-  |   aexp '{' seq1_fbind '}'                   {}
+-------------------------------------------------------------------------------
+-- Tuple expressions
 
-seq1_exp: seq1_exp ',' exp                      {}
-  |       exp                                   {}
+texp: exp                                       {}
+    | infixexp qop                              {}
+    | qopm infixexp                             {}
+    | exp '->' texp                             {}
 
-seq1_qual: seq1_qual ',' qual                   {}
-  |        qual                                 {}
+tup_exprs: texp commas_tup_tail                 {}
+         | commas tup_tail                      {}
 
-seq_fbind : seq1_fbind                          {}
-  |         {- empty -}                         {}
+commas_tup_tail: commas tup_tail                {}
 
-seq1_fbind: seq1_fbind ',' fbind                {}
-  |         fbind                               {}
+tup_tail: texp commas_tup_tail                  {}
+        | texp                                  {}
+        | {- empty -}                           {}
 
-qual: pat '<-' exp                              {}
-  |   'let' decls                               {}
-  |   exp                                       {}
+-------------------------------------------------------------------------------
+-- List expressions
 
-alts: alts ';' alt                              {}
-  |   alt                                       {}
+list: texp                                      {}
+    | lexps                                     {}
+    | texp '..'                                 {}
+    | texp ',' exp '..'                         {}
+    | texp '..' exp                             {}
+    | texp ',' exp '..' exp                     {}
+    | texp '|' squals                           {}
+      
+lexps: lexps ',' texp                           {}
+     | texp ',' texp                            {}
 
-alt: pat '->' exp                               {}
-  |  pat '->' exp 'where' decls                 {}
-  |  pat gdpat                                  {}
-  |  pat gdpat 'where' decls                    {}
+-------------------------------------------------------------------------------
+-- List Comprehensions
 
-gdpat: guards '->' exp                          {}
-  |    guards '->' exp gdpat                    {}
+squals: squals ',' qual                         {}
+      | qual                                    {}
 
-stmts: seq_stmt exp semi_opt                    {}
+-------------------------------------------------------------------------------
+-- Guards
 
-seq_stmt: seq_stmt stmt                         {}
-  |       {- empty -}                           {}
+guardquals: guardquals1                         {}
 
-stmt: exp ';'                                   {}
-  |   pat '<-' exp ';'                          {}
-  |   'let' decls ';'                           {}
-  |   ';'                                       {}
+guardquals1
+  : guardquals1 ',' qual                        {}
+  | qual                                        {}
+    
+-------------------------------------------------------------------------------
+-- Case alternatives
 
-fbind: qvar '=' exp                             {}
+altslist
+  : '{'     alts '}'                            {}
+  | vocurly alts close                          {}
+    
+alts: alts1                                     {}
+    | ';' alts                                  {}
+      
+alts1: alts1 ';' alt                            {}
+     | alts1 ';'                                {}
+     | alt                                      {}
+       
+alt: pat opt_sig alt_rhs                        {}
+
+alt_rhs: ralt wherebinds                        {}
+
+ralt: '->' exp                                  {}
+    | gdpats                                    {}
+      
+gdpats: gdpats gdpat                            {}
+      | gdpat                                   {}
+        
+gdpat: '|' guardquals '->' exp                  {}
 
 pat: exp                                        {}
    | '!' aexp                                   {}
-
+    
 apat: aexp                                      {}
     | '!' aexp                                  {}
 
-gcon: '(' ')'                                   {}
-    | '[' ']'                                   {}
-    | '(' commas ')'                            {}
-    | qcon                                      {}
+apats: apat apats                               {}
+     | {- empty -}                              {}
+                                                
+-------------------------------------------------------------------------------
+-- Statement sequences
 
-commas: commas ','                              {}
-      | ','                                     {}
+stmtlist
+  : '{'     stmts '}'                           {}
+  | vocurly stmts close                         {}
+    
+stmts: stmt stmts_help                          {}
+     | ';' stmts                                {}
+     | {- empty -}                              {}
+                                                
+stmts_help: ';' stmts                           {}
+          | {- empty -}                         {}
+                                                
+stmt: qual                                      {}
+
+qual: pat '<-' exp                              {}
+    | exp                                       {}
+    | 'let' binds                               {}
+
+-------------------------------------------------------------------------------
+-- Record Field Updata/Construction
+
+fbinds: fbinds1                                 {}
+      | {- empty -}                             {}
+                                                
+fbinds1: fbind ',' fbinds1                      {}
+       | fbind                                  {}
+       | '..'                                   {}
+         
+fbind: qvar '=' exp                             {}         
+
+-------------------------------------------------------------------------------
+-- Data constructors
+
+qcon: qconid                                    {}
+    | '(' qconsym ')'                           {}
+    | sysdcon                                   {}
+
+con: conid                                      {}
+   | '(' consym ')'                             {}
+   | sysdcon                                    {}
+     
+con_list: con                                   {}
+        | con ',' con_list                      {}
+          
+sysdcon
+  : '(' ')'                                     {}
+  | '(' commas ')'                              {}
+  | '[' ']'                                     {}
+
+conop: consym                                   {}
+     | '`' conid '`'                            {}
+
+qconop: qconsym                                 {}
+      | '`' qconid '`'                          {}
+        
+-------------------------------------------------------------------------------
+-- Type constructors
+
+gtycon -- A "general" qualified tycon
+  : oqtycon                                     {}
+  | '(' ')'                                     {}
+  | '(' commas ')'                              {}
+  | '(' '->' ')'                                {}
+  | '[' ']'                                     {}
+    
+oqtycon -- An "ordinary" qualified tycon
+  : qtycon                                      {}
+  | '(' qtyconsym ')'                           {}
+  | '(' '~' ')'                                 {}
+    
+qtyconop
+  : qtyconsym                                   {}
+  | '`' qtycon '`'                              {}
+    
+qtycon: TQCONID                                 {}
+      | tycon                                   {}
+        
+tycon: TCONID                                   {}
+
+qtyconsym: TQCONSYM                             {}
+         | tyconsym                             {}
+           
+tyconsym: TQCONSYM                              {}
+
+-------------------------------------------------------------------------------
+-- Operators
+
+op: varop                                       {}
+  | conop                                       {}
+
+varop : varsym                                  {}
+      | '`' varid '`'                           {}
+
+qop: qvarop                                     {}
+  |  qconop                                     {}
+
+qopm: qvaropm                                   {}
+    | qconop                                    {}
+      
+qvarop: qvarsym                                 {}
+      | '`' qvarid '`'                          {}
+        
+qvaropm: qvarsym_no_minus                       {}
+       | '`' qvarid '`'                         {}
+
+-------------------------------------------------------------------------------
+-- Type variables
+
+tyvar: tyvarid                                  {}
+     | '(' tyvarsym ')'                         {}
+       
+tyvarop: '`' tyvarid '`'                        {}
+       | tyvarsym                               {}
+         
+tyvarid
+  : TVARID                                      {}
+  | 'as'                                        {}
+  | 'hiding'                                    { mkName ("hiding", $1) }
+  | 'qualified'                                 { mkName ("qualified", $1) }
+  | 'safe'                                      { mkName ("safe", $1) }
+  | 'unsafe'                                    { mkName ("unsafe", $1) }
+
+tyvarsym: TVARSYM                               { mkName $1 }
+
+-------------------------------------------------------------------------------
+-- Variables
 
 var: varid                                      {}
    | '(' varsym ')'                             {}
 
 qvar: qvarid                                    {}
-    | '(' qvarsym ')'                           {}
-    | varid                                     {}
     | '(' varsym ')'                            {}
+    | '(' qvarsym1 ')'                          {}
 
-con: conid                                      {}
-   | '(' consym ')'                             {}
+qvarid: varid                                   {}
+      | TQVARID                                 { mkName $1 }
 
-qcon : qconid                                   {}
-     | '(' gconsym ')'                          {}
-     | conid                                    {}
-     | '(' consym ')'                           {}
+varid
+  : TVARID                                      {}
+  | 'as'                                        {}
+  | 'hiding'                                    { mkName ("hiding", $1) }
+  | 'qualified'                                 { mkName ("qualified", $1) }
+  | 'safe'                                      { mkName ("safe", $1) }
+  | 'unsafe'                                    { mkName ("unsafe", $1) }
 
-varop : varsym                                  {}
-      | '`' varid '`'                           {}
+qvarsym: varsym                                 {}
+       | qvarsym1                               {}
 
-qvarop: qvarsym                                 {}
-      | '`' qvarid '`'                          {}
-      | varsym                                  {}
-      | '`' varid '`'                           {}
+qvarsym_no_minus
+  : varsym_no_minus                             {}
+  | qvarsym1                                    {}
 
-conop: consym                                   {}
-     | '`' conid '`'                            {}
+qvarsym1: TQVARSYM                              {}
 
-qconop: gconsym                                 {}
-      | '`' qconid '`'                          {}
-      | consym                                  {}
-      | '`' conid '`'                           {}
-
-op: varop                                       {}
-  | conop                                       {}
-
-qop: qvarop                                     {}
-  |  qconop                                     {}
-
--- qop<->
-qop_no_minus: varsym_no_minus                   {}
-            | qvarsym                           {}
-            | '`' qvarid '`'                    {}
-            | qconop                            {}
-
-gconsym: ':'                                    {}
-       | qconsym                                {}
-
-modid: TCONID                                   {}
-     | TQCONID                                  {}
-
-varid: TVARID                                   { mkName $1 }
-     | 'as'                                     { mkName ("as", $1) }
-     | 'hiding'                                 { mkName ("hiding", $1) }
-     | 'qualified'                              { mkName ("qualified", $1) }
-     | 'safe'                                   { mkName ("safe", $1) }
-     | 'unsafe'                                 { mkName ("unsafe", $1) }
-
-conid: TCONID                                   { mkName $1 }
-
-varsym: TVARSYM                                 { mkName $1 }
-      | '-'                                     { mkName ("-", $1) }
-      | '!'                                     { mkName ("!", $1) }
+varsym: varsym_no_minus                         {}
+      | '-'                                     {}
 
 varsym_no_minus: TVARSYM                        {}
                | '!'                            {}
 
+-------------------------------------------------------------------------------
+-- Data constructors
+
+qconid: conid                                   {}
+      | TQCONID                                 { mkName $1 }
+
+conid: TCONID                                   { mkName $1 }
+
+qconsym: consym                                 {}
+       | TQCONSYM                               {}
+
 consym: TCONSYM                                 {}
+      | ':'                                     {}
 
-qvarid: TQVARID                                 { mkName $1 }
+-------------------------------------------------------------------------------
+-- Literals
 
-qconid: TQCONID                                 { mkName $1 }
-qvarsym: TQVARSYM                               {}
-qconsym: TQCONSYM                               {}
-qtycon: qconid                                  {}
+literal: TLITCHAR                               {}
+  |      TLITSTR                                {}
+  |      TLITINT                                {}
+  |      TLITFLOAT                              {}
 
-tyvar: varid                                    {}
-tycon: conid                                    {}
-qtycls: qconid                                  {}
-  |     conid                                   {}
+-------------------------------------------------------------------------------
+-- Layout 
 
-integer: TLITINT                                {}
-float:   TLITFLOAT                              {}
-char:    TLITCHAR                               {}
-string:  TLITSTR                                {}
+close: vccurly                                  {}
+     | error                                    { {- pop context -} }
 
-literal: integer                                {}
-  |      float                                  {}
-  |      char                                   {}
-  |      string                                 {}
+-------------------------------------------------------------------------------
+-- Misc
+
+commas: commas ','                              {}
+      | ','                                     {}
+
+modid: TCONID                                   {}
+     | TQCONID                                  {}
+
 {
 extrPos :: AlexPosn -> Pos
 extrPos (AlexPn _ line col) = (line, col)
