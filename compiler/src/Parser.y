@@ -92,8 +92,13 @@ top: impdecls                                   {}
 exports_opt: '(' exportlist ')'                 {}
            | {- empty -}                        {}
 
-exportlist: export ',' exportlist               {}
-          | export                              {}
+exportlist: exportlist1                         {}
+          | exportlist1 ','                     {}
+          | ','                                 {}
+          | {- empty -}                         {}
+
+exportlist1: export ',' exportlist1             {}
+           | export                             {}
 
 export: qvar                                    {}
       | oqtycon                                 {}
