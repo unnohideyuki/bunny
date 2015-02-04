@@ -227,9 +227,6 @@ fspec: TLITSTR var '::' sigtypedoc              {}
      |        var '::' sigtypedoc               {}
 
 -- Type signatures ------------------------------------------------------------
-opt_sig: '::' sigtype                           {}
-       | {- empty -}                            {}
-
 sigtype: ctype                                  {}
 
 sigtypedoc: ctypedoc                            {}
@@ -313,7 +310,7 @@ deriving: 'deriving' qtycon                     {}
 -- Value definitions ----------------------------------------------------------
 decl: sigdecl                                   {}
     | '!' aexp rhs                              {}
-    | infixexp opt_sig rhs                      {}
+    | infixexp rhs                              {}
 
 rhs: '=' exp wherebinds                         {}
    | gdrhs wherebinds                           {}
@@ -416,7 +413,7 @@ alts1: alts1 ';' alt                            {}
      | alts1 ';'                                {}
      | alt                                      {}
 
-alt: pat opt_sig alt_rhs                        {}
+alt: pat alt_rhs                                {}
 
 alt_rhs: ralt wherebinds                        {}
 
