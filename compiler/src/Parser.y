@@ -1,9 +1,9 @@
 {
-module Main where
+module Parser where
 import Lexer
 import Absyn
+import ParserHelper
 }
-
 %name      parser
 %error     { parseError }
 %lexer     { lexwrap }{ Eof }
@@ -159,7 +159,7 @@ topdecl: cl_decl                                {}
 
 cl_decl: 'class' tycl_hdr fds where_cls         {}
 
-ty_decl: 'type' type '=' ctypedoc               {}
+ty_decl: 'type' type '=' type                   {}
        | data_or_newtype tycl_hdr constrs deriving
                                                 {}
 data_or_newtype: 'data'                         {}
@@ -227,39 +227,31 @@ fspec: TLITSTR var '::' sigtypedoc              {}
      |        var '::' sigtypedoc               {}
 
 -- Type signatures ------------------------------------------------------------
-sigtype: ctype                                  {}
-
-sigtypedoc: ctypedoc                            {}
+sigtypedoc: context '=>' type                   {}
+          | type                                {}
 
 sig_vars: sig_vars ',' var                      {}
         | var                                   {}
-
-ctypedoc: context '=>' ctypedoc                 {}
-        | typedoc                               {}
 
 -- There is a note for 'context' in the GHC's source.
 context: btype '~' btype                        {}
        | btype                                  {}
 
-ctype: type                                     {}
-
 type: btype                                     {}
     | btype '->' type                           {}
 
-typedoc: type                                   {}
-
 btype: btype atype                              {}
-     |       atype                              {}
+     | atype                                    {}
 
 atype: gtycon                                   {}
      | tyvar                                    {}
      | '!' atype                                {} -- constructor sigs only
      | '{' fielddecls '}'                       {} -- constructor sigs only
-     | '(' ctype ',' comma_types1 ')'           {}
-     | '[' ctype ']'                            {}
-     | '(' ctype ')'                            {}
+     | '(' type ',' comma_types1 ')'            {}
+     | '[' type ']'                             {}
+     | '(' type ')'                             {}
 
-inst_type: ctype                                {}
+inst_type: type                                 {}
 
 inst_types1: inst_type                          {}
            | inst_type ',' inst_types1          {}
@@ -267,8 +259,8 @@ inst_types1: inst_type                          {}
 comma_types0: comma_types1                      {}
             | {- empty -}                       {}
 
-comma_types1: ctype                             {}
-            | ctype ',' comma_types1            {}
+comma_types1: type                              {}
+            | type ',' comma_types1             {}
 
 fds: {- empty -}                                {}
    | '|' fds1                                   {}
@@ -300,7 +292,7 @@ fielddecls1
  : fielddecl ',' fielddecls1                    {}
  | fielddecl                                    {}
 
-fielddecl: sig_vars '::' ctype                  {}
+fielddecl: sig_vars '::' type                   {}
 
 deriving: 'deriving' qtycon                     {}
         | 'deriving' '(' ')'                    {}
@@ -326,7 +318,7 @@ sigdecl
   | fixity prec ops                             {}
 
 -- Expressions ----------------------------------------------------------------
-exp: infixexp '::' sigtype                      {}
+exp: infixexp '::' sigtypedoc                   {}
    | infixexp                                   {}
 
 infixexp: exp10                                 {}
@@ -596,25 +588,7 @@ commas: commas ','                              {}
 
 modid: TCONID                                   {}
      | TQCONID                                  {}
-
 {
-extrPos :: AlexPosn -> Pos
-extrPos (AlexPn _ line col) = (line, col)
-
-extrQual qual name =
-  case span (/= '.') name of
-    (_, "")      -> (qual, name)
-    (q, ('.':n)) -> extrQual (qual ++ q ++ ".") n
-    (q, n)       -> extrQual (qual ++ q ++ ".") n
-
-mkName (s, pos) = Name { name_body = body
-                       , name_qual = qual
-                       , name_pos  = extrPos pos }
-  where
-    (qual, body) = extrQual "" s
-
-mkModule modid = Module modid []
-
 lexwrap :: (Token -> Alex a) -> Alex a
 lexwrap = (alexMonadScan >>=)
 
@@ -622,7 +596,4 @@ parseError :: Token -> Alex a
 parseError t = alexError $ "parseError: " ++ show t
 
 parse s = runAlex s parser
-
-main :: IO ()
-main = getContents >>= print . parse
 }

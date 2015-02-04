@@ -3,6 +3,7 @@ compiler/src/Lexer.x
 compiler/src/Parser.hs
 compiler/src/unicateg
 compiler/sample/lexer_sample
+compiler/sample/parser_sample
 *.hi
 *.o
 *~
