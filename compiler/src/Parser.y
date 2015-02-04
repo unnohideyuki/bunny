@@ -110,8 +110,8 @@ export: qvar                                    {}
 qcnames: qcnames ',' qcname                     {}
        | qcname                                 {}
 
-qcname: qvar                                    {}
-      | qcon                                    {}
+qcname: qvar                                    { $1 }
+      | qcon                                    { $1 }
 
 -- Import Declarations --------------------------------------------------------
 impdecls: impdecls ';' impdecl                  {}
@@ -318,42 +318,42 @@ sigdecl
   | fixity prec ops                             {}
 
 -- Expressions ----------------------------------------------------------------
-exp: infixexp '::' sigtypedoc                   {}
-   | infixexp                                   {}
+exp: infixexp '::' sigtypedoc                   { ExpWithTySig $1 {- todo -} }
+   | infixexp                                   { $1 }
 
-infixexp: exp10                                 {}
-        | infixexp qop exp10                    {}
+infixexp: exp10                                 { $1 }
+        | infixexp qop exp10                    { InfixExp $1 $2 $3 }
 
 exp10
-  : '\\' apat apats '->' exp                    {}
-  | 'let' binds 'in' exp                        {}
+  : '\\' apat apats '->' exp                    { undefined }
+  | 'let' binds 'in' exp                        { undefined }
   | 'if' exp semi_opt 'then' exp semi_opt 'else' exp
-                                                {}
-  | 'case' exp 'of' altslist                    {}
-  | '-' fexp                                    {}
-  | 'do' stmtlist                               {}
-  | fexp                                        {}
+                                                { undefined }
+  | 'case' exp 'of' altslist                    { undefined }
+  | '-' fexp                                    { undefined }
+  | 'do' stmtlist                               { undefined }
+  | fexp                                        { $1 }
 
-semi_opt: ';'                                   {}
-        | {- empty -}                           {}
+semi_opt: ';'                                   { () }
+        | {- empty -}                           { () }
 
-fexp: fexp aexp                                 {}
-    | aexp                                      {}
+fexp: fexp aexp                                 { FunAppExp $1 $2 }
+    | aexp                                      { $1 }
 
-aexp: qvar '@' aexp                             {}
-    | '~' aexp                                  {}
-    | aexp1                                     {}
+aexp: qvar '@' aexp                             { AsPat $1 $3 }
+    | '~' aexp                                  { LazyPat $2 }
+    | aexp1                                     { $1 }
 
-aexp1: aexp1 '{' fbinds '}'                     {}
-     | aexp2                                    {}
+aexp1: aexp1 '{' fbinds '}'                     { RecordConOrUpdate $1 $3 }
+     | aexp2                                    { $1 }
 
 aexp2
-  : qcname                                      {}
-  | literal                                     {}
-  | '(' texp ')'                                {}
-  | '(' tup_exprs ')'                           {}
-  | '[' list ']'                                {}
-  | '_'                                         {}
+  : qcname                                      { VarExp $1 }
+  | literal                                     { LitExp $1 }
+  | '(' texp ')'                                { undefined }
+  | '(' tup_exprs ')'                           { undefined }
+  | '[' list ']'                                { undefined }
+  | '_'                                         { WildPat }
 
 -- Tuple expressions ----------------------------------------------------------
 texp: exp                                       {}
@@ -453,7 +453,7 @@ fbinds1: fbind ',' fbinds1
        | fbind                                  { ([$1], False) }
        | '..'                                   { ([], True) }
 
-fbind: qvar '=' exp                             { mkRecField $1 }
+fbind: qvar '=' exp                             { mkRecField $1 undefined }
 
 -- Data constructors ----------------------------------------------------------
 qcon: qconid                                    { $1 }

@@ -39,8 +39,20 @@ data Literal = LitInteger Integer Pos
              | LitFloat   Float   Pos
              | LitString  String  Pos
              | LitChar    Char    Pos
+               deriving Show
 
 -- todo Exp is just a place holder
 data RecField = RecField Name Exp
+                deriving Show
 
-data Exp = Exp
+data Exp = Dummy -- dummy
+         | VarExp Name
+         | LitExp Literal
+         | FunAppExp Exp Exp
+         | InfixExp Exp Name Exp
+         | ExpWithTySig Exp -- todo: Sig
+         | AsPat Name Exp
+         | LazyPat Exp
+         | WildPat
+         | RecordConOrUpdate Exp ([RecField], Bool)
+           deriving Show
