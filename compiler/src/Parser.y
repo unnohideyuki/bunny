@@ -78,11 +78,11 @@ TLITCHAR    { TChar       $$ }
 
 %%
 -- Module Header --------------------------------------------------------------
-module: 'module' modid exports_opt 'where' body {}
-      | body                                    {}
+module: 'module' modid exports_opt 'where' body { mkModule (Just $2) }
+      | body                                    { mkModule Nothing }
 
-body: '{'     top '}'                           {}
-    | vocurly top close                         {}
+body: '{'     top '}'                           { $2 }
+    | vocurly top close                         { $2 }
 
 top: impdecls                                   {}
    | impdecls ';' topdecls                      {}
@@ -455,139 +455,139 @@ fbinds1: fbind ',' fbinds1                      {}
 fbind: qvar '=' exp                             {}
 
 -- Data constructors ----------------------------------------------------------
-qcon: qconid                                    {}
-    | '(' qconsym ')'                           {}
-    | sysdcon                                   {}
+qcon: qconid                                    { $1 }
+    | '(' qconsym ')'                           { $2 }
+    | sysdcon                                   { $1 }
 
 sysdcon
-  : '(' ')'                                     {}
-  | '(' commas ')'                              {}
-  | '[' ']'                                     {}
+  : '(' ')'                                     { mkName ("()", $1) }
+  | '(' commas ')'                              { mkName ("(" ++ $2 ++ ")", $1) }
+  | '[' ']'                                     { mkName ("[]", $1) }
 
-conop: consym                                   {}
-     | '`' conid '`'                            {}
+conop: consym                                   { $1 }
+     | '`' conid '`'                            { $2 }
 
-qconop: qconsym                                 {}
-      | '`' qconid '`'                          {}
+qconop: qconsym                                 { $1 }
+      | '`' qconid '`'                          { $2 }
 
 -- Type constructors ----------------------------------------------------------
 gtycon -- A "general" qualified tycon
-  : oqtycon                                     {}
-  | '(' ')'                                     {}
-  | '(' commas ')'                              {}
-  | '(' '->' ')'                                {}
-  | '[' ']'                                     {}
+  : oqtycon                                     { $1 }
+  | '(' ')'                                     { mkName ("()", $1) }
+  | '(' commas ')'                              { mkName ("(" ++ $2 ++ ")", $1) }
+  | '(' '->' ')'                                { mkName ("(->)", $1) }
+  | '[' ']'                                     { mkName ("[]", $1) }
 
 oqtycon -- An "ordinary" qualified tycon
-  : qtycon                                      {}
-  | '(' qtyconsym ')'                           {}
-  | '(' '~' ')'                                 {}
+  : qtycon                                      { $1 }
+  | '(' qtyconsym ')'                           { $2 }
+  | '(' '~' ')'                                 { mkName ("~", $2) }
 
-qtycon: TQCONID                                 {}
-      | tycon                                   {}
+qtycon: TQCONID                                 { mkName $1 }
+      | tycon                                   { $1 }
 
-tycon: TCONID                                   {}
+tycon: TCONID                                   { mkName $1 }
 
-qtyconsym: TQCONSYM                             {}
-         | tyconsym                             {}
+qtyconsym: TQCONSYM                             { mkName $1 }
+         | tyconsym                             { $1 }
 
-tyconsym: TCONSYM                               {}
+tyconsym: TCONSYM                               { mkName $1 }
 
 -- Operators ------------------------------------------------------------------
-op: varop                                       {}
-  | conop                                       {}
+op: varop                                       { $1 }
+  | conop                                       { $1 }
 
-varop : varsym                                  {}
-      | '`' varid '`'                           {}
+varop : varsym                                  { $1 }
+      | '`' varid '`'                           { $2 }
 
-qop: qvarop                                     {}
-  |  qconop                                     {}
+qop: qvarop                                     { $1 }
+  |  qconop                                     { $1 }
 
-qopm: qvaropm                                   {}
-    | qconop                                    {}
+qopm: qvaropm                                   { $1 }
+    | qconop                                    { $1 }
 
-qvarop: qvarsym                                 {}
-      | '`' qvarid '`'                          {}
+qvarop: qvarsym                                 { $1 }
+      | '`' qvarid '`'                          { $2 }
 
-qvaropm: qvarsym_no_minus                       {}
-       | '`' qvarid '`'                         {}
+qvaropm: qvarsym_no_minus                       { $1 }
+       | '`' qvarid '`'                         { $2 }
 
 -- Type variables -------------------------------------------------------------
-tyvar: tyvarid                                  {}
-     | '(' tyvarsym ')'                         {}
+tyvar: tyvarid                                  { $1 }
+     | '(' tyvarsym ')'                         { $2 }
 
 tyvarid
-  : TVARID                                      {}
-  | 'as'                                        {}
-  | 'hiding'                                    {}
-  | 'qualified'                                 {}
-  | 'safe'                                      {}
-  | 'unsafe'                                    {}
+  : TVARID                                      { mkName $1 }
+  | 'as'                                        { mkName ("as", $1) }
+  | 'hiding'                                    { mkName ("hiding", $1) }
+  | 'qualified'                                 { mkName ("qualified", $1) }
+  | 'safe'                                      { mkName ("safe", $1) }
+  | 'unsafe'                                    { mkName ("unsafe", $1) }
 
-tyvarsym: TVARSYM                               {}
+tyvarsym: TVARSYM                               { mkName $1 }
 
 -- Variables ------------------------------------------------------------------
-var: varid                                      {}
-   | '(' varsym ')'                             {}
+var: varid                                      { $1 }
+   | '(' varsym ')'                             { $2 }
 
-qvar: qvarid                                    {}
-    | '(' varsym ')'                            {}
-    | '(' qvarsym1 ')'                          {}
+qvar: qvarid                                    { $1 }
+    | '(' varsym ')'                            { $2 }
+    | '(' qvarsym1 ')'                          { $2 }
 
-qvarid: varid                                   {}
-      | TQVARID                                 {}
+qvarid: varid                                   { $1 }
+      | TQVARID                                 { mkName $1 }
 
 varid
-  : TVARID                                      {}
-  | 'as'                                        {}
-  | 'hiding'                                    {}
-  | 'qualified'                                 {}
-  | 'safe'                                      {}
-  | 'unsafe'                                    {}
+  : TVARID                                      { mkName $1 }
+  | 'as'                                        { mkName ("as", $1) }
+  | 'hiding'                                    { mkName ("hiding", $1) }
+  | 'qualified'                                 { mkName ("qualified", $1) }
+  | 'safe'                                      { mkName ("safe", $1) }
+  | 'unsafe'                                    { mkName ("unsafe", $1) }
 
-qvarsym: varsym                                 {}
-       | qvarsym1                               {}
+qvarsym: varsym                                 { $1 }
+       | qvarsym1                               { $1 }
 
 qvarsym_no_minus
-  : varsym_no_minus                             {}
-  | qvarsym1                                    {}
+  : varsym_no_minus                             { $1 }
+  | qvarsym1                                    { $1 }
 
-qvarsym1: TQVARSYM                              {}
+qvarsym1: TQVARSYM                              { mkName $1 }
 
-varsym: varsym_no_minus                         {}
-      | '-'                                     {}
+varsym: varsym_no_minus                         { $1 }
+      | '-'                                     { mkName ("-", $1) }
 
-varsym_no_minus: TVARSYM                        {}
-               | '!'                            {}
+varsym_no_minus: TVARSYM                        { mkName $1 }
+               | '!'                            { mkName ("!", $1) }
 
 -- Data constructors ----------------------------------------------------------
-qconid: conid                                   {}
-      | TQCONID                                 {}
+qconid: conid                                   { $1 }
+      | TQCONID                                 { mkName $1 }
 
-conid: TCONID                                   {}
+conid: TCONID                                   { mkName $1 }
 
-qconsym: consym                                 {}
-       | TQCONSYM                               {}
+qconsym: consym                                 { $1 }
+       | TQCONSYM                               { mkName $1 }
 
-consym: TCONSYM                                 {}
-      | ':'                                     {}
+consym: TCONSYM                                 { mkName $1 }
+      | ':'                                     { mkName (":", $1) }
 
 -- Literals -------------------------------------------------------------------
-literal: TLITCHAR                               {}
-  |      TLITSTR                                {}
-  |      TLITINT                                {}
-  |      TLITFLOAT                              {}
+literal: TLITCHAR                               { mkChar $1 }
+  |      TLITSTR                                { mkString $1 }
+  |      TLITINT                                { mkInteger $1 }
+  |      TLITFLOAT                              { mkFloat $1 }
 
 -- Layout ---------------------------------------------------------------------
-close: vccurly                                  {}
+close: vccurly                                  { () }
      | error                                    {% popCtx }
 
 -- Misc -----------------------------------------------------------------------
-commas: commas ','                              {}
-      | ','                                     {}
+commas: commas ','                              { ',' : $1 }
+      | ','                                     { "," }
 
-modid: TCONID                                   {}
-     | TQCONID                                  {}
+modid: TCONID                                   { mkName $1 }
+     | TQCONID                                  { mkName $1 }
 {
 lexwrap :: (Token -> Alex a) -> Alex a
 lexwrap = (alexMonadScan >>=)

@@ -13,10 +13,10 @@ data Name = Name { name_body :: String
                  }
           deriving Show
 
-data Module = Module { modid    :: Name
+data Module = Module { modid    :: Maybe Name
                      , exports  :: [IE]
-                       -- , impdecls :: [Impdecl]
-                       -- , topdecls :: [Topdecl]
+                     , impdecls :: [Importdecl]
+                     , decls    :: [Decl]
                      }
              deriving Show
 
@@ -28,3 +28,15 @@ data IE
   | IEThingWith     Name [Name] -- ^ Class/Type plus some methods/constructors
   | IEModuleContens Name        -- ^ Module (export only)
     deriving Show
+
+data Importdecl = Importdecl
+                  deriving Show
+
+data Decl = Decl
+            deriving Show
+
+data Literal = LitInteger Integer Pos
+             | LitFloat   Float   Pos
+             | LitString  String  Pos
+             | LitChar    Char    Pos
+
