@@ -107,11 +107,8 @@ export: qvar                                    {}
       | oqtycon '(' qcnames ')'                 {}
       | 'module' modid                          {}
 
-qcnames: qcnames ',' qcname_ext                 {}
-       | qcname_ext                             {}
-
-qcname_ext: qcname                              {}
-          | 'type' qcon                         {}
+qcnames: qcnames ',' qcname                     {}
+       | qcname                                 {}
 
 qcname: qvar                                    {}
       | qcon                                    {}
