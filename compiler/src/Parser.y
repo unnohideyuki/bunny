@@ -445,14 +445,15 @@ qual: pat '<-' exp                              {}
     | 'let' binds                               {}
 
 -- Record Field Updata/Construction -------------------------------------------
-fbinds: fbinds1                                 {}
-      | {- empty -}                             {}
+fbinds: fbinds1                                 { $1 }
+      | {- empty -}                             { ([], False) }
 
-fbinds1: fbind ',' fbinds1                      {}
-       | fbind                                  {}
-       | '..'                                   {}
+fbinds1: fbind ',' fbinds1
+                                          { case $3 of (fs, b) -> ($1 : fs,b) }
+       | fbind                                  { ([$1], False) }
+       | '..'                                   { ([], True) }
 
-fbind: qvar '=' exp                             {}
+fbind: qvar '=' exp                             { mkRecField $1 }
 
 -- Data constructors ----------------------------------------------------------
 qcon: qconid                                    { $1 }

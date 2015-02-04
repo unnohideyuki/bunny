@@ -22,6 +22,8 @@ mkName (s, pos) = Name { name_body = body
 
 mkModule n = Module n [] [] []
 
+mkRecField qv _ = RecField qv Exp
+
 mkChar :: (Char, AlexPosn) -> Literal
 mkChar (c, pos) = LitChar c $ extrPos pos
 

@@ -40,3 +40,7 @@ data Literal = LitInteger Integer Pos
              | LitString  String  Pos
              | LitChar    Char    Pos
 
+-- todo Exp is just a place holder
+data RecField = RecField Name Exp
+
+data Exp = Exp
