@@ -234,33 +234,33 @@ sig_vars: sig_vars ',' var                      {}
         | var                                   {}
 
 -- There is a note for 'context' in the GHC's source.
-context: btype '~' btype                        {}
-       | btype                                  {}
+context: btype                                  { $1 }
 
-type: btype                                     {}
-    | btype '->' type                           {}
+type: btype                                     { $1 }
+    | btype '->' type                           { FunTy $1 $3 }
 
-btype: btype atype                              {}
-     | atype                                    {}
+btype: btype atype                              { AppTy $1 $2 }
+     | atype                                    { $1 }
 
-atype: gtycon                                   {}
-     | tyvar                                    {}
-     | '!' atype                                {} -- constructor sigs only
-     | '{' fielddecls '}'                       {} -- constructor sigs only
-     | '(' type ',' comma_types1 ')'            {}
-     | '[' type ']'                             {}
-     | '(' type ')'                             {}
+atype: gtycon                                   { Tycon $1 }
+     | tyvar                                    { Tyvar $1 }
+     | '(' type ',' comma_types1 ')'            { TupleTy ($2:$4) }
+     | '[' type ']'                             { ListTy $2 }
+     | '(' type ')'                             { ParTy $2 }
+     -- constructor sigs only
+     | '!' atype                                { BangTy $2 }
+     | '{' fielddecls '}'                       { undefined }
 
-inst_type: type                                 {}
+inst_type: type                                 { $1 }
 
-inst_types1: inst_type                          {}
-           | inst_type ',' inst_types1          {}
+inst_types1: inst_type                          { [$1] }
+           | inst_type ',' inst_types1          { $1:$3 }
 
-comma_types0: comma_types1                      {}
-            | {- empty -}                       {}
+comma_types0: comma_types1                      { $1 }
+            | {- empty -}                       { [] }
 
-comma_types1: type                              {}
-            | type ',' comma_types1             {}
+comma_types1: type                              { [$1] }
+            | type ',' comma_types1             { $1:$3 }
 
 fds: {- empty -}                                {}
    | '|' fds1                                   {}
@@ -294,10 +294,10 @@ fielddecls1
 
 fielddecl: sig_vars '::' type                   {}
 
-deriving: 'deriving' qtycon                     {}
-        | 'deriving' '(' ')'                    {}
-        | 'deriving' '(' inst_types1 ')'        {}
-        | {- empty -}                           {}
+deriving: 'deriving' qtycon                     { Just [Tycon $2] }
+        | 'deriving' '(' ')'                    { Just [] }
+        | 'deriving' '(' inst_types1 ')'        { Just $3 }
+        | {- empty -}                           { Nothing }
 
 -- Value definitions ----------------------------------------------------------
 decl: sigdecl                                   {}
@@ -325,12 +325,12 @@ infixexp: exp10                                 { $1 }
         | infixexp qop exp10                    { InfixExp $1 $2 $3 }
 
 exp10
-  : '\\' apat apats '->' exp                    { undefined }
+  : '\\' apat apats '->' exp                    { LamExp ($2:$3) $5 }
   | 'let' binds 'in' exp                        { undefined }
   | 'if' exp semi_opt 'then' exp semi_opt 'else' exp
-                                                { undefined }
+                                                { IfExp $2 $5 $8 }
   | 'case' exp 'of' altslist                    { undefined }
-  | '-' fexp                                    { undefined }
+  | '-' fexp                                    { UMinusExp $2 }
   | 'do' stmtlist                               { undefined }
   | fexp                                        { $1 }
 
@@ -353,7 +353,7 @@ aexp2
   | '(' texp ')'                                { undefined }
   | '(' tup_exprs ')'                           { undefined }
   | '[' list ']'                                { undefined }
-  | '_'                                         { WildPat }
+  | '_'                                         { WildcardPat }
 
 -- Tuple expressions ----------------------------------------------------------
 texp: exp                                       {}
@@ -420,11 +420,11 @@ gdpat: '|' guardquals '->' exp                  {}
 pat: exp                                        {}
    | '!' aexp                                   {}
 
-apat: aexp                                      {}
-    | '!' aexp                                  {}
+apat: aexp                                      { $1 }
+    | '!' aexp                                  { undefined }
 
-apats: apat apats                               {}
-     | {- empty -}                              {}
+apats: apat apats                               { $1:$2 }
+     | {- empty -}                              { [] }
 
 -- Statement sequences --------------------------------------------------------
 stmtlist

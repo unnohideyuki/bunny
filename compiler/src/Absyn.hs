@@ -45,14 +45,33 @@ data Literal = LitInteger Integer Pos
 data RecField = RecField Name Exp
                 deriving Show
 
+data Type = Tyvar   Name
+          | Tycon   Name
+          | FunTy   Type Type
+          | AppTy   Type Type
+          | BangTy  Type
+          | TupleTy [Type]
+          | ListTy  Type
+          | ParTy   Type -- why needed parened type?
+
+{- メモ
+   いまは、パターンも何もかも Exp にしているが、
+   Pattern と Exp は別の型にするべきかもしれない。
+   そのときには、mkLamExp とかのなかで Exp -> Pat の変換をやるのだろう。
+-}
 data Exp = Dummy -- dummy
-         | VarExp Name
-         | LitExp Literal
-         | FunAppExp Exp Exp
-         | InfixExp Exp Name Exp
+
+         | VarExp       Name
+         | LitExp       Literal
+         | FunAppExp    Exp Exp
+         | InfixExp     Exp Name Exp
+         | LamExp       [Exp] Exp
+         | IfExp        Exp Exp Exp
+         | UMinusExp    Exp
          | ExpWithTySig Exp -- todo: Sig
+
          | AsPat Name Exp
          | LazyPat Exp
-         | WildPat
+         | WildcardPat
          | RecordConOrUpdate Exp ([RecField], Bool)
            deriving Show
