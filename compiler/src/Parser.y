@@ -135,15 +135,15 @@ impspec: '(' exportlist ')'                     {}
        | 'hiding' '(' exportlist ')'            {}
 
 -- Fixity Declarations --------------------------------------------------------
-prec: {- empty -}                               { {- 9 -} }
-    | TLITINT                                   {}
+prec: {- empty -}                               { 9 :: Int }
+    | TLITINT                           { case $1 of (i, _) -> fromIntegral i }
 
-fixity: 'infixl'                                {}
-      | 'infixr'                                {}
-      | 'infix'                                 {}
+fixity: 'infixl'                                { Infixl }
+      | 'infixr'                                { Infixr }
+      | 'infix'                                 { Infix  }
 
-ops: ops ',' op                                 {}
-   | op                                         {}
+ops: ops ',' op                                 { $1 ++ [$3] }
+   | op                                         { [$1] }
 
 -- Top-Level Declarations -----------------------------------------------------
 topdecls: topdecls ';' topdecl                  {}
@@ -199,20 +199,20 @@ where_inst: 'where' decllist_inst               {}
           | {- empty -}                         {}
 
 -- Declarations
-decls: decls ';' decl                           {}
-     | decls ';'                                {}
-     | decl                                     {}
-     | {- empty -}                              {}
+decls: decls ';' decl                           { $1 ++ [$3] }
+     | decls ';'                                { $1 }
+     | decl                                     { [$1] }
+     | {- empty -}                              { [] }
 
 decllist
-  : '{'     decls '}'                           {}
-  | vocurly decls close                         {}
+  : '{'     decls '}'                           { $2 }
+  | vocurly decls close                         { $2 }
 
 -- Binding groups
-binds: decllist                                 {}
+binds: decllist                                 { $1 }
 
-wherebinds: 'where' binds                       {}
-          | {- empty -}                         {}
+wherebinds: 'where' binds                       { $2 }
+          | {- empty -}                         { [] }
 
 -- Foreign import/export declarations -----------------------------------------
 fdecl: 'import' callconv safety fspec           {}
@@ -227,11 +227,11 @@ fspec: TLITSTR var '::' sigtypedoc              {}
      |        var '::' sigtypedoc               {}
 
 -- Type signatures ------------------------------------------------------------
-sigtypedoc: context '=>' type                   {}
-          | type                                {}
+sigtypedoc: context '=>' type                   { Context (Just $1) $3 }
+          | type                                { Context Nothing $1 }
 
-sig_vars: sig_vars ',' var                      {}
-        | var                                   {}
+sig_vars: sig_vars ',' var                      { $1 ++ [$3] }
+        | var                                   { [$1] }
 
 -- There is a note for 'context' in the GHC's source.
 context: btype                                  { $1 }
@@ -300,22 +300,20 @@ deriving: 'deriving' qtycon                     { Just [Tycon $2] }
         | {- empty -}                           { Nothing }
 
 -- Value definitions ----------------------------------------------------------
-decl: sigdecl                                   {}
-    | '!' aexp rhs                              {}
-    | infixexp rhs                              {}
+decl: sigdecl                                   { $1 }
+    | infixexp rhs                              { ValDecl $1 $2 }
 
-rhs: '=' exp wherebinds                         {}
-   | gdrhs wherebinds                           {}
+rhs: '=' exp wherebinds                         { UnguardedRhs $2 $3 }
+   | gdrhs wherebinds                           { GuardedRhs $1 $2 }
 
-gdrhs: gdrhs gdrh                               {}
-     | gdrh                                     {}
+gdrhs: gdrhs gdrh                               { $1 ++ [$2] }
+     | gdrh                                     { [$1] }
 
-gdrh: '|' guardquals '=' exp                    {}
+gdrh: '|' guardquals '=' exp                    { ($2, $4) }
 
 sigdecl
-  : infixexp '::' sigtypedoc                    {}
-  | var ',' sig_vars '::' sigtypedoc            {}
-  | fixity prec ops                             {}
+  : sig_vars '::' sigtypedoc                    { TypeSigDecl $1 $3 }
+  | fixity prec ops                             { FixSigDecl $1 $2 $3 }
 
 -- Expressions ----------------------------------------------------------------
 exp: infixexp '::' sigtypedoc                   { ExpWithTySig $1 {- todo -} }
@@ -344,7 +342,7 @@ aexp: qvar '@' aexp                             { AsPat $1 $3 }
     | '~' aexp                                  { LazyPat $2 }
     | aexp1                                     { $1 }
 
-aexp1: aexp1 '{' fbinds '}'                     { RecordConOrUpdate $1 $3 }
+aexp1: aexp1 '{' fbinds '}'                     { RecConUpdate $1 $3 }
      | aexp2                                    { $1 }
 
 aexp2
@@ -387,7 +385,7 @@ squals: squals ',' qual                         {}
       | qual                                    {}
 
 -- Guards ---------------------------------------------------------------------
-guardquals: guardquals1                         {}
+guardquals: guardquals1                         { undefined }
 
 guardquals1
   : guardquals1 ',' qual                        {}

@@ -27,12 +27,24 @@ data IE
   | IEThingAll      Name        -- ^ Class/Type plus all methods/constructors
   | IEThingWith     Name [Name] -- ^ Class/Type plus some methods/constructors
   | IEModuleContens Name        -- ^ Module (export only)
-    deriving Show
+  deriving Show
 
 data Importdecl = Importdecl
-                  deriving Show
+                deriving Show
 
-data Decl = Decl
+data Decl = ValDecl     Exp Rhs
+          | TypeSigDecl [Name] Context
+          | FixSigDecl  Fixity Int [Name]
+          deriving Show
+
+data Qual = DummyQual
+          deriving Show
+
+data Rhs = UnguardedRhs Exp [Decl]
+         | GuardedRhs   [([Qual],Exp)] [Decl]
+         deriving Show
+
+data Fixity = Infixl | Infixr | Infix
             deriving Show
 
 data Literal = LitInteger Integer Pos
@@ -53,6 +65,10 @@ data Type = Tyvar   Name
           | TupleTy [Type]
           | ListTy  Type
           | ParTy   Type -- why needed parened type?
+          deriving Show
+
+data Context = Context (Maybe Type) Type
+             deriving Show
 
 {- メモ
    いまは、パターンも何もかも Exp にしているが、
@@ -70,8 +86,8 @@ data Exp = Dummy -- dummy
          | UMinusExp    Exp
          | ExpWithTySig Exp -- todo: Sig
 
-         | AsPat Name Exp
-         | LazyPat Exp
+         | AsPat        Name Exp
+         | LazyPat      Exp
          | WildcardPat
-         | RecordConOrUpdate Exp ([RecField], Bool)
+         | RecConUpdate Exp ([RecField], Bool)
            deriving Show
