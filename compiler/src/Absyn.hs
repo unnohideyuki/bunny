@@ -37,12 +37,16 @@ data Decl = ValDecl     Exp Rhs
           | FixSigDecl  Fixity Int [Name]
           deriving Show
 
-data Qual = DummyQual
+data Stmt = BindStmt Exp Exp
+          | ExpStmt  Exp
+          | LetStmt  [Decl]
           deriving Show
 
 data Rhs = UnguardedRhs Exp [Decl]
-         | GuardedRhs   [([Qual],Exp)] [Decl]
+         | GuardedRhs   [([Stmt],Exp)] [Decl]
          deriving Show
+
+data Alt = Match Exp Rhs
 
 data Fixity = Infixl | Infixr | Infix
             deriving Show
@@ -57,6 +61,9 @@ data Literal = LitInteger Integer Pos
 data RecField = RecField Name Exp
                 deriving Show
 
+data ConDeclField = ConDeclField Name Type
+                  deriving Show
+
 data Type = Tyvar   Name
           | Tycon   Name
           | FunTy   Type Type
@@ -65,17 +72,23 @@ data Type = Tyvar   Name
           | TupleTy [Type]
           | ListTy  Type
           | ParTy   Type -- why needed parened type?
+          | RecTy   [ConDeclField]
           deriving Show
 
 data Context = Context (Maybe Type) Type
              deriving Show
 
+data Constr = Con      Type
+            | InfixCon Type Name Type
+            deriving Show
 {- メモ
    いまは、パターンも何もかも Exp にしているが、
    Pattern と Exp は別の型にするべきかもしれない。
    そのときには、mkLamExp とかのなかで Exp -> Pat の変換をやるのだろう。
 -}
 data Exp = Dummy -- dummy
+         | ParExp       Exp
+         | TupleExp     [Maybe Exp]
 
          | VarExp       Name
          | LitExp       Literal
@@ -90,4 +103,17 @@ data Exp = Dummy -- dummy
          | LazyPat      Exp
          | WildcardPat
          | RecConUpdate Exp ([RecField], Bool)
+
+         | SectionL     Exp Name
+         | SectionR     Name Exp
+
+         | ListExp      [Exp]
+         | ArithSeqExp  ArithSeqRange
+         | ListCompExp  Exp [Stmt]
            deriving Show
+
+data ArithSeqRange = From       Exp
+                   | FromThen   Exp Exp
+                   | FromTo     Exp Exp
+                   | FromThenTo Exp Exp Exp
+                   deriving Show

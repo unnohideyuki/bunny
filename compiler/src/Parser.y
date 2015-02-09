@@ -157,7 +157,7 @@ topdecl: cl_decl                                {}
        | 'foreign' fdecl                        {}
        | decl                                   {}
 
-cl_decl: 'class' tycl_hdr fds where_cls         {}
+cl_decl: 'class' tycl_hdr where_cls             {}
 
 ty_decl: 'type' type '=' type                   {}
        | data_or_newtype tycl_hdr constrs deriving
@@ -169,34 +169,34 @@ tycl_hdr: context '=>' type                     {}
         | type                                  {}
 
 -- Class body
-decl_cls: decl                                  {}
+decl_cls: decl                                  { $1 }
 
-decls_cls : decls_cls ';' decl_cls              {}
-          | decls_cls ';'                       {}
-          | decl_cls                            {}
-          | {- empty -}                         {}
+decls_cls : decls_cls ';' decl_cls              { $3:$1 }
+          | decls_cls ';'                       { $1 }
+          | decl_cls                            { [$1] }
+          | {- empty -}                         { [] }
 
 decllist_cls
-  : '{'     decls_cls '}'                       {}
-  | vocurly decls_cls close                     {}
+  : '{'     decls_cls '}'                       { reverse $2 }
+  | vocurly decls_cls close                     { reverse $2 }
 
-where_cls: 'where' decllist_cls                 {}
-         | {- empty -}                          {}
+where_cls: 'where' decllist_cls                 { $2 }
+         | {- empty -}                          { [] }
 
 -- Instance body
-decl_inst: decl                                 {}
+decl_inst: decl                                 { $1 }
 
-decls_inst: decls_inst ';' decl_inst            {}
-          | decls_inst ';'                      {}
-          | decl_inst                           {}
-          | {- empty -}                         {}
+decls_inst: decls_inst ';' decl_inst            { $3:$1 }
+          | decls_inst ';'                      { $1 }
+          | decl_inst                           { [$1] }
+          | {- empty -}                         { [] }
 
 decllist_inst
-  : '{'     decls_inst '}'                      {}
-  | vocurly decls_inst close                    {}
+  : '{'     decls_inst '}'                      { reverse $2 }
+  | vocurly decls_inst close                    { reverse $2 }
 
-where_inst: 'where' decllist_inst               {}
-          | {- empty -}                         {}
+where_inst: 'where' decllist_inst               { $2 }
+          | {- empty -}                         { [] }
 
 -- Declarations
 decls: decls ';' decl                           { $1 ++ [$3] }
@@ -224,7 +224,7 @@ safety: 'unsafe'                                {}
       |     'safe'                              {}
 
 fspec: TLITSTR var '::' sigtypedoc              {}
-     |        var '::' sigtypedoc               {}
+     |         var '::' sigtypedoc              {}
 
 -- Type signatures ------------------------------------------------------------
 sigtypedoc: context '=>' type                   { Context (Just $1) $3 }
@@ -249,7 +249,7 @@ atype: gtycon                                   { Tycon $1 }
      | '(' type ')'                             { ParTy $2 }
      -- constructor sigs only
      | '!' atype                                { BangTy $2 }
-     | '{' fielddecls '}'                       { undefined }
+     | '{' fielddecls '}'                       { RecTy $2 }
 
 inst_type: type                                 { $1 }
 
@@ -262,37 +262,26 @@ comma_types0: comma_types1                      { $1 }
 comma_types1: type                              { [$1] }
             | type ',' comma_types1             { $1:$3 }
 
-fds: {- empty -}                                {}
-   | '|' fds1                                   {}
-
-fds1: fds1 ',' fd                               {}
-    | fd                                        {}
-
-fd: varids0 '->' varids0                        {}
-
-varids0: {- empty -}                            {}
-       | varids0 tyvar                          {}
-
 -- Datatype declarations ------------------------------------------------------
-constrs: '=' constrs1                           {}
+constrs: '=' constrs1                           { $2 }
 
-constrs1: constrs1 '|' constr                   {}
-        | constr                                {}
+constrs1: constrs1 '|' constr                   { $3:$1 }
+        | constr                                { [$1] }
 
-constr: constr_stuff                            {}
+constr: constr_stuff                            { $1 }
 
 constr_stuff
- : btype                                        {}
- | btype conop btype                            {}
+ : btype                                        { Con $1 }
+ | btype conop btype                            { InfixCon $1 $2 $3 }
 
-fielddecls: {- empty -}                         {}
-          | fielddecls1                         {}
+fielddecls: {- empty -}                         { [] }
+          | fielddecls1                         { $1 }
 
 fielddecls1
- : fielddecl ',' fielddecls1                    {}
- | fielddecl                                    {}
+ : fielddecl ',' fielddecls1                    { $1 ++ $3 }
+ | fielddecl                                    { $1 }
 
-fielddecl: sig_vars '::' type                   {}
+fielddecl: sig_vars '::' type             { [ConDeclField fld $3 | fld <- $1] }
 
 deriving: 'deriving' qtycon                     { Just [Tycon $2] }
         | 'deriving' '(' ')'                    { Just [] }
@@ -304,7 +293,7 @@ decl: sigdecl                                   { $1 }
     | infixexp rhs                              { ValDecl $1 $2 }
 
 rhs: '=' exp wherebinds                         { UnguardedRhs $2 $3 }
-   | gdrhs wherebinds                           { GuardedRhs $1 $2 }
+   | gdrhs   wherebinds                         { GuardedRhs $1 $2 }
 
 gdrhs: gdrhs gdrh                               { $1 ++ [$2] }
      | gdrh                                     { [$1] }
@@ -348,99 +337,89 @@ aexp1: aexp1 '{' fbinds '}'                     { RecConUpdate $1 $3 }
 aexp2
   : qcname                                      { VarExp $1 }
   | literal                                     { LitExp $1 }
-  | '(' texp ')'                                { undefined }
-  | '(' tup_exprs ')'                           { undefined }
-  | '[' list ']'                                { undefined }
+  | '(' texp ')'                                { ParExp $2 }
+  | '(' tup_exprs ')'                           { TupleExp $2 }
+  | '[' list ']'                                { $2 }
   | '_'                                         { WildcardPat }
 
 -- Tuple expressions ----------------------------------------------------------
-texp: exp                                       {}
-    | infixexp qop                              {}
-    | qopm infixexp                             {}
-    | exp '->' texp                             {}
+texp: exp                                       { $1 }
+    | infixexp qop                              { SectionL $1 $2 }
+    | qopm infixexp                             { SectionR $1 $2 }
 
-tup_exprs: texp commas_tup_tail                 {}
-         | commas tup_tail                      {}
+tup_exprs: texp commas_tup_tail                 { Just $1 : $2 }
+         | commas tup_tail                      { replicate $1 Nothing ++ $2 }
 
-commas_tup_tail: commas tup_tail                {}
+commas_tup_tail: commas tup_tail                { replicate $1 Nothing ++ $2 }
 
-tup_tail: texp commas_tup_tail                  {}
-        | texp                                  {}
-        | {- empty -}                           {}
+tup_tail: texp commas_tup_tail                  { Just $1 : $2 }
+        | texp                                  { [Just $1] }
+        | {- empty -}                           { [Nothing] }
 
 -- List expressions -----------------------------------------------------------
-list: texp                                      {}
-    | lexps                                     {}
-    | texp '..'                                 {}
-    | texp ',' exp '..'                         {}
-    | texp '..' exp                             {}
-    | texp ',' exp '..' exp                     {}
-    | texp '|' squals                           {}
+list: texp                                      { ListExp [$1] }
+    | lexps                                     { ListExp (reverse $1) }
+    | texp '..'                                 { ArithSeqExp (From $1) }
+    | texp ',' exp '..'                        { ArithSeqExp (FromThen $1 $3) }
+    | texp '..' exp                             { ArithSeqExp (FromTo $1 $3) }
+    | texp ',' exp '..' exp               { ArithSeqExp (FromThenTo $1 $3 $5) }
+    | texp '|' squals                           { ListCompExp $1 $3 }
 
-lexps: lexps ',' texp                           {}
-     | texp ',' texp                            {}
+lexps: lexps ',' texp                           { $3:$1 }
+     | texp ',' texp                            { [$3, $1] }
 
--- List Comprehensions --------------------------------------------------------
-squals: squals ',' qual                         {}
-      | qual                                    {}
+-- Guards / List Comprehensions -----------------------------------------------
+squals: squals ',' qual                         { $1 ++ [$3] }
+      | qual                                    { [$1] }
 
--- Guards ---------------------------------------------------------------------
-guardquals: guardquals1                         { undefined }
-
-guardquals1
-  : guardquals1 ',' qual                        {}
-  | qual                                        {}
+guardquals: squals                              { $1 }
 
 -- Case alternatives ----------------------------------------------------------
 altslist
-  : '{'     alts '}'                            {}
-  | vocurly alts close                          {}
+  : '{'     alts '}'                            { reverse $2 }
+  | vocurly alts close                          { reverse $2 }
 
-alts: alts1                                     {}
-    | ';' alts                                  {}
+alts: alts1                                     { $1 }
+    | ';' alts                                  { $2 }
 
-alts1: alts1 ';' alt                            {}
-     | alts1 ';'                                {}
-     | alt                                      {}
+alts1: alts1 ';' alt                            { $3:$1 }
+     | alts1 ';'                                { $1 }
+     | alt                                      { [$1] }
 
-alt: pat alt_rhs                                {}
+alt: pat alt_rhs                                { Match $1 $2 }
 
-alt_rhs: ralt wherebinds                        {}
+alt_rhs: '->' exp wherebinds                    { UnguardedRhs $2 $3 }
+       | gdpats   wherebinds                    { GuardedRhs $1 $2 }
 
-ralt: '->' exp                                  {}
-    | gdpats                                    {}
+gdpats: gdpats gdpat                            { $1 ++ [$2] }
+      | gdpat                                   { [$1] }
 
-gdpats: gdpats gdpat                            {}
-      | gdpat                                   {}
+gdpat: '|' guardquals '->' exp                  { ($2, $4) }
 
-gdpat: '|' guardquals '->' exp                  {}
-
-pat: exp                                        {}
-   | '!' aexp                                   {}
+pat: exp                                        { $1 }
 
 apat: aexp                                      { $1 }
-    | '!' aexp                                  { undefined }
 
 apats: apat apats                               { $1:$2 }
      | {- empty -}                              { [] }
 
 -- Statement sequences --------------------------------------------------------
 stmtlist
-  : '{'     stmts '}'                           {}
-  | vocurly stmts close                         {}
+  : '{'     stmts '}'                           { $2 }
+  | vocurly stmts close                         { $2 }
 
-stmts: stmt stmts_help                          {}
-     | ';' stmts                                {}
-     | {- empty -}                              {}
+stmts: stmt stmts_help                          { $1:$2 }
+     | ';' stmts                                { $2 }
+     | {- empty -}                              { [] }
 
-stmts_help: ';' stmts                           {}
-          | {- empty -}                         {}
+stmts_help: ';' stmts                           { $2 }
+          | {- empty -}                         { [] }
 
-stmt: qual                                      {}
+stmt: qual                                      { $1 }
 
-qual: pat '<-' exp                              {}
-    | exp                                       {}
-    | 'let' binds                               {}
+qual: pat '<-' exp                              { BindStmt $1 $3 }
+    | exp                                       { ExpStmt $1 }
+    | 'let' binds                               { LetStmt $2 }
 
 -- Record Field Updata/Construction -------------------------------------------
 fbinds: fbinds1                                 { $1 }
@@ -460,7 +439,7 @@ qcon: qconid                                    { $1 }
 
 sysdcon
   : '(' ')'                                     { mkName ("()", $1) }
-  | '(' commas ')'                              { mkName ("(" ++ $2 ++ ")", $1) }
+  | '(' commas ')'              { mkName ("(" ++ replicate $2 ',' ++ ")", $1) }
   | '[' ']'                                     { mkName ("[]", $1) }
 
 conop: consym                                   { $1 }
@@ -473,7 +452,7 @@ qconop: qconsym                                 { $1 }
 gtycon -- A "general" qualified tycon
   : oqtycon                                     { $1 }
   | '(' ')'                                     { mkName ("()", $1) }
-  | '(' commas ')'                              { mkName ("(" ++ $2 ++ ")", $1) }
+  | '(' commas ')'              { mkName ("(" ++ replicate $2 ',' ++ ")", $1) }
   | '(' '->' ')'                                { mkName ("(->)", $1) }
   | '[' ']'                                     { mkName ("[]", $1) }
 
@@ -582,8 +561,8 @@ close: vccurly                                  { () }
      | error                                    {% popCtx }
 
 -- Misc -----------------------------------------------------------------------
-commas: commas ','                              { ',' : $1 }
-      | ','                                     { "," }
+commas: commas ','                              { $1 + 1 }
+      | ','                                     { 1 }
 
 modid: TCONID                                   { mkName $1 }
      | TQCONID                                  { mkName $1 }
