@@ -14,28 +14,43 @@ data Name = Name { name_body :: String
           deriving Show
 
 data Module = Module { modid    :: Maybe Name
-                     , exports  :: [IE]
-                     , impdecls :: [Importdecl]
-                     , decls    :: [Decl]
+                     , exports  :: Maybe [IE]
+                     , body     :: ([ImportDecl], [Decl])
                      }
              deriving Show
 
 -- | Imported or exported entity
 data IE
-  = IEVar           Name
-  | IEThingAbs      Name        -- ^ Class/Type
-  | IEThingAll      Name        -- ^ Class/Type plus all methods/constructors
-  | IEThingWith     Name [Name] -- ^ Class/Type plus some methods/constructors
-  | IEModuleContens Name        -- ^ Module (export only)
+  = IEVar            Name
+  | IEThingAbs       Name        -- ^ Class/Type
+  | IEThingAll       Name        -- ^ Class/Type plus all methods/constructors
+  | IEThingWith      Name [Name] -- ^ Class/Type plus some methods/constructors
+  | IEModuleContents Name        -- ^ Module (export only)
   deriving Show
 
-data Importdecl = Importdecl
+data ImportDecl = ImportDecl Bool Name (Maybe Name) (Maybe (Bool, [IE]))
                 deriving Show
 
 data Decl = ValDecl     Exp Rhs
-          | TypeSigDecl [Name] Context
+          | TypeSigDecl [Name] (Maybe Type, Type)
           | FixSigDecl  Fixity Int [Name]
+          | DefaultDecl [Type]
+          | ForeignDecl FDecl
+          | ClassDecl   (Maybe Type, Type) [Decl]
+          | SynonymDecl Type Type
+          | DataDecl    (Maybe Type, Type) [Constr] (Maybe [Type])
+          | NewtypeDecl (Maybe Type, Type) [Constr] (Maybe [Type])
+          | InstDecl    Type [Decl]
           deriving Show
+
+data FDecl = FImDecl Name (Maybe Safety) FSpec
+           deriving Show
+
+data Safety = Safe | Unsafe
+            deriving (Eq, Show)
+
+data FSpec = FSpec (Maybe Literal) Name (Maybe Type, Type)
+           deriving Show
 
 data Stmt = BindStmt Exp Exp
           | ExpStmt  Exp
@@ -74,9 +89,6 @@ data Type = Tyvar   Name
           | ParTy   Type -- why needed parened type?
           | RecTy   [ConDeclField]
           deriving Show
-
-data Context = Context (Maybe Type) Type
-             deriving Show
 
 data Constr = Con      Type
             | InfixCon Type Name Type

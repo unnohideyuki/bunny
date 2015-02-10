@@ -78,61 +78,61 @@ TLITCHAR    { TChar       $$ }
 
 %%
 -- Module Header --------------------------------------------------------------
-module: 'module' modid exports_opt 'where' body { mkModule (Just $2) }
-      | body                                    { mkModule Nothing }
+module: 'module' modid exports_opt 'where' body { Module (Just $2) $3 $5 }
+      | body                                    { Module Nothing Nothing $1 }
 
 body: '{'     top '}'                           { $2 }
     | vocurly top close                         { $2 }
 
-top: impdecls                                   {}
-   | impdecls ';' topdecls                      {}
-   | topdecls                                   {}
+top: impdecls                                   { ($1, []) }
+   | impdecls ';' topdecls                      { ($1, $3) }
+   | topdecls                                   { ([], $1) }
 
 -- Export List ----------------------------------------------------------------
-exports_opt: '(' exportlist ')'                 {}
-           | {- empty -}                        {}
+exports_opt: '(' exportlist ')'                 { Just $2 }
+           | {- empty -}                        { Nothing }
 
-exportlist: exportlist1                         {}
-          | exportlist1 ','                     {}
-          | ','                                 {}
-          | {- empty -}                         {}
+exportlist: exportlist1                         { $1 }
+          | exportlist1 ','                     { $1 }
+          | ','                                 { [] }
+          | {- empty -}                         { [] }
 
-exportlist1: export ',' exportlist1             {}
-           | export                             {}
+exportlist1: export ',' exportlist1             { $1:$3 }
+           | export                             { [$1] }
 
-export: qvar                                    {}
-      | oqtycon                                 {}
-      | oqtycon '(' '..' ')'                    {}
-      | oqtycon '(' ')'                         {}
-      | oqtycon '(' qcnames ')'                 {}
-      | 'module' modid                          {}
+export: qvar                                    { IEVar $1 }
+      | oqtycon                                 { IEThingAbs $1 }
+      | oqtycon '(' '..' ')'                    { IEThingAll $1 }
+      | oqtycon '(' ')'                         { IEThingWith $1 [] }
+      | oqtycon '(' qcnames ')'                 { IEThingWith $1 $3 }
+      | 'module' modid                          { IEModuleContents $2 }
 
-qcnames: qcnames ',' qcname                     {}
-       | qcname                                 {}
+qcnames: qcnames ',' qcname                     { $3:$1 }
+       | qcname                                 { [$1] }
 
 qcname: qvar                                    { $1 }
       | qcon                                    { $1 }
 
 -- Import Declarations --------------------------------------------------------
-impdecls: impdecls ';' impdecl                  {}
-        | impdecls ';'                          {}
-        | impdecl                               {}
-        | {- empty -}                           {}
+impdecls: impdecls ';' impdecl                  { $1 ++ [$3] }
+        | impdecls ';'                          { $1 }
+        | impdecl                               { [$1] }
+        | {- empty -}                           { [] }
 
 impdecl: 'import' qual_opt modid as_opt impspec_opt
-                                                {}
+                                                { ImportDecl $2 $3 $4 $5 }
 
-qual_opt: 'qualified'                           {}
-        | {- empty -}                           {}
+qual_opt: 'qualified'                           { True }
+        | {- empty -}                           { False }
 
-as_opt: 'as' modid                              {}
-      | {- empty -}                             {}
+as_opt: 'as' modid                              { Just $2 }
+      | {- empty -}                             { Nothing }
 
-impspec_opt: impspec                            {}
-           | {- empty -}                        {}
+impspec_opt: impspec                            { Just $1 }
+           | {- empty -}                        { Nothing }
 
-impspec: '(' exportlist ')'                     {}
-       | 'hiding' '(' exportlist ')'            {}
+impspec: '(' exportlist ')'                     { (False, $2) }
+       | 'hiding' '(' exportlist ')'            { (True, $3) }
 
 -- Fixity Declarations --------------------------------------------------------
 prec: {- empty -}                               { 9 :: Int }
@@ -146,27 +146,27 @@ ops: ops ',' op                                 { $1 ++ [$3] }
    | op                                         { [$1] }
 
 -- Top-Level Declarations -----------------------------------------------------
-topdecls: topdecls ';' topdecl                  {}
-        | topdecls ';'                          {}
-        | topdecl                               {}
+topdecls: topdecls ';' topdecl                  { $1 ++ [$3] }
+        | topdecls ';'                          { $1 }
+        | topdecl                               { [$1] }
 
-topdecl: cl_decl                                {}
-       | ty_decl                                {}
-       | 'instance' inst_type where_inst        {}
-       | 'default' '(' comma_types0 ')'         {}
-       | 'foreign' fdecl                        {}
-       | decl                                   {}
+topdecl: cl_decl                                { $1 }
+       | ty_decl                                { $1 }
+       | 'instance' inst_type where_inst        { InstDecl $2 $3 }
+       | 'default' '(' comma_types0 ')'         { DefaultDecl $3 }
+       | 'foreign' fdecl                        { ForeignDecl $2 }
+       | decl                                   { $1 }
 
-cl_decl: 'class' tycl_hdr where_cls             {}
+cl_decl: 'class' tycl_hdr where_cls             { ClassDecl $2 $3 }
 
-ty_decl: 'type' type '=' type                   {}
-       | data_or_newtype tycl_hdr constrs deriving
-                                                {}
-data_or_newtype: 'data'                         {}
-               | 'newtype'                      {}
+ty_decl: 'type' type '=' type                   { SynonymDecl $2 $4 }
+       | data_or_newtype tycl_hdr constrs deriving  { $1 $2 $3 $4 }
 
-tycl_hdr: context '=>' type                     {}
-        | type                                  {}
+data_or_newtype: 'data'                         { DataDecl }
+               | 'newtype'                      { NewtypeDecl }
+
+tycl_hdr: context '=>' type                     { ((Just $1), $3) }
+        | type                                  { (Nothing, $1) }
 
 -- Class body
 decl_cls: decl                                  { $1 }
@@ -214,21 +214,21 @@ binds: decllist                                 { $1 }
 wherebinds: 'where' binds                       { $2 }
           | {- empty -}                         { [] }
 
--- Foreign import/export declarations -----------------------------------------
-fdecl: 'import' callconv safety fspec           {}
-     | 'import' callconv        fspec           {}
+-- Foreign import(/export) declarations ---------------------------------------
+fdecl: 'import' callconv safety fspec           { FImDecl $2 (Just $3) $4 }
+     | 'import' callconv        fspec           { FImDecl $2 Nothing   $3 }
 
-callconv: {- tbd -}                             {}
+callconv: varid                                 { $1 }
 
-safety: 'unsafe'                                {}
-      |     'safe'                              {}
+safety: 'unsafe'                                { Unsafe }
+      | 'safe'                                  { Safe }
 
-fspec: TLITSTR var '::' sigtypedoc              {}
-     |         var '::' sigtypedoc              {}
+fspec: TLITSTR var '::' sigtypedoc         { FSpec (Just $ mkString $1) $2 $4 }
+     |         var '::' sigtypedoc              { FSpec Nothing $1 $3 }
 
 -- Type signatures ------------------------------------------------------------
-sigtypedoc: context '=>' type                   { Context (Just $1) $3 }
-          | type                                { Context Nothing $1 }
+sigtypedoc: context '=>' type                   { ((Just $1), $3) }
+          | type                                { (Nothing, $1) }
 
 sig_vars: sig_vars ',' var                      { $1 ++ [$3] }
         | var                                   { [$1] }

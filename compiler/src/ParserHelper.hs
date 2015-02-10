@@ -20,8 +20,6 @@ mkName (s, pos) = Name { name_body = body
   where
     (qual, body) = extrQual "" s
 
-mkModule n = Module n [] [] []
-
 mkRecField qv _ = RecField qv Dummy
 
 mkChar :: (Char, AlexPosn) -> Literal
@@ -35,5 +33,3 @@ mkInteger (i, pos) = LitInteger i $ extrPos pos
 
 mkFloat :: (Float, AlexPosn) -> Literal
 mkFloat (d, pos) = LitFloat d $ extrPos pos
-
-
