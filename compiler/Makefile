@@ -17,10 +17,9 @@ src/Parser.hs:	src/Parser.y
 	happy $<
 
 src/Parser.o:	src/Parser.hs
-src/ParserHelper.o:	src/ParserHelper.hs
 src/Absyn.o:	src/Absyn.hs
 
-sample/parser_sample:	sample/parser_sample.hs src/Parser.o src/ParserHelper.o src/Absyn.o
+sample/parser_sample:	sample/parser_sample.hs src/Parser.o src/Absyn.o
 	ghc -Wall -isrc $<
 
 clean:	

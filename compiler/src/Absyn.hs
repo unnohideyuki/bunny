@@ -1,4 +1,5 @@
 module Absyn where
+import Lexer
 
 type Pos = (Int, Int) -- line number, column number
 
@@ -7,7 +8,7 @@ posLine (line, _) = line
 posCol :: Pos -> Int
 posCol (_, col) = col
 
-data Name = Name { name_body :: String
+data Name = Name { name_base :: String
                  , name_qual :: String
                  , name_pos  :: Pos
                  }
@@ -129,3 +130,36 @@ data ArithSeqRange = From       Exp
                    | FromTo     Exp Exp
                    | FromThenTo Exp Exp Exp
                    deriving Show
+
+---- Helper functions
+
+extrPos :: AlexPosn -> Pos
+extrPos (AlexPn _ line col) = (line, col)
+
+extrQual :: String -> String -> (String, String)
+extrQual qual name =
+  case span (/= '.') name of
+    (_, "")      -> (qual, name)
+    (q, ('.':n)) -> extrQual (qual ++ q ++ ".") n
+    (q, n)       -> extrQual (qual ++ q ++ ".") n
+
+mkName :: (String, AlexPosn) -> Name
+mkName (s, pos) = Name { name_base = n
+                       , name_qual = qual
+                       , name_pos  = extrPos pos }
+  where
+    (qual, n) = extrQual "" s
+
+mkRecField qv _ = RecField qv Dummy
+
+mkChar :: (Char, AlexPosn) -> Literal
+mkChar (c, pos) = LitChar c $ extrPos pos
+
+mkString :: (String, AlexPosn) -> Literal
+mkString (s, pos) = LitString s $ extrPos pos
+
+mkInteger :: (Integer, AlexPosn) -> Literal
+mkInteger (i, pos) = LitInteger i $ extrPos pos
+
+mkFloat :: (Float, AlexPosn) -> Literal
+mkFloat (d, pos) = LitFloat d $ extrPos pos

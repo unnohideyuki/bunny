@@ -2,7 +2,6 @@
 module Parser where
 import Lexer
 import Absyn
-import ParserHelper
 }
 %name      parser
 %error     { parseError }
