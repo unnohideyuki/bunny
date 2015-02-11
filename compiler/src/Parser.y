@@ -304,7 +304,7 @@ sigdecl
   | fixity prec ops                             { FixSigDecl $1 $2 $3 }
 
 -- Expressions ----------------------------------------------------------------
-exp: infixexp '::' sigtypedoc                   { ExpWithTySig $1 {- todo -} }
+exp: infixexp '::' sigtypedoc                   { ExpWithTySig $1 $3 }
    | infixexp                                   { $1 }
 
 infixexp: exp10                                 { $1 }
@@ -312,12 +312,12 @@ infixexp: exp10                                 { $1 }
 
 exp10
   : '\\' apat apats '->' exp                    { LamExp ($2:$3) $5 }
-  | 'let' binds 'in' exp                        { undefined }
+  | 'let' binds 'in' exp                        { LetExp $2 $4 }
   | 'if' exp semi_opt 'then' exp semi_opt 'else' exp
                                                 { IfExp $2 $5 $8 }
-  | 'case' exp 'of' altslist                    { undefined }
+  | 'case' exp 'of' altslist                    { CaseExp $2 $4 }
   | '-' fexp                                    { UMinusExp $2 }
-  | 'do' stmtlist                               { undefined }
+  | 'do' stmtlist                               { DoExp $2 }
   | fexp                                        { $1 }
 
 semi_opt: ';'                                   { () }
@@ -429,7 +429,7 @@ fbinds1: fbind ',' fbinds1
        | fbind                                  { ([$1], False) }
        | '..'                                   { ([], True) }
 
-fbind: qvar '=' exp                             { mkRecField $1 undefined }
+fbind: qvar '=' exp                             { RecField $1 $3 }
 
 -- Data constructors ----------------------------------------------------------
 qcon: qconid                                    { $1 }

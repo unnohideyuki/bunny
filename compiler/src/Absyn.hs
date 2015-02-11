@@ -20,7 +20,6 @@ data Module = Module { modid    :: Maybe Name
                      }
              deriving Show
 
--- | Imported or exported entity
 data IE
   = IEVar            Name
   | IEThingAbs       Name        -- ^ Class/Type
@@ -63,6 +62,7 @@ data Rhs = UnguardedRhs Exp [Decl]
          deriving Show
 
 data Alt = Match Exp Rhs
+         deriving Show
 
 data Fixity = Infixl | Infixr | Infix
             deriving Show
@@ -108,9 +108,12 @@ data Exp = Dummy -- dummy
          | FunAppExp    Exp Exp
          | InfixExp     Exp Name Exp
          | LamExp       [Exp] Exp
+         | LetExp       [Decl] Exp
          | IfExp        Exp Exp Exp
+         | CaseExp      Exp [Alt]
          | UMinusExp    Exp
-         | ExpWithTySig Exp -- todo: Sig
+         | DoExp        [Stmt]
+         | ExpWithTySig Exp (Maybe Type, Type)
 
          | AsPat        Name Exp
          | LazyPat      Exp
@@ -132,25 +135,20 @@ data ArithSeqRange = From       Exp
                    deriving Show
 
 ---- Helper functions
+mkName :: (String, AlexPosn) -> Name
+mkName (s, pos) = Name { name_base = name'
+                       , name_qual = qual'
+                       , name_pos  = extrPos pos }
+  where
+    (qual', name') = extrQual "" s
+    extrQual qual name =
+      case span (/= '.') name of
+        (_, "")      -> (qual, name)
+        (q, ('.':n)) -> extrQual (qual ++ q ++ ".") n
+        (q, n)       -> extrQual (qual ++ q ++ ".") n
 
 extrPos :: AlexPosn -> Pos
 extrPos (AlexPn _ line col) = (line, col)
-
-extrQual :: String -> String -> (String, String)
-extrQual qual name =
-  case span (/= '.') name of
-    (_, "")      -> (qual, name)
-    (q, ('.':n)) -> extrQual (qual ++ q ++ ".") n
-    (q, n)       -> extrQual (qual ++ q ++ ".") n
-
-mkName :: (String, AlexPosn) -> Name
-mkName (s, pos) = Name { name_base = n
-                       , name_qual = qual
-                       , name_pos  = extrPos pos }
-  where
-    (qual, n) = extrQual "" s
-
-mkRecField qv _ = RecField qv Dummy
 
 mkChar :: (Char, AlexPosn) -> Literal
 mkChar (c, pos) = LitChar c $ extrPos pos
