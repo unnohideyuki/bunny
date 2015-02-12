@@ -1,6 +1,9 @@
 samples = sample/parser_sample
 
-all: src/Lexer.o src/Parser.o $(samples)
+temps = src/Lexer.x src/Lexer.hs src/Parser.hs
+objs = src/Lexer.o src/Parser.o src/Absyn.o src/Types.o src/Symbol.o \
+       src/Typing.o
+all: $(samples)
 
 %.o:	%.hs
 	ghc -Wall -isrc $<
@@ -18,9 +21,12 @@ src/Parser.hs:	src/Parser.y
 
 src/Parser.o:	src/Parser.hs
 src/Absyn.o:	src/Absyn.hs
+src/Types.o:	src/Types.hs
+src/Symbol.o:	src/Symbol.hs
+src/Typing.o:	src/Typing.hs
 
-sample/parser_sample:	sample/parser_sample.hs src/Parser.o src/Absyn.o
+sample/parser_sample:	sample/parser_sample.hs $(objs)
 	ghc -Wall -isrc $<
 
 clean:	
-	rm -f src/Lexer.x src/Lexer.hs src/Parser.hs src/*.hi src/*.o sample/*.o $(samples)
+	rm -f src/*.hi src/*.o sample/*.o $(samples) $(temps) $(objs)

@@ -1,18 +1,6 @@
 module Absyn where
 import Lexer
-
-type Pos = (Int, Int) -- line number, column number
-
-posLine :: Pos -> Int
-posLine (line, _) = line
-posCol :: Pos -> Int
-posCol (_, col) = col
-
-data Name = Name { name_base :: String
-                 , name_qual :: String
-                 , name_pos  :: Pos
-                 }
-          deriving Show
+import Symbol
 
 data Module = Module { modid    :: Maybe Name
                      , exports  :: Maybe [IE]
