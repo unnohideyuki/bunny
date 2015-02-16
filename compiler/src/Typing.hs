@@ -337,3 +337,139 @@ tiLit (LitInt _)  = do v <- newTVar Star
 tiLit (LitStr _) = return ([], tString)
 tiLit (LitRat _) = do v <- newTVar Star
                       return ([IsIn "Fractional" v], v)
+-- Patterns
+
+data Pat = PVar Id
+         | PWildcard
+         | PAs Id Pat
+         | PLit Literal
+         | PCon Assump [Pat]
+
+tiPat :: Pat -> TI ([Pred], [Assump], Type)
+
+tiPat (PVar i) = do v <- newTVar Star
+                    return ([], [i :>: toScheme v], v)
+
+tiPat PWildcard = do v <- newTVar Star
+                     return ([], [], v)
+
+tiPat (PAs i pat) = do (ps, as, t) <- tiPat pat
+                       return (ps, (i :>: toScheme t):as, t)
+
+tiPat (PLit l) = do (ps, t) <- tiLit l
+                    return (ps, [], t)
+
+tiPat (PCon (_ :>: sc) pats) = do (ps, as, ts) <- tiPats pats
+                                  t'           <- newTVar Star
+                                  (qs :=> t)   <- freshInst sc
+                                  unify t (foldr fn t' ts)
+                                  return (ps ++ qs, as, t')
+
+tiPats     :: [Pat] -> TI([Pred], [Assump], [Type])
+tiPats pats = do psasts <- mapM tiPat pats
+                 let ps = concat [ps' | (ps', _, _) <- psasts]
+                     as = concat [as' | (_, as', _) <- psasts]
+                     ts = [t | (_, _, t) <- psasts]
+                 return (ps, as, ts)
+
+-- Expressions
+
+data Expr = Var   Id
+          | Lit   Literal
+          | Const Assump
+          | Ap    Expr Expr
+          | Let   BindGroup Expr
+
+tiExpr                       :: Infer Expr Type
+tiExpr _ as (Var i)           = do sc         <- find i as
+                                   (ps :=> t) <- freshInst sc
+                                   return (ps, t)
+tiExpr _ _ (Const (_ :>: sc)) = do (ps :=> t) <- freshInst sc
+                                   return (ps, t)
+tiExpr _ _ (Lit l)            = do (ps, t) <- tiLit l
+                                   return (ps, t)
+tiExpr ce as (Ap e f)         = do (ps, te) <- tiExpr ce as e
+                                   (qs, tf) <- tiExpr ce as f
+                                   t        <- newTVar Star
+                                   unify (tf `fn` t) te
+                                   return (ps ++ qs, t)
+tiExpr ce as (Let bg e)       = do (ps, as') <- tiBindGroup ce as bg
+                                   (qs, t)   <- tiExpr ce (as' ++ as) e
+                                   return (ps ++ qs, t)
+
+-- Alternatives
+
+type Alt = ([Pat], Expr)
+
+tiAlt :: Infer Alt Type
+tiAlt ce as (pats, e) = do (ps, as', ts) <- tiPats pats
+                           (qs, t)       <- tiExpr ce (as' ++ as) e
+                           return (ps ++ qs, foldr fn t ts)
+
+tiAlts             :: ClassEnv -> [Assump] -> [Alt] -> Type -> TI [Pred]
+tiAlts ce as alts t = do psts <- mapM (tiAlt ce as) alts
+                         mapM_ (unify t) (map snd psts)
+                         return (concat (map fst psts))
+
+-------------------------------------------------------------------------------
+
+split :: Monad m => ClassEnv -> [Tyvar] -> [Tyvar] -> [Pred]
+                      -> m ([Pred], [Pred])
+
+split ce fs gs ps = do ps' <- reduce ce ps
+                       let (ds, rs) = partition (all (`elem` fs) . tv) ps'
+                       rs' <- defaultedPreds ce (fs ++ gs) rs
+                       return (ds, rs \\ rs')
+
+type Ambiguity = (Tyvar, [Pred])
+
+ambiguities        :: ClassEnv -> [Tyvar] -> [Pred] -> [Ambiguity]
+ambiguities _ vs ps = [(v, filter (elem v . tv) ps) | v <- tv ps \\ vs]
+
+numClasses :: [Id]
+numClasses  = ["Num", "Integral", "Floating", "Fractional",
+               "Real", "RealFloat", "RealFrac"]
+
+stdClasses :: [Id]
+stdClasses  = ["Eq", "Ord", "Show", "Read", "Bounded", "Enum", "Ix",
+               "Functor", "Monad", "MonadPlus"] ++ numClasses
+
+candidates           :: ClassEnv -> Ambiguity ->[Type]
+candidates ce (v, qs) = [t' | let is = [i | IsIn i _ <- qs]
+                                  ts = [t | IsIn _ t <- qs],
+                              all ((TVar v)==) ts,
+                              any (`elem` numClasses) is,
+                              all (`elem` stdClasses) is,
+                              t' <- defaults ce,
+                              all (entail ce []) [IsIn i t' | i<- is]]
+
+withDefaults :: Monad m => ([Ambiguity] -> [Type] -> a)
+                  -> ClassEnv -> [Tyvar] -> [Pred] -> m a
+withDefaults f ce vs ps
+  | any null tss = fail "cannot resolve ambiguity"
+  | otherwise    = return (f vps (map head tss))
+  where vps = ambiguities ce vs ps
+        tss = map (candidates ce) vps
+
+defaultedPreds :: Monad m => ClassEnv -> [Tyvar] -> [Pred] -> m [Pred]
+defaultedPreds  = withDefaults (\vps _ -> concat (map snd vps))
+
+defaultSubst :: Monad m => ClassEnv -> [Tyvar] -> [Pred] -> m Subst
+defaultSubst  = withDefaults (\vps ts -> zip (map fst vps) ts)
+
+-------------------------------------------------------------------------------
+
+type Expl = (Id, Scheme, [Alt])
+
+
+
+-------------------------------------------------------------------------------
+
+type Impl = (Id, [Alt])
+
+-------------------------------------------------------------------------------
+
+type BindGroup = ([Expl], [Impl])
+
+tiBindGroup :: Infer BindGroup [Assump]
+tiBindGroup = undefined
