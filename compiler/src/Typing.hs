@@ -2,7 +2,7 @@ module Typing where
 
 import Data.List (nub, (\\), intersect, union, partition)
 import Control.Monad (msum)
-import Control.Monad.State (State, state)
+import Control.Monad.State (State, state, runState)
 
 import Types
 import Symbol
@@ -281,6 +281,9 @@ find i ((i' :>: sc):as) = if i == i' then return sc else find i as
 
 type TI a = State (Subst, Int) a
 
+runTI :: TI a -> a
+runTI ti = x where (x, _) = runState ti (nullSubst, 0)
+
 getSubst :: TI Subst
 getSubst  = state $ \st@(s, _) -> (s, st)
 
@@ -461,15 +464,81 @@ defaultSubst  = withDefaults (\vps ts -> zip (map fst vps) ts)
 
 type Expl = (Id, Scheme, [Alt])
 
-
+tiExpl :: ClassEnv -> [Assump] -> Expl -> TI [Pred]
+tiExpl ce as (_, sc, alts)
+  = do (qs :=> t) <- freshInst sc
+       ps         <- tiAlts ce as alts t
+       s          <- getSubst
+       let qs'     = apply s qs
+           t'      = apply s t
+           fs      = tv (apply s as)
+           gs      = tv t' \\ fs
+           sc'     = quantify gs (qs' :=> t')
+           ps'     = filter (not.entail ce qs') (apply s ps)
+       (ds, rs)   <- split ce fs gs ps'
+       if sc /= sc' then
+           fail "signature too general"
+         else if not (null rs) then
+           fail "context too weak"
+         else
+           return ds
 
 -------------------------------------------------------------------------------
 
 type Impl = (Id, [Alt])
 
+restricted   :: [Impl] -> Bool
+restricted bs = any simple bs
+  where simple (_, alts) = any (null.fst) alts
+
+tiImpls         :: Infer [Impl] [Assump]
+tiImpls ce as bs = do ts <- mapM (\_ -> newTVar Star) bs
+                      let is    = map fst bs
+                          scs   = map toScheme ts
+                          as'   = zipWith (:>:) is scs ++ as
+                          altss = map snd bs
+                      pss <- sequence (zipWith (tiAlts ce as') altss ts)
+                      s   <- getSubst
+                      let ps' = apply s (concat pss)
+                          ts' = apply s ts
+                          fs  = tv (apply s as)
+                          vss = map tv ts'
+                          gs  = foldr1 union vss \\ fs
+                      (ds, rs) <- split ce fs (foldr1 intersect vss) ps'
+                      if restricted bs then
+                        let gs'  = gs \\ tv rs
+                            scs' = map (quantify gs' . ([]:=>)) ts'
+                        in return (ds ++ rs, zipWith (:>:) is scs')
+                       else
+                        let scs' = map (quantify gs . (rs:=>)) ts'
+                        in return (ds, zipWith (:>:) is scs')
+
 -------------------------------------------------------------------------------
 
-type BindGroup = ([Expl], [Impl])
+type BindGroup = ([Expl], [[Impl]])
 
 tiBindGroup :: Infer BindGroup [Assump]
-tiBindGroup = undefined
+tiBindGroup  ce as (es, iss) =
+  do let as' = [v :>: sc | (v, sc, _) <- es]
+     (ps, as'') <- tiSeq tiImpls ce (as' ++ as) iss
+     qss        <- mapM (tiExpl ce (as'' ++ as' ++ as)) es
+     return (ps ++ concat qss, as'' ++ as')
+
+tiSeq                  :: Infer bg [Assump] -> Infer [bg] [Assump]
+tiSeq  _  _  _ []       = return ([], [])
+tiSeq ti ce as (bs:bss) = do (ps, as')  <- ti ce as bs
+                             (qs, as'') <- tiSeq ti ce (as' ++ as) bss
+                             return (ps ++ qs, as'' ++ as')
+
+-------------------------------------------------------------------------------
+-- TIProg: Type Inference for Whole Programs
+
+type Program = [BindGroup]
+
+tiProgram :: ClassEnv -> [Assump] -> Program -> [Assump]
+tiProgram ce as bgs = runTI $
+                      do (ps, as') <- tiSeq tiBindGroup ce as bgs
+                         s         <- getSubst
+                         rs        <- reduce ce (apply s ps)
+                         s'        <- defaultSubst ce [] rs
+                         return (apply (s'@@s) as')
