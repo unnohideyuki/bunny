@@ -479,8 +479,10 @@ act_ccurly (pos, _, _, _) _ =
   do unFlags; popCtx; return $ TCCurly pos
 
 act_layout_keyword :: (AlexPosn -> Token) -> AlexAction Token
-act_layout_keyword maker (pos, _, _, _) _ = 
-  do setMorrow True; return $ maker pos
+act_layout_keyword maker (pos, _, _, _) _ =
+  do tok <- act_token (maker pos) pos
+     setMorrow True
+     return tok
 
 act_token :: Token -> AlexPosn -> Alex Token
 act_token tok pos@(AlexPn _ _ n) = do
