@@ -5,7 +5,7 @@ import Control.Monad (msum)
 import Control.Monad.State (State, state, runState)
 
 import Types
-import Symbol
+import Symbol hiding (lookup)
 
 class HasKind t where
   kind :: t -> Kind
@@ -18,8 +18,8 @@ instance HasKind Type where
   kind (TVar u)  = kind u
   kind (TAp t _) = case (kind t) of
     (Kfun _ k) -> k
-    _          -> undefined
-  kind (TGen _)  = undefined
+    _          -> error "(kind t) must be Kfun."
+  kind (TGen _)  = error "TGen must not occur here."
 
 -- Substitutions
 

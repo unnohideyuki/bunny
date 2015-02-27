@@ -124,16 +124,9 @@ data ArithSeqRange = From       Exp
 
 ---- Helper functions
 mkName :: (String, AlexPosn) -> Name
-mkName (s, pos) = Name { name_base = name'
-                       , name_qual = qual'
+mkName (s, pos) = Name { orig_name = s
+                       , qual_name = ""
                        , name_pos  = extrPos pos }
-  where
-    (qual', name') = extrQual "" s
-    extrQual qual name =
-      case span (/= '.') name of
-        (_, "")      -> (qual, name)
-        (q, ('.':n)) -> extrQual (qual ++ q ++ ".") n
-        (q, n)       -> extrQual (qual ++ q ++ ".") n
 
 extrPos :: AlexPosn -> Pos
 extrPos (AlexPn _ line col) = (line, col)
