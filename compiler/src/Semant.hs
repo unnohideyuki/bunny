@@ -39,6 +39,22 @@ renameVar name = state $ \(modid, (lv:lvs), tenv, ifxenv) ->
   in
    ((), (modid, (lv':lvs), tenv, ifxenv))
 
+regFixity :: A.Fixity -> Int -> [Name] -> RN ()
+regFixity _ _ [] = return ()
+regFixity fixity i (n:ns) = do reg (f i) n; regFixity fixity i ns
+  where f = case fixity of
+          A.Infixl -> LeftAssoc
+          A.Infixr -> RightAssoc
+          A.Infix  -> NoAssoc
+        reg finfo name = state $ \(modid, (lv:lvs), tenv, ifxenv) ->
+          let
+            qn = (lv_prefix lv) ++ "." ++ (orig_name name)
+            ifxenv' = insert qn finfo ifxenv
+          in
+           if defined (Symbol.lookup qn ifxenv) then
+             error $ "duplicate fixity declaration:" ++ qn
+           else
+             ((), (modid, (lv:lvs), tenv, ifxenv'))
 
 collectNames :: [A.Decl] -> RN ()
 collectNames [] = return ()
@@ -50,6 +66,7 @@ collectNames (decl:decls) = do collname decl; collectNames decls
     extrName e                     = error $ "unexpected exp:" ++ show e
 
     collname (A.ValDecl e _) = renameVar (extrName e)
+    collname (A.FixSigDecl fixity i ns) = regFixity fixity i ns
     collname _               = return ()
 
 type TempBinds = (Id, Maybe Scheme, [Alt])
