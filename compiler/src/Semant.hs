@@ -1,6 +1,6 @@
 module Semant where
 
-import Control.Monad.State (State, state, runState)
+import Control.Monad.State (State, state)
 import Symbol
 import qualified Absyn as A
 import Typing
@@ -24,42 +24,33 @@ initialLevel modid = Level { lv_prefix = case modid of
                            , lv_num    = 0
                            }
 
--- collect top-level names
+-- Renaming Monad
 
-collectTopNames :: Id -> (Table Id, Table FixtyInfo) -> [A.Decl]
-                   -> (Table Id, Table FixtyInfo)
-collectTopNames _     (rdict, ifxenv) [] = (rdict, ifxenv)
-collectTopNames modid (rdict, ifxenv) (decl:decls) =
+type RN a = State (Id, [Level], Table Id, Table FixtyInfo) a
+
+renameVar :: Name -> RN ()
+renameVar name = state $ \(modid, (lv:lvs), tenv, ifxenv) ->
   let
-    (rdict', ifxenv') = collname decl
+    prefix = lv_prefix lv
+    qname = (++) (prefix ++ ".")
+    n = orig_name name
+    dict' = insert n (qname n) (lv_dict lv)
+    lv' = lv{lv_dict=dict'}
+  in
+   ((), (modid, (lv':lvs), tenv, ifxenv))
 
-    qname = (++) (modid ++ ".")
 
-    renNoCheck name =
-      let
-        n = orig_name name
-        rdict'' = insert n (qname n) rdict
-      in
-       (rdict'', ifxenv)
-
+collectNames :: [A.Decl] -> RN ()
+collectNames [] = return ()
+collectNames (decl:decls) = do collname decl; collectNames decls
+  where
     extrName (A.VarExp name)       = name
     extrName (A.FunAppExp f _)     = extrName f
     extrName (A.InfixExp _ name _) = name
     extrName e                     = error $ "unexpected exp:" ++ show e
 
-    collname (A.ValDecl e _) = renNoCheck $ extrName e
-
-    collname _ = (rdict, ifxenv)
-  in
-   collectTopNames modid (rdict', ifxenv') decls
-
--- transProg
-
-data RenamingState = RenamingState { ren_modid  :: Id
-                                   , ren_lvs    :: [Level]
-                                   , ren_rdict  :: Table Id
-                                   , ren_ifxenv :: Table Id
-                                   }
+    collname (A.ValDecl e _) = renameVar (extrName e)
+    collname _               = return ()
 
 type TempBinds = (Id, Maybe Scheme, [Alt])
 

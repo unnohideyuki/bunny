@@ -5,13 +5,17 @@ import qualified Absyn
 import Semant
 import Symbol
 
+import Control.Monad.State (runState)
+
 do_semant :: Absyn.Module -> IO ()
 do_semant m = do
   let lv = initialLevel $ Absyn.modid m
   print lv
   let body = snd $ Absyn.body m
   -- print body
-  let result = collectTopNames (lv_prefix lv) (empty, empty) body
+  -- let result = collectTopNames (lv_prefix lv) (empty, empty) body
+  let result = runState (collectNames body)
+               (lv_prefix lv, [lv], empty, empty)
   print result
 
 main :: IO ()
