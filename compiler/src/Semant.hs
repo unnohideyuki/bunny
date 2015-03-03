@@ -4,6 +4,16 @@ import Control.Monad.State (State, state)
 import Symbol
 import qualified Absyn as A
 import Typing
+import StaticPrelude
+
+econst  :: Assump -> Expr
+econst c = (Const c)
+
+pNil :: Pat
+pNil  = PCon nilCfun []
+
+eNil :: Expr
+eNil  = econst nilCfun
 
 data FixtyInfo = LeftAssoc  Int
                | RightAssoc Int
@@ -64,18 +74,23 @@ regFixity fixity i (n:ns) = do reg (f i) n; regFixity fixity i ns
            else
              ((), st{rn_ifxenv=ifxenv'})
 
-collectNames :: [A.Decl] -> RN ()
-collectNames [] = return ()
-collectNames (decl:decls) = do collname decl; collectNames decls
+collectNames :: ([A.Decl], [A.Decl], [A.Decl]) -> [A.Decl]
+                -> RN ([A.Decl], [A.Decl], [A.Decl])
+collectNames x [] = return x
+collectNames (ds, cds, ids) (decl:decls) = do
+  (ds', cds', ids') <- collname decl
+  collectNames (ds', cds', ids') decls
   where
     extrName (A.VarExp name)       = name
     extrName (A.FunAppExp f _)     = extrName f
     extrName (A.InfixExp _ name _) = name
     extrName e                     = error $ "unexpected exp:" ++ show e
 
-    collname (A.ValDecl e _) = renameVar (extrName e)
-    collname (A.FixSigDecl fixity i ns) = regFixity fixity i ns
-    collname _               = return ()
+    collname d@(A.ValDecl e _) = do renameVar (extrName e)
+                                    return (ds ++ [d], cds, ids)
+    collname (A.FixSigDecl fixity i ns) = do regFixity fixity i ns
+                                             return (ds, cds, ids)
+    collname _               = return (ds, cds, ids)
 
 type TempBinds = (Id, Maybe Scheme, [Alt])
 

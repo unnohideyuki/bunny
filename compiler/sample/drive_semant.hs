@@ -15,7 +15,7 @@ do_semant m = do
   -- print body
   -- let result = collectTopNames (lv_prefix lv) (empty, empty) body
   let st = RnState (lv_prefix lv) [lv] empty empty
-      result = runState (collectNames body) st
+      result = runState (collectNames ([],[],[]) body) st
   print result
 
 main :: IO ()
