@@ -4,6 +4,7 @@ compiler/src/Parser.hs
 compiler/src/unicateg
 compiler/sample/lexer_sample
 compiler/sample/parser_sample
+compiler/sample/drive_semant
 *.hi
 *.o
 *~

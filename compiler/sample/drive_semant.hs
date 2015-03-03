@@ -14,8 +14,8 @@ do_semant m = do
   let body = snd $ Absyn.body m
   -- print body
   -- let result = collectTopNames (lv_prefix lv) (empty, empty) body
-  let result = runState (collectNames body)
-               (lv_prefix lv, [lv], empty, empty)
+  let st = RnState (lv_prefix lv) [lv] empty empty
+      result = runState (collectNames body) st
   print result
 
 main :: IO ()

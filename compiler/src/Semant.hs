@@ -26,10 +26,18 @@ initialLevel modid = Level { lv_prefix = case modid of
 
 -- Renaming Monad
 
-type RN a = State (Id, [Level], Table Id, Table FixtyInfo) a
+data RnState = RnState { rn_modid  :: Id
+                       , rn_lvs    :: [Level]
+                       , rn_tenv   :: Table Id
+                       , rn_ifxenv :: Table FixtyInfo
+                       -- , rn_ce     :: ClassEnv
+                       }
+               deriving Show
+
+type RN a = State RnState a
 
 renameVar :: Name -> RN ()
-renameVar name = state $ \(modid, (lv:lvs), tenv, ifxenv) ->
+renameVar name = state $ \st@RnState{rn_lvs=(lv:lvs)} ->
   let
     prefix = lv_prefix lv
     qname = (++) (prefix ++ ".")
@@ -37,7 +45,7 @@ renameVar name = state $ \(modid, (lv:lvs), tenv, ifxenv) ->
     dict' = insert n (qname n) (lv_dict lv)
     lv' = lv{lv_dict=dict'}
   in
-   ((), (modid, (lv':lvs), tenv, ifxenv))
+   ((), st{rn_lvs=(lv':lvs)})
 
 regFixity :: A.Fixity -> Int -> [Name] -> RN ()
 regFixity _ _ [] = return ()
@@ -46,7 +54,7 @@ regFixity fixity i (n:ns) = do reg (f i) n; regFixity fixity i ns
           A.Infixl -> LeftAssoc
           A.Infixr -> RightAssoc
           A.Infix  -> NoAssoc
-        reg finfo name = state $ \(modid, (lv:lvs), tenv, ifxenv) ->
+        reg finfo name = state $ \st@RnState{rn_lvs=(lv:_), rn_ifxenv=ifxenv} ->
           let
             qn = (lv_prefix lv) ++ "." ++ (orig_name name)
             ifxenv' = insert qn finfo ifxenv
@@ -54,7 +62,7 @@ regFixity fixity i (n:ns) = do reg (f i) n; regFixity fixity i ns
            if defined (Symbol.lookup qn ifxenv) then
              error $ "duplicate fixity declaration:" ++ qn
            else
-             ((), (modid, (lv:lvs), tenv, ifxenv'))
+             ((), st{rn_ifxenv=ifxenv'})
 
 collectNames :: [A.Decl] -> RN ()
 collectNames [] = return ()
