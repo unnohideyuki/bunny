@@ -27,3 +27,6 @@ insert s v tab = Map.insert s v tab
 
 lookup       :: Id -> Table a -> Maybe a
 lookup s tab = Map.lookup s tab
+
+fromList :: [(Id, a)] -> Table a
+fromList = Map.fromList

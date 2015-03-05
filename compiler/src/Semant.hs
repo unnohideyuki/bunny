@@ -4,7 +4,7 @@ import Control.Monad.State (State, state)
 import Symbol
 import qualified Absyn as A
 import Typing
-import StaticPrelude
+import PreDefined
 
 econst  :: Assump -> Expr
 econst c = (Const c)
