@@ -40,7 +40,7 @@ data RnState = RnState { rn_modid  :: Id
                        , rn_lvs    :: [Level]
                        , rn_tenv   :: Table Id
                        , rn_ifxenv :: Table FixtyInfo
-                       -- , rn_ce     :: ClassEnv
+                       , rn_ce     :: ClassEnv
                        }
                deriving Show
 
@@ -69,7 +69,7 @@ regFixity fixity i (n:ns) = do reg (f i) n; regFixity fixity i ns
             qn = (lv_prefix lv) ++ "." ++ (orig_name name)
             ifxenv' = insert qn finfo ifxenv
           in
-           if defined (Symbol.lookup qn ifxenv) then
+           if defined (tabLookup qn ifxenv) then
              error $ "duplicate fixity declaration:" ++ qn
            else
              ((), st{rn_ifxenv=ifxenv'})

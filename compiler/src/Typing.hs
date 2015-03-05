@@ -5,7 +5,7 @@ import Control.Monad (msum)
 import Control.Monad.State (State, state, runState)
 
 import Types
-import Symbol hiding (lookup)
+import Symbol
 
 class HasKind t where
   kind :: t -> Kind
@@ -117,8 +117,14 @@ type Inst  = Qual Pred
 
 -- Class Environment
 
-data ClassEnv = ClassEnv { classes  :: Id -> Maybe Class
+data ClassEnv = ClassEnv { ce_map   :: Table Class
                          , defaults :: [Type]}
+                deriving Show
+
+classes :: Monad m => ClassEnv -> Id -> m Class
+classes ce i = case tabLookup i (ce_map ce) of
+                Just c  -> return c
+                Nothing -> fail "class not defined"
 
 super     :: ClassEnv -> Id -> [Id]
 super ce i = case classes ce i of Just (is, _) -> is
@@ -133,11 +139,10 @@ defined (Just _) = True
 defined Nothing  = False
 
 modify       :: ClassEnv -> Id -> Class -> ClassEnv
-modify ce i c = ce{classes = \j -> if i == j then Just c
-                                             else classes ce j}
+modify ce@ClassEnv{ce_map = m} i c = ce{ce_map = insert i c m}
 
 initialEnv :: ClassEnv
-initialEnv  = ClassEnv { classes = \_ -> fail "class not defined"
+initialEnv  = ClassEnv { ce_map   = empty
                        , defaults = [tInteger, tDouble]}
 
 type EnvTransformer = ClassEnv -> Maybe ClassEnv
@@ -266,7 +271,7 @@ toScheme t = Forall [] ([] :=> t)
 
 -- Assumptions
 
-data Assump = Id :>: Scheme
+data Assump = Id :>: Scheme deriving Show
 
 instance Types Assump where
   apply s (i :>: sc) = i :>: apply s sc
@@ -332,6 +337,7 @@ data Literal = LitInt  Integer
              | LitChar Char
              | LitRat  Rational
              | LitStr  String
+             deriving Show
 
 tiLit :: Literal -> TI ([Pred], Type)
 tiLit (LitChar _) = return ([], tChar)
@@ -347,6 +353,7 @@ data Pat = PVar Id
          | PAs Id Pat
          | PLit Literal
          | PCon Assump [Pat]
+         deriving Show
 
 tiPat :: Pat -> TI ([Pred], [Assump], Type)
 
@@ -382,6 +389,7 @@ data Expr = Var   Id
           | Const Assump
           | Ap    Expr Expr
           | Let   BindGroup Expr
+          deriving Show
 
 tiExpr                       :: Infer Expr Type
 tiExpr _ as (Var i)           = do sc         <- find i as

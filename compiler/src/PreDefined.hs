@@ -3,6 +3,11 @@ import Types
 import Typing
 import Symbol
 
+-- preludeClasses
+
+preludeClasses :: ClassEnv
+preludeClasses  = initialEnv
+
 -- Primitive Constructors and Member Functions
 
 unitCfun :: Assump

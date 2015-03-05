@@ -4,6 +4,7 @@ import Parser
 import qualified Absyn
 import Semant
 import Symbol
+import PreDefined
 
 import Control.Monad.State (runState)
 
@@ -14,7 +15,7 @@ do_semant m = do
   let body = snd $ Absyn.body m
   -- print body
   -- let result = collectTopNames (lv_prefix lv) (empty, empty) body
-  let st = RnState (lv_prefix lv) [lv] empty empty
+  let st = RnState (lv_prefix lv) [lv] empty empty preludeClasses
       result = runState (collectNames ([],[],[]) body) st
   print result
 
