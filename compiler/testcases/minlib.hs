@@ -23,6 +23,11 @@ infixr 9 .
 (.) :: (b -> c) -> (a -> b) -> (a -> c)
 (.) f g = \x -> f (g x)
 
+infixr 5 ++
+(++) :: [a] -> [a] -> [a]
+(++) []     ys = ys
+(++) (x:xs) ys = x : xs ++ ys
+
 concatMap  :: (a -> [b]) -> [a] -> [b]
 concatMap f = foldr ((++) . f) []
 
