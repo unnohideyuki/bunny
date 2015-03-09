@@ -10,7 +10,8 @@ import Control.Monad.State (runState)
 
 do_semant :: Absyn.Module -> IO ()
 do_semant m = do
-  let lv = initialLevel $ Absyn.modid m
+  -- TODO: regular way to add primitive names.
+  let lv = (initialLevel $ Absyn.modid m){lv_dict=primNames}
   print lv
   let body = snd $ Absyn.body m
   -- print body
