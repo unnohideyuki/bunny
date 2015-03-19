@@ -43,6 +43,7 @@ data RnState = RnState { rn_modid  :: Id
                        , rn_tenv   :: Table Id
                        , rn_ifxenv :: Table FixtyInfo
                        , rn_ce     :: ClassEnv
+                       , rn_cms    :: [Assump]
                        }
                deriving Show
 
@@ -129,9 +130,27 @@ transDecl (A.ValDecl exp rhs) = do
 transDecl _ = return ("", Nothing, [])
 
 -- Todo:
-transFExp (A.FunAppExp (A.VarExp n) (A.VarExp m)) =
-  return ("Main.qsort", [PCon nilCfun []])
+transFExp (A.FunAppExp (A.VarExp n) (A.VarExp m)) = do
+  qname_f <- qname (orig_name n)
+  qname_p <- qname (orig_name m)
+  a_pat   <- findCMs qname_p
+  return (qname_f, [PCon a_pat []])
 
 -- Todo:
-transRhs (A.UnguardedRhs (A.VarExp n) []) =
-  return (Const nilCfun)
+transRhs (A.UnguardedRhs (A.VarExp n) []) = do
+  qname_c <- qname (orig_name n)
+  c_pat   <- findCMs qname_c
+  return (Const c_pat)
+
+qname   :: Id -> RN Id
+qname name = state $ \st@RnState{rn_lvs=lvs} -> (findQName lvs name, st)
+  where findQName [] n = error $ "qname not found: " ++ n
+        findQName (lv:lvs) n = case tabLookup n (lv_dict lv) of
+          Just qn -> qn
+          Nothing -> findQName lvs n
+
+findCMs   :: Id -> RN Assump
+findCMs qn = state $ \st@RnState{rn_cms=as} -> (find' as qn, st)
+  where find' [] qn' = error $ "Const/Member not found: " ++ qn'
+        find' (a@(n :>: _):as') qn' | n == qn'   = a
+                                    | otherwise = find' as' qn'
