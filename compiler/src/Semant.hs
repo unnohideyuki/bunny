@@ -114,7 +114,8 @@ transProg m = do
   let body = snd (A.body m)
   -- (ds, cds, ids) <- collectNames ([], [], []) body
   (ds, _, _) <- collectNames ([], [], []) body
-  tbs <- transDecls [] ds
+  -- tbs <- transDecls [] ds
+  _ <- transDecls [] ds
   return ([], [])
 
 transDecls :: [TempBinds] -> [A.Decl] -> RN [TempBinds]
@@ -165,3 +166,28 @@ findCMs qn = state $ \st@RnState{rn_cms=as} -> (find' as qn, st)
 pushLv :: Level -> RN ()
 pushLv lv = state $ \st@RnState{rn_lvs=lvs} ->
   ((), st{rn_lvs=(lv:lvs)})
+
+getPrefix :: RN Id
+getPrefix = state $ \st@RnState{rn_lvs=(lv:_)} -> (lv_prefix lv, st)
+
+newNum :: RN Int
+newNum = state $ \st@RnState{rn_lvs=(lv:lvs)} ->
+  let n   = lv_num lv
+      lv' = lv{lv_num=n+1}
+  in (n, st{rn_lvs=(lv':lvs)})
+
+enterNewLevelWith :: Id -> RN ()
+enterNewLevelWith n = do
+  currPrefix <- getPrefix
+  let newPrefix = currPrefix ++ "." ++ n
+      lv = Level newPrefix empty 0
+  pushLv lv
+
+enterNewLevel :: RN ()
+enterNewLevel = do
+  currPrefix <- getPrefix
+  n <- newNum
+  enterNewLevelWith (currPrefix ++ "." ++ "l" ++ show n)
+
+
+
