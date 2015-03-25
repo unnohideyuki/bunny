@@ -49,16 +49,16 @@ data RnState = RnState { rn_modid  :: Id
 
 type RN a = State RnState a
 
-renameVar :: Name -> RN ()
+renameVar :: Name -> RN Id
 renameVar name = state $ \st@RnState{rn_lvs=(lv:lvs)} ->
   let
     prefix = lv_prefix lv
-    qname = (++) (prefix ++ ".")
-    n = orig_name name
-    dict' = insert n (qname n) (lv_dict lv)
+    n  = orig_name name
+    n' = prefix ++ "." ++ n
+    dict' = insert n n' (lv_dict lv)
     lv' = lv{lv_dict=dict'}
   in
-   ((), st{rn_lvs=(lv':lvs)})
+   (n', st{rn_lvs=(lv':lvs)})
 
 regFixity :: A.Fixity -> Int -> [Name] -> RN ()
 regFixity _ _ [] = return ()
@@ -89,7 +89,7 @@ collectNames (ds, cds, ids) (decl:decls) = do
     extrName (A.InfixExp _ name _) = name
     extrName e                     = error $ "unexpected exp:" ++ show e
 
-    collname d@(A.ValDecl e _) = do renameVar (extrName e)
+    collname d@(A.ValDecl e _) = do _ <- renameVar (extrName e)
                                     return (ds ++ [d], cds, ids)
     collname (A.FixSigDecl fixity i ns) = do regFixity fixity i ns
                                              return (ds, cds, ids)
@@ -112,7 +112,8 @@ type TempBinds = (Id, Maybe Scheme, [Alt])
 transProg  :: A.Module -> RN ([TempBinds], [Assump])
 transProg m = do
   let body = snd (A.body m)
-  (ds, cds, ids) <- collectNames ([], [], []) body
+  -- (ds, cds, ids) <- collectNames ([], [], []) body
+  (ds, _, _) <- collectNames ([], [], []) body
   tbs <- transDecls [] ds
   return ([], [])
 
@@ -120,27 +121,33 @@ transDecls :: [TempBinds] -> [A.Decl] -> RN [TempBinds]
 transDecls tbs [] = return tbs
 transDecls tbs (d:ds) = do
   tb <- transDecl d
-  trace (show (d, tb)) $ return [tb]
-  -- trace (show (d, tb)) $ transDecls (tbs++[tb]) ds
+  trace (show (d, tb)) $ transDecls (tbs++[tb]) ds
 
-transDecl (A.ValDecl exp rhs) = do
-  (n, pats) <- transFExp exp
+transDecl :: A.Decl -> RN TempBinds
+transDecl (A.ValDecl expr rhs) = do
+  (n, pats) <- transFExp expr
   rexp      <- transRhs  rhs
   return (n, Nothing, [(pats, rexp)])
 transDecl _ = return ("", Nothing, [])
 
 -- Todo:
+transFExp :: A.Exp -> RN (Id, [Pat])
 transFExp (A.FunAppExp (A.VarExp n) (A.VarExp m)) = do
   qname_f <- qname (orig_name n)
   qname_p <- qname (orig_name m)
   a_pat   <- findCMs qname_p
   return (qname_f, [PCon a_pat []])
 
+transFExp e = trace (show e) $ return ("", [])
+
 -- Todo:
+transRhs :: A.Rhs -> RN Expr
 transRhs (A.UnguardedRhs (A.VarExp n) []) = do
   qname_c <- qname (orig_name n)
   c_pat   <- findCMs qname_c
   return (Const c_pat)
+
+transRhs rhs = trace (show rhs) $ return undefined
 
 qname   :: Id -> RN Id
 qname name = state $ \st@RnState{rn_lvs=lvs} -> (findQName lvs name, st)
@@ -154,3 +161,7 @@ findCMs qn = state $ \st@RnState{rn_cms=as} -> (find' as qn, st)
   where find' [] qn' = error $ "Const/Member not found: " ++ qn'
         find' (a@(n :>: _):as') qn' | n == qn'   = a
                                     | otherwise = find' as' qn'
+
+pushLv :: Level -> RN ()
+pushLv lv = state $ \st@RnState{rn_lvs=lvs} ->
+  ((), st{rn_lvs=(lv:lvs)})
