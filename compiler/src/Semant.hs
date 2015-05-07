@@ -1,6 +1,6 @@
 module Semant where
 
-import Control.Monad.State (State, state)
+import Control.Monad.State (State, state, get)
 import Symbol
 import qualified Absyn as A
 import Typing
@@ -110,7 +110,7 @@ type TempBinds = (Id, Maybe Scheme, [Alt])
 
 
 transProg  :: A.Module -> RN ([TempBinds], [Assump])
-transProg m = do
+transProg m = trace (show m) $ do
   let body = snd (A.body m)
   -- (ds, cds, ids) <- collectNames ([], [], []) body
   (ds, _, _) <- collectNames ([], [], []) body
@@ -141,14 +141,33 @@ transFExp (A.FunAppExp (A.VarExp n) (A.VarExp m)) = do
 
 transFExp e = trace (show e) $ return ("", [])
 
--- Todo:
 transRhs :: A.Rhs -> RN Expr
 transRhs (A.UnguardedRhs (A.VarExp n) []) = do
   qname_c <- qname (orig_name n)
   c_pat   <- findCMs qname_c
   return (Const c_pat)
 
-transRhs rhs = trace (show rhs) $ return undefined
+transRhs (A.UnguardedRhs e []) = transExp e
+
+transRhs rhs = do
+  st <- get
+  trace (show (st, rhs)) $ error "transRhs not yet implemented."
+
+transExp (A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
+  (prec1, fix1) <- lookupInfixOp op1
+  (prec2, fix2) <- lookupInfixOp op2
+  if prec1 == prec2 && (fix1 /= fix2 || fix1 == A.Infix)
+    then fail "fixty resolution error."
+    else if prec1 > prec2 || (prec1 == prec2 && fix1 == A.Infixr)
+         then transExp (A.InfixExp rest op2 (opAppExp op1 e2 e1))
+         else transExp (opAppExp op1 (A.InfixExp rest op2 e2) e1)
+  where
+    opAppExp op e e' = (A.FunAppExp (A.FunAppExp (A.VarExp op) e) e')
+
+lookupInfixOp :: Name -> RN (Int, A.Fixity)
+lookupInfixOp op = do
+  st <- get
+  trace (show st) $ fail "lookupInfixOp"
 
 qname   :: Id -> RN Id
 qname name = state $ \st@RnState{rn_lvs=lvs} -> (findQName lvs name, st)

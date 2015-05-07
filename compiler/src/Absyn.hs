@@ -53,7 +53,7 @@ data Alt = Match Exp Rhs
          deriving Show
 
 data Fixity = Infixl | Infixr | Infix
-            deriving Show
+            deriving (Show, Eq)
 
 data Literal = LitInteger Integer Pos
              | LitFloat   Float   Pos
