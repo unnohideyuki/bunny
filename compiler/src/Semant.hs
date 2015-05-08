@@ -67,15 +67,18 @@ regFixity fixity i (n:ns) = do reg (f i) n; regFixity fixity i ns
           A.Infixl -> LeftAssoc
           A.Infixr -> RightAssoc
           A.Infix  -> NoAssoc
-        reg finfo name = state $ \st@RnState{rn_lvs=(lv:_), rn_ifxenv=ifxenv} ->
+        reg finfo name = state $ \st@RnState{rn_lvs=(lv:lvs), rn_ifxenv=ifxenv} ->
           let
             qn = (lv_prefix lv) ++ "." ++ (orig_name name)
             ifxenv' = insert qn finfo ifxenv
+            -- TODO: shoud insert qname here? definition of op should do?
+            dict' = insert (orig_name name) qn (lv_dict lv)
+            lv' = lv{lv_dict=dict'}
           in
            if defined (tabLookup qn ifxenv) then
              error $ "duplicate fixity declaration:" ++ qn
            else
-             ((), st{rn_ifxenv=ifxenv'})
+             ((), st{rn_lvs=(lv':lvs), rn_ifxenv=ifxenv'})
 
 collectNames :: ([A.Decl], [A.Decl], [A.Decl]) -> [A.Decl]
                 -> RN ([A.Decl], [A.Decl], [A.Decl])
@@ -114,9 +117,8 @@ transProg m = trace (show m) $ do
   let body = snd (A.body m)
   -- (ds, cds, ids) <- collectNames ([], [], []) body
   (ds, _, _) <- collectNames ([], [], []) body
-  -- tbs <- transDecls [] ds
-  _ <- transDecls [] ds
-  return ([], [])
+  tbs <- transDecls [] ds
+  trace (show tbs) $ return (tbs, [])
 
 transDecls :: [TempBinds] -> [A.Decl] -> RN [TempBinds]
 transDecls tbs [] = return tbs
@@ -139,7 +141,11 @@ transFExp (A.FunAppExp (A.VarExp n) (A.VarExp m)) = do
   a_pat   <- findCMs qname_p
   return (qname_f, [PCon a_pat []])
 
-transFExp e = trace (show e) $ return ("", [])
+transFExp (A.VarExp n) = do
+  qname_f <- qname (orig_name n)
+  return (qname_f, [])
+
+transFExp e = trace (show (e,"hoge")) $ return ("", [])
 
 transRhs :: A.Rhs -> RN Expr
 transRhs (A.UnguardedRhs (A.VarExp n) []) = do
@@ -164,10 +170,33 @@ transExp (A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
   where
     opAppExp op e e' = (A.FunAppExp (A.FunAppExp (A.VarExp op) e) e')
 
+transExp (A.InfixExp e2 op e1) = 
+  transExp (A.FunAppExp (A.FunAppExp (A.VarExp op) e2) e1)
+
+transExp (A.FunAppExp e1 e2) = do
+  expr1 <- transExp e1
+  expr2 <- transExp e2
+  return (Ap expr1 expr2)
+
+transExp (A.VarExp name) = do
+  qn <- qname (orig_name name)
+  return (Var qn)
+
+transExp (A.LitExp (A.LitInteger i _)) = do
+  return (Lit (LitInt i))
+
+transExp e = trace (show e) $ error "Non-exhaustive patterns in transExp."
+
 lookupInfixOp :: Name -> RN (Int, A.Fixity)
 lookupInfixOp op = do
+  op_qname <- qname (orig_name op)
   st <- get
-  trace (show st) $ fail "lookupInfixOp"
+  trace (show (st, op_qname)) $ return ()
+  case tabLookup op_qname (rn_ifxenv st) of
+    Just (LeftAssoc  x) -> return (x, A.Infixl)
+    Just (RightAssoc x) -> return (x, A.Infixr)
+    Just (NoAssoc    x) -> return (x, A.Infix)
+    Nothing             -> return (9, A.Infixl)
 
 qname   :: Id -> RN Id
 qname name = state $ \st@RnState{rn_lvs=lvs} -> (findQName lvs name, st)
