@@ -123,10 +123,19 @@ data ArithSeqRange = From       Exp
                    deriving Show
 
 ---- Helper functions
-mkName :: (String, AlexPosn) -> Name
-mkName (s, pos) = Name { orig_name = s
-                       , qual_name = ""
-                       , name_pos  = extrPos pos }
+mkVName :: (String, AlexPosn) -> Name
+mkVName (s, pos) = Name { orig_name = s
+                        , qual_name = ""
+                        , name_pos  = extrPos pos
+                        , isConName = False
+                        }
+
+mkCName :: (String, AlexPosn) -> Name
+mkCName (s, pos) = Name { orig_name = s
+                        , qual_name = ""
+                        , name_pos  = extrPos pos
+                        , isConName = True
+                        }
 
 extrPos :: AlexPosn -> Pos
 extrPos (AlexPn _ line col) = (line, col)

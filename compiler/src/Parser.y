@@ -437,9 +437,9 @@ qcon: qconid                                    { $1 }
     | sysdcon                                   { $1 }
 
 sysdcon
-  : '(' ')'                                     { mkName ("()", $1) }
-  | '(' commas ')'              { mkName ("(" ++ replicate $2 ',' ++ ")", $1) }
-  | '[' ']'                                     { mkName ("[]", $1) }
+  : '(' ')'                                     { mkCName ("()", $1) }
+  | '(' commas ')'             { mkCName ("(" ++ replicate $2 ',' ++ ")", $1) }
+  | '[' ']'                                     { mkCName ("[]", $1) }
 
 conop: consym                                   { $1 }
      | '`' conid '`'                            { $2 }
@@ -450,25 +450,25 @@ qconop: qconsym                                 { $1 }
 -- Type constructors ----------------------------------------------------------
 gtycon -- A "general" qualified tycon
   : oqtycon                                     { $1 }
-  | '(' ')'                                     { mkName ("()", $1) }
-  | '(' commas ')'              { mkName ("(" ++ replicate $2 ',' ++ ")", $1) }
-  | '(' '->' ')'                                { mkName ("(->)", $1) }
-  | '[' ']'                                     { mkName ("[]", $1) }
+  | '(' ')'                                     { mkCName ("()", $1) }
+  | '(' commas ')'             { mkCName ("(" ++ replicate $2 ',' ++ ")", $1) }
+  | '(' '->' ')'                                { mkCName ("(->)", $1) }
+  | '[' ']'                                     { mkCName ("[]", $1) }
 
 oqtycon -- An "ordinary" qualified tycon
   : qtycon                                      { $1 }
   | '(' qtyconsym ')'                           { $2 }
-  | '(' '~' ')'                                 { mkName ("~", $2) }
+  | '(' '~' ')'                                 { mkCName ("~", $2) }
 
-qtycon: TQCONID                                 { mkName $1 }
+qtycon: TQCONID                                 { mkCName $1 }
       | tycon                                   { $1 }
 
-tycon: TCONID                                   { mkName $1 }
+tycon: TCONID                                   { mkCName $1 }
 
-qtyconsym: TQCONSYM                             { mkName $1 }
+qtyconsym: TQCONSYM                             { mkCName $1 }
          | tyconsym                             { $1 }
 
-tyconsym: TCONSYM                               { mkName $1 }
+tyconsym: TCONSYM                               { mkCName $1 }
 
 -- Operators ------------------------------------------------------------------
 op: varop                                       { $1 }
@@ -494,14 +494,14 @@ tyvar: tyvarid                                  { $1 }
      | '(' tyvarsym ')'                         { $2 }
 
 tyvarid
-  : TVARID                                      { mkName $1 }
-  | 'as'                                        { mkName ("as", $1) }
-  | 'hiding'                                    { mkName ("hiding", $1) }
-  | 'qualified'                                 { mkName ("qualified", $1) }
-  | 'safe'                                      { mkName ("safe", $1) }
-  | 'unsafe'                                    { mkName ("unsafe", $1) }
+  : TVARID                                      { mkVName $1 }
+  | 'as'                                        { mkVName ("as", $1) }
+  | 'hiding'                                    { mkVName ("hiding", $1) }
+  | 'qualified'                                 { mkVName ("qualified", $1) }
+  | 'safe'                                      { mkVName ("safe", $1) }
+  | 'unsafe'                                    { mkVName ("unsafe", $1) }
 
-tyvarsym: TVARSYM                               { mkName $1 }
+tyvarsym: TVARSYM                               { mkVName $1 }
 
 -- Variables ------------------------------------------------------------------
 var: varid                                      { $1 }
@@ -512,15 +512,15 @@ qvar: qvarid                                    { $1 }
     | '(' qvarsym1 ')'                          { $2 }
 
 qvarid: varid                                   { $1 }
-      | TQVARID                                 { mkName $1 }
+      | TQVARID                                 { mkVName $1 }
 
 varid
-  : TVARID                                      { mkName $1 }
-  | 'as'                                        { mkName ("as", $1) }
-  | 'hiding'                                    { mkName ("hiding", $1) }
-  | 'qualified'                                 { mkName ("qualified", $1) }
-  | 'safe'                                      { mkName ("safe", $1) }
-  | 'unsafe'                                    { mkName ("unsafe", $1) }
+  : TVARID                                      { mkVName $1 }
+  | 'as'                                        { mkVName ("as", $1) }
+  | 'hiding'                                    { mkVName ("hiding", $1) }
+  | 'qualified'                                 { mkVName ("qualified", $1) }
+  | 'safe'                                      { mkVName ("safe", $1) }
+  | 'unsafe'                                    { mkVName ("unsafe", $1) }
 
 qvarsym: varsym                                 { $1 }
        | qvarsym1                               { $1 }
@@ -529,25 +529,25 @@ qvarsym_no_minus
   : varsym_no_minus                             { $1 }
   | qvarsym1                                    { $1 }
 
-qvarsym1: TQVARSYM                              { mkName $1 }
+qvarsym1: TQVARSYM                              { mkVName $1 }
 
 varsym: varsym_no_minus                         { $1 }
-      | '-'                                     { mkName ("-", $1) }
+      | '-'                                     { mkVName ("-", $1) }
 
-varsym_no_minus: TVARSYM                        { mkName $1 }
-               | '!'                            { mkName ("!", $1) }
+varsym_no_minus: TVARSYM                        { mkVName $1 }
+               | '!'                            { mkVName ("!", $1) }
 
 -- Data constructors ----------------------------------------------------------
 qconid: conid                                   { $1 }
-      | TQCONID                                 { mkName $1 }
+      | TQCONID                                 { mkCName $1 }
 
-conid: TCONID                                   { mkName $1 }
+conid: TCONID                                   { mkCName $1 }
 
 qconsym: consym                                 { $1 }
-       | TQCONSYM                               { mkName $1 }
+       | TQCONSYM                               { mkCName $1 }
 
-consym: TCONSYM                                 { mkName $1 }
-      | ':'                                     { mkName (":", $1) }
+consym: TCONSYM                                 { mkCName $1 }
+      | ':'                                     { mkCName (":", $1) }
 
 -- Literals -------------------------------------------------------------------
 literal: TLITCHAR                               { mkChar $1 }
@@ -563,8 +563,8 @@ close: vccurly                                  { () }
 commas: commas ','                              { $1 + 1 }
       | ','                                     { 1 }
 
-modid: TCONID                                   { mkName $1 }
-     | TQCONID                                  { mkName $1 }
+modid: TCONID                                   { mkCName $1 }
+     | TQCONID                                  { mkCName $1 }
 {
 lexwrap :: (Token -> Alex a) -> Alex a
 lexwrap = (alexMonadScan >>=)

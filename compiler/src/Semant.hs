@@ -1,6 +1,7 @@
 module Semant where
 
-import Control.Monad.State (State, state, get)
+import Control.Monad.State (State, state, get, put)
+import Data.Maybe
 import Symbol
 import qualified Absyn as A
 import Typing
@@ -135,23 +136,34 @@ transDecl _ = return ("", Nothing, [])
 
 -- Todo:
 transFExp :: A.Exp -> RN (Id, [Pat])
-transFExp (A.FunAppExp (A.VarExp n) (A.VarExp m)) = do
-  qname_f <- qname (orig_name n)
-  qname_p <- qname (orig_name m)
-  a_pat   <- findCMs qname_p
-  return (qname_f, [PCon a_pat []])
 
 transFExp (A.VarExp n) = do
   qname_f <- qname (orig_name n)
   return (qname_f, [])
 
-transFExp e = trace (show (e,"hoge")) $ return ("", [])
+transFExp (A.FunAppExp (A.VarExp n) es) = do
+  enterNewLevel
+  qname_f <- qname (orig_name n)
+  pats <- transPats es
+  return (qname_f, pats)
+  -- a_pat   <- findCMs qname_p
+  -- return (qname_f, [PCon a_pat []])
+
+transFExp e = trace (show (e,"**hoge**")) $ return ("", [])
+
+transPats (A.VarExp n) | isConName n = do qn <- qname (orig_name n)
+                                          Just a <- findCMs qn
+                                          return [PCon a []]
+
+
+transPats es = trace (show es) undefined
 
 transRhs :: A.Rhs -> RN Expr
 transRhs (A.UnguardedRhs (A.VarExp n) []) = do
   qname_c <- qname (orig_name n)
   c_pat   <- findCMs qname_c
-  return (Const c_pat)
+  case c_pat of
+    Just pat -> return (Const pat)
 
 transRhs (A.UnguardedRhs e []) = transExp e
 
@@ -205,10 +217,10 @@ qname name = state $ \st@RnState{rn_lvs=lvs} -> (findQName lvs name, st)
           Just qn -> qn
           Nothing -> findQName lvs n
 
-findCMs   :: Id -> RN Assump
+findCMs   :: Id -> RN (Maybe Assump)
 findCMs qn = state $ \st@RnState{rn_cms=as} -> (find' as qn, st)
-  where find' [] qn' = error $ "Const/Member not found: " ++ qn'
-        find' (a@(n :>: _):as') qn' | n == qn'   = a
+  where find' [] _ = Nothing
+        find' (a@(n :>: _):as') qn' | n == qn'  = Just a
                                     | otherwise = find' as' qn'
 
 pushLv :: Level -> RN ()
@@ -236,6 +248,12 @@ enterNewLevel = do
   currPrefix <- getPrefix
   n <- newNum
   enterNewLevelWith (currPrefix ++ "." ++ "l" ++ show n)
+
+exitLevel :: RN ()
+exitLevel = do
+  st <- get
+  let lvs' = tail $ rn_lvs st
+  put st{rn_lvs=lvs'}
 
 
 
