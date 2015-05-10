@@ -141,22 +141,48 @@ transFExp (A.VarExp n) = do
   qname_f <- qname (orig_name n)
   return (qname_f, [])
 
-transFExp (A.FunAppExp (A.VarExp n) es) = do
+transFExp (A.FunAppExp (A.VarExp n) e) = do
   enterNewLevel
   qname_f <- qname (orig_name n)
-  pats <- transPats es
-  return (qname_f, pats)
-  -- a_pat   <- findCMs qname_p
-  -- return (qname_f, [PCon a_pat []])
+  pat <- transPat e
+  return (qname_f, [pat])
 
 transFExp e = trace (show (e,"**hoge**")) $ return ("", [])
 
-transPats (A.VarExp n) | isConName n = do qn <- qname (orig_name n)
-                                          Just a <- findCMs qn
-                                          return [PCon a []]
+transPat (A.VarExp n) | isConName n = do qn <- qname (orig_name n)
+                                         Just a <- findCMs qn
+                                         return $ PCon a []
+                      | otherwise   = do qn <- renameVar n
+                                         return $ PVar qn
 
+transPat (A.ParExp e) = transPat e
 
-transPats es = trace (show es) undefined
+-- TODO: DRY! transExp and transPats have
+transPat(A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
+  (prec1, fix1) <- lookupInfixOp op1
+  (prec2, fix2) <- lookupInfixOp op2
+  if prec1 == prec2 && (fix1 /= fix2 || fix1 == A.Infix)
+    then fail "fixty resolution error."
+    else if prec1 > prec2 || (prec1 == prec2 && fix1 == A.Infixr)
+         then transPat (A.InfixExp rest op2 (opAppExp op1 e2 e1))
+         else transPat (opAppExp op1 (A.InfixExp rest op2 e2) e1)
+  where
+    opAppExp op e e' = (A.FunAppExp (A.FunAppExp (A.VarExp op) e) e')
+
+transPat (A.InfixExp e2 op e1) =
+  transPat (A.FunAppExp (A.FunAppExp (A.VarExp op) e2) e1)
+
+transPat (A.FunAppExp e e') = transPCon (A.FunAppExp e e') []
+  where transPCon (A.FunAppExp (A.FunAppExp e e') e'') pats = do
+          pat <- transPat e''
+          transPCon (A.FunAppExp e e') (pat:pats)
+        transPCon (A.FunAppExp (A.VarExp n) e') pats = do
+          qn <- qname (orig_name n)
+          Just a <- findCMs qn
+          pat' <- transPat e'
+          trace (show $ PCon a (pat':pats)) $ return $ PCon a (pat':pats)
+
+transPat e = trace (show e) undefined
 
 transRhs :: A.Rhs -> RN Expr
 transRhs (A.UnguardedRhs (A.VarExp n) []) = do
@@ -245,9 +271,8 @@ enterNewLevelWith n = do
 
 enterNewLevel :: RN ()
 enterNewLevel = do
-  currPrefix <- getPrefix
   n <- newNum
-  enterNewLevelWith (currPrefix ++ "." ++ "l" ++ show n)
+  enterNewLevelWith ("l" ++ show n)
 
 exitLevel :: RN ()
 exitLevel = do
