@@ -6,14 +6,14 @@ import Semant
 import Symbol
 import PreDefined
 
-import Control.Monad.State (runState)
+import Control.Monad.State.Strict (runState)
 
 do_semant :: Absyn.Module -> IO ()
 do_semant m = do
   -- TODO: regular way to add primitive names.
   let lv = (initialLevel $ Absyn.modid m){lv_dict=primNames}
   print lv
-  let st = RnState (lv_prefix lv) [lv] empty empty preludeClasses primConsMems
+  let st = RnState (lv_prefix lv) [lv] empty empty preludeClasses primConsMems []
       result = runState (transProg m) st
   print result
 

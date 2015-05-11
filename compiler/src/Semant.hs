@@ -1,6 +1,6 @@
 module Semant where
 
-import Control.Monad.State (State, state, get, put)
+import Control.Monad.State.Strict (State, state, get, put)
 import Data.Maybe
 import Symbol
 import qualified Absyn as A
@@ -45,6 +45,7 @@ data RnState = RnState { rn_modid  :: Id
                        , rn_ifxenv :: Table FixtyInfo
                        , rn_ce     :: ClassEnv
                        , rn_cms    :: [Assump]
+                       , rn_tbs    :: [TempBinds]
                        }
                deriving Show
 
@@ -114,23 +115,32 @@ type TempBinds = (Id, Maybe Scheme, [Alt])
 
 
 transProg  :: A.Module -> RN ([TempBinds], [Assump])
-transProg m = trace (show m) $ do
+transProg m = do
   let body = snd (A.body m)
   -- (ds, cds, ids) <- collectNames ([], [], []) body
   (ds, _, _) <- collectNames ([], [], []) body
-  tbs <- transDecls [] ds
+  tbs <- transDecls ds
   trace (show tbs) $ return (tbs, [])
 
-transDecls :: [TempBinds] -> [A.Decl] -> RN [TempBinds]
-transDecls tbs [] = return tbs
-transDecls tbs (d:ds) = do
+transDecls :: [A.Decl] -> RN [TempBinds]
+transDecls [] = do
+  st <- get
+  return $ rn_tbs st
+transDecls (d:ds) = do
   tb <- transDecl d
-  trace (show (d, tb)) $ transDecls (tbs++[tb]) ds
+  st <- get
+  let tbs = rn_tbs st
+      tbs' = tbs++[tb]
+  put st{rn_tbs=tbs'}
+  transDecls ds
 
 transDecl :: A.Decl -> RN TempBinds
 transDecl (A.ValDecl expr rhs) = do
+  enterNewLevel
   (n, pats) <- transFExp expr
+  trace (show (n, pats)) $ return ()
   rexp      <- transRhs  rhs
+  exitLevel
   return (n, Nothing, [(pats, rexp)])
 transDecl _ = return ("", Nothing, [])
 
@@ -142,12 +152,11 @@ transFExp (A.VarExp n) = do
   return (qname_f, [])
 
 transFExp (A.FunAppExp (A.VarExp n) e) = do
-  enterNewLevel
   qname_f <- qname (orig_name n)
   pat <- transPat e
   return (qname_f, [pat])
 
-transFExp e = trace (show (e,"**hoge**")) $ return ("", [])
+transFExp e = trace (show (e,"**hoge**")) $ error "transFExp"
 
 transPat (A.VarExp n) | isConName n = do qn <- qname (orig_name n)
                                          Just a <- findCMs qn
@@ -180,9 +189,9 @@ transPat (A.FunAppExp e e') = transPCon (A.FunAppExp e e') []
           qn <- qname (orig_name n)
           Just a <- findCMs qn
           pat' <- transPat e'
-          trace (show $ PCon a (pat':pats)) $ return $ PCon a (pat':pats)
+          return $ PCon a (pat':pats)
 
-transPat e = trace (show e) undefined
+transPat e = trace (show e) $ error "transPat"
 
 transRhs :: A.Rhs -> RN Expr
 transRhs (A.UnguardedRhs (A.VarExp n) []) = do
@@ -192,6 +201,9 @@ transRhs (A.UnguardedRhs (A.VarExp n) []) = do
     Just pat -> return (Const pat)
 
 transRhs (A.UnguardedRhs e []) = transExp e
+
+transRhs (A.UnguardedRhs e ds) =
+  transRhs (A.UnguardedRhs (A.LetExp ds e) [])
 
 transRhs rhs = do
   st <- get
@@ -223,13 +235,22 @@ transExp (A.VarExp name) = do
 transExp (A.LitExp (A.LitInteger i _)) = do
   return (Lit (LitInt i))
 
+transExp (A.LetExp ds e) = do
+  enterNewLevel
+  (ds', _, _) <- collectNames ([], [], []) ds
+  trace "transDecls for LetExp" $ transDecls ds'
+  st <- get
+  trace (show (st, "oops")) $ return ()
+  r <- transExp e
+  exitLevel
+  return r
+
 transExp e = trace (show e) $ error "Non-exhaustive patterns in transExp."
 
 lookupInfixOp :: Name -> RN (Int, A.Fixity)
 lookupInfixOp op = do
   op_qname <- qname (orig_name op)
   st <- get
-  trace (show (st, op_qname)) $ return ()
   case tabLookup op_qname (rn_ifxenv st) of
     Just (LeftAssoc  x) -> return (x, A.Infixl)
     Just (RightAssoc x) -> return (x, A.Infixr)
