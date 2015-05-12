@@ -245,6 +245,45 @@ transExp (A.LetExp ds e) = do
   exitLevel
   return r
 
+-- List comprehension
+-- [e | True] = [e]
+-- [e | q] = [q, True]
+transExp (A.ListCompExp e [stmt@(A.ExpStmt p)]) =
+  case p of
+    A.VarExp n  | orig_name n == "True" -> transExp (A.ListExp [e])
+                | otherwise             -> trans'
+    _                                   -> trans'
+  where tname = Name "True" "" (0,0) True
+        true = A.ExpStmt $ A.VarExp tname
+        trans' = transExp (A.ListCompExp e [stmt, true])
+
+-- [e | b, Q] = if b then [e | Q] else []
+transExp (A.ListCompExp e ((A.ExpStmt b):stmts)) =
+  transExp (A.IfExp b (A.ListCompExp e stmts) nil)
+  where nil = A.VarExp $ Name "[]" "" (0,0) True
+
+-- [e | p <- l, Q] = let ok p = [e | Q] in concatMap ok l
+transExp (A.ListCompExp e ((A.BindStmt p l):stmts)) = transExp letexp
+  where
+    ok = Name "OK" "" (0,0) False -- "OK" is fresh,  will never parsed as a variable.
+    okp = A.FunAppExp (A.VarExp ok) p
+    rhs = case stmts of
+      [] -> A.UnguardedRhs (A.ListExp [e]) []
+      _  -> A.UnguardedRhs (A.ListCompExp e stmts) []
+    decl = A.ValDecl okp rhs
+    body = A.FunAppExp (A.FunAppExp (A.VarExp $ Name "concatMap" "" (0,0) False)
+                                    (A.VarExp ok))
+                       l
+    letexp = A.LetExp [decl] body
+
+-- [e | let decls, Q] = let decls in [e | Q]
+transExp (A.ListCompExp e ((A.LetStmt decls):stmts)) = transExp letexp
+  where
+    body = case stmts of
+      [] -> A.ListExp [e]
+      _  -> A.ListCompExp e stmts
+    letexp = A.LetExp decls body
+
 transExp e = trace (show e) $ error "Non-exhaustive patterns in transExp."
 
 lookupInfixOp :: Name -> RN (Int, A.Fixity)
