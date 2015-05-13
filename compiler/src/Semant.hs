@@ -294,6 +294,12 @@ renExp (A.IfExp c t f) = renExp caseexp
     alt2 = A.Match aFalse (A.UnguardedRhs f [])
     caseexp = A.CaseExp c [alt1, alt2]
 
+renExp (A.CaseExp c alts) = renExp (A.LetExp decls fc)
+  where f = Name "F" "" (0,0) False
+        fc = A.FunAppExp (A.VarExp f) c
+        decls = map (\(A.Match p rhs) ->
+                      A.ValDecl (A.FunAppExp (A.VarExp f) p) rhs) alts
+
 renExp e = trace (show e) $ error "Non-exhaustive patterns in renExp."
 
 lookupInfixOp :: Name -> RN (Int, A.Fixity)
