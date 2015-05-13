@@ -14,7 +14,7 @@ do_semant m = do
   let lv = (initialLevel $ Absyn.modid m){lv_dict=primNames}
   print lv
   let st = RnState (lv_prefix lv) [lv] empty empty preludeClasses primConsMems []
-      result = runState (transProg m) st
+      result = runState (renProg m) st
   print result
 
 main :: IO ()

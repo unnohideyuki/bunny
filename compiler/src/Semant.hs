@@ -18,14 +18,20 @@ pNil  = PCon nilCfun []
 eNil :: Expr
 eNil  = econst nilCfun
 
+aTrue :: A.Exp
+aTrue = A.VarExp $ Name "True" "" (0,0) True
+
+aFalse :: A.Exp
+aFalse = A.VarExp $ Name "False" "" (0,0) True
+
 data FixtyInfo = LeftAssoc  Int
                | RightAssoc Int
                | NoAssoc    Int
                  deriving (Show, Eq)
 
-data Level = Level { lv_prefix :: Id
-                   , lv_dict   :: Table Id
-                   , lv_num    :: Int
+data Level = Level { lv_prefix :: !Id
+                   , lv_dict   :: !(Table Id)
+                   , lv_num    :: !Int
                    }
              deriving Show
 
@@ -39,13 +45,13 @@ initialLevel modid = Level { lv_prefix = case modid of
 
 -- Renaming Monad
 
-data RnState = RnState { rn_modid  :: Id
-                       , rn_lvs    :: [Level]
-                       , rn_tenv   :: Table Id
-                       , rn_ifxenv :: Table FixtyInfo
-                       , rn_ce     :: ClassEnv
-                       , rn_cms    :: [Assump]
-                       , rn_tbs    :: [TempBinds]
+data RnState = RnState { rn_modid  :: !Id
+                       , rn_lvs    :: !([Level])
+                       , rn_tenv   :: !(Table Id)
+                       , rn_ifxenv :: !(Table FixtyInfo)
+                       , rn_ce     :: !(ClassEnv)
+                       , rn_cms    :: !([Assump])
+                       , rn_tbs    :: !([TempBinds])
                        }
                deriving Show
 
@@ -114,156 +120,154 @@ collectNames (ds, cds, ids) (decl:decls) = do
 type TempBinds = (Id, Maybe Scheme, [Alt])
 
 
-transProg  :: A.Module -> RN ([TempBinds], [Assump])
-transProg m = do
+renProg  :: A.Module -> RN ([TempBinds], [Assump])
+renProg m = do
   let body = snd (A.body m)
   -- (ds, cds, ids) <- collectNames ([], [], []) body
   (ds, _, _) <- collectNames ([], [], []) body
-  tbs <- transDecls ds
+  tbs <- renDecls ds
   trace (show tbs) $ return (tbs, [])
 
-transDecls :: [A.Decl] -> RN [TempBinds]
-transDecls [] = do
+renDecls :: [A.Decl] -> RN [TempBinds]
+renDecls [] = do
   st <- get
   return $ rn_tbs st
-transDecls (d:ds) = do
-  tb <- transDecl d
+renDecls (d:ds) = do
+  tb <- renDecl d
   st <- get
   let tbs = rn_tbs st
       tbs' = tbs++[tb]
   put st{rn_tbs=tbs'}
-  transDecls ds
+  renDecls ds
 
-transDecl :: A.Decl -> RN TempBinds
-transDecl (A.ValDecl expr rhs) = do
+renDecl :: A.Decl -> RN TempBinds
+renDecl (A.ValDecl expr rhs) = do
   enterNewLevel
-  (n, pats) <- transFExp expr
+  (n, pats) <- renFExp expr
   trace (show (n, pats)) $ return ()
-  rexp      <- transRhs  rhs
+  rexp      <- renRhs  rhs
   exitLevel
   return (n, Nothing, [(pats, rexp)])
-transDecl _ = return ("", Nothing, [])
+renDecl _ = return ("", Nothing, [])
 
 -- Todo:
-transFExp :: A.Exp -> RN (Id, [Pat])
+renFExp :: A.Exp -> RN (Id, [Pat])
 
-transFExp (A.VarExp n) = do
+renFExp (A.VarExp n) = do
   qname_f <- qname (orig_name n)
   return (qname_f, [])
 
-transFExp (A.FunAppExp (A.VarExp n) e) = do
+renFExp (A.FunAppExp (A.VarExp n) e) = do
   qname_f <- qname (orig_name n)
-  pat <- transPat e
+  pat <- renPat e
   return (qname_f, [pat])
 
-transFExp e = trace (show (e,"**hoge**")) $ error "transFExp"
+renFExp e = trace (show (e,"**hoge**")) $ error "renFExp"
 
-transPat (A.VarExp n) | isConName n = do qn <- qname (orig_name n)
-                                         Just a <- findCMs qn
-                                         return $ PCon a []
-                      | otherwise   = do qn <- renameVar n
-                                         return $ PVar qn
+renPat (A.VarExp n) | isConName n = do qn <- qname (orig_name n)
+                                       Just a <- findCMs qn
+                                       return $ PCon a []
+                    | otherwise   = do qn <- renameVar n
+                                       return $ PVar qn
 
-transPat (A.ParExp e) = transPat e
+renPat (A.ParExp e) = renPat e
 
--- TODO: DRY! transExp and transPats have
-transPat(A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
+-- TODO: DRY! renExp and renPats have
+renPat(A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
   (prec1, fix1) <- lookupInfixOp op1
   (prec2, fix2) <- lookupInfixOp op2
   if prec1 == prec2 && (fix1 /= fix2 || fix1 == A.Infix)
     then fail "fixty resolution error."
     else if prec1 > prec2 || (prec1 == prec2 && fix1 == A.Infixr)
-         then transPat (A.InfixExp rest op2 (opAppExp op1 e2 e1))
-         else transPat (opAppExp op1 (A.InfixExp rest op2 e2) e1)
+         then renPat (A.InfixExp rest op2 (opAppExp op1 e2 e1))
+         else renPat (opAppExp op1 (A.InfixExp rest op2 e2) e1)
   where
     opAppExp op e e' = (A.FunAppExp (A.FunAppExp (A.VarExp op) e) e')
 
-transPat (A.InfixExp e2 op e1) =
-  transPat (A.FunAppExp (A.FunAppExp (A.VarExp op) e2) e1)
+renPat (A.InfixExp e2 op e1) =
+  renPat (A.FunAppExp (A.FunAppExp (A.VarExp op) e2) e1)
 
-transPat (A.FunAppExp e e') = transPCon (A.FunAppExp e e') []
-  where transPCon (A.FunAppExp (A.FunAppExp e e') e'') pats = do
-          pat <- transPat e''
-          transPCon (A.FunAppExp e e') (pat:pats)
-        transPCon (A.FunAppExp (A.VarExp n) e') pats = do
+renPat (A.FunAppExp e e') = renPCon (A.FunAppExp e e') []
+  where renPCon (A.FunAppExp (A.FunAppExp e e') e'') pats = do
+          pat <- renPat e''
+          renPCon (A.FunAppExp e e') (pat:pats)
+        renPCon (A.FunAppExp (A.VarExp n) e') pats = do
           qn <- qname (orig_name n)
           Just a <- findCMs qn
-          pat' <- transPat e'
+          pat' <- renPat e'
           return $ PCon a (pat':pats)
 
-transPat e = trace (show e) $ error "transPat"
+renPat e = trace (show e) $ error "renPat"
 
-transRhs :: A.Rhs -> RN Expr
-transRhs (A.UnguardedRhs (A.VarExp n) []) = do
+renRhs :: A.Rhs -> RN Expr
+renRhs (A.UnguardedRhs (A.VarExp n) []) = do
   qname_c <- qname (orig_name n)
   c_pat   <- findCMs qname_c
   case c_pat of
     Just pat -> return (Const pat)
 
-transRhs (A.UnguardedRhs e []) = transExp e
+renRhs (A.UnguardedRhs e []) = renExp e
 
-transRhs (A.UnguardedRhs e ds) =
-  transRhs (A.UnguardedRhs (A.LetExp ds e) [])
+renRhs (A.UnguardedRhs e ds) =
+  renRhs (A.UnguardedRhs (A.LetExp ds e) [])
 
-transRhs rhs = do
+renRhs rhs = do
   st <- get
-  trace (show (st, rhs)) $ error "transRhs not yet implemented."
+  trace (show (st, rhs)) $ error "renRhs not yet implemented."
 
-transExp (A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
+renExp (A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
   (prec1, fix1) <- lookupInfixOp op1
   (prec2, fix2) <- lookupInfixOp op2
   if prec1 == prec2 && (fix1 /= fix2 || fix1 == A.Infix)
     then fail "fixty resolution error."
     else if prec1 > prec2 || (prec1 == prec2 && fix1 == A.Infixr)
-         then transExp (A.InfixExp rest op2 (opAppExp op1 e2 e1))
-         else transExp (opAppExp op1 (A.InfixExp rest op2 e2) e1)
+         then renExp (A.InfixExp rest op2 (opAppExp op1 e2 e1))
+         else renExp (opAppExp op1 (A.InfixExp rest op2 e2) e1)
   where
     opAppExp op e e' = (A.FunAppExp (A.FunAppExp (A.VarExp op) e) e')
 
-transExp (A.InfixExp e2 op e1) = 
-  transExp (A.FunAppExp (A.FunAppExp (A.VarExp op) e2) e1)
+renExp (A.InfixExp e2 op e1) = 
+  renExp (A.FunAppExp (A.FunAppExp (A.VarExp op) e2) e1)
 
-transExp (A.FunAppExp e1 e2) = do
-  expr1 <- transExp e1
-  expr2 <- transExp e2
+renExp (A.FunAppExp e1 e2) = do
+  expr1 <- renExp e1
+  expr2 <- renExp e2
   return (Ap expr1 expr2)
 
-transExp (A.VarExp name) = do
+renExp (A.VarExp name) = do
   qn <- qname (orig_name name)
   return (Var qn)
 
-transExp (A.LitExp (A.LitInteger i _)) = do
+renExp (A.LitExp (A.LitInteger i _)) = do
   return (Lit (LitInt i))
 
-transExp (A.LetExp ds e) = do
+renExp (A.LetExp ds e) = do
   enterNewLevel
   (ds', _, _) <- collectNames ([], [], []) ds
-  trace "transDecls for LetExp" $ transDecls ds'
+  trace "renDecls for LetExp" $ renDecls ds'
   st <- get
   trace (show (st, "oops")) $ return ()
-  r <- transExp e
+  r <- renExp e
   exitLevel
   return r
 
 -- List comprehension
 -- [e | True] = [e]
 -- [e | q] = [q, True]
-transExp (A.ListCompExp e [stmt@(A.ExpStmt p)]) =
+renExp (A.ListCompExp e [stmt@(A.ExpStmt p)]) =
   case p of
-    A.VarExp n  | orig_name n == "True" -> transExp (A.ListExp [e])
-                | otherwise             -> trans'
-    _                                   -> trans'
-  where tname = Name "True" "" (0,0) True
-        true = A.ExpStmt $ A.VarExp tname
-        trans' = transExp (A.ListCompExp e [stmt, true])
+    A.VarExp n  | orig_name n == "True" -> renExp (A.ListExp [e])
+                | otherwise             -> ren'
+    _                                   -> ren'
+  where ren' = renExp (A.ListCompExp e [stmt, A.ExpStmt aTrue])
 
 -- [e | b, Q] = if b then [e | Q] else []
-transExp (A.ListCompExp e ((A.ExpStmt b):stmts)) =
-  transExp (A.IfExp b (A.ListCompExp e stmts) nil)
+renExp (A.ListCompExp e ((A.ExpStmt b):stmts)) =
+  renExp (A.IfExp b (A.ListCompExp e stmts) nil)
   where nil = A.VarExp $ Name "[]" "" (0,0) True
 
 -- [e | p <- l, Q] = let ok p = [e | Q] in concatMap ok l
-transExp (A.ListCompExp e ((A.BindStmt p l):stmts)) = transExp letexp
+renExp (A.ListCompExp e ((A.BindStmt p l):stmts)) = renExp letexp
   where
     ok = Name "OK" "" (0,0) False -- "OK" is fresh,  will never parsed as a variable.
     okp = A.FunAppExp (A.VarExp ok) p
@@ -277,14 +281,20 @@ transExp (A.ListCompExp e ((A.BindStmt p l):stmts)) = transExp letexp
     letexp = A.LetExp [decl] body
 
 -- [e | let decls, Q] = let decls in [e | Q]
-transExp (A.ListCompExp e ((A.LetStmt decls):stmts)) = transExp letexp
+renExp (A.ListCompExp e ((A.LetStmt decls):stmts)) = renExp letexp
   where
     body = case stmts of
       [] -> A.ListExp [e]
       _  -> A.ListCompExp e stmts
     letexp = A.LetExp decls body
 
-transExp e = trace (show e) $ error "Non-exhaustive patterns in transExp."
+renExp (A.IfExp c t f) = renExp caseexp
+  where
+    alt1 = A.Match aTrue (A.UnguardedRhs t [])
+    alt2 = A.Match aFalse (A.UnguardedRhs f [])
+    caseexp = A.CaseExp c [alt1, alt2]
+
+renExp e = trace (show e) $ error "Non-exhaustive patterns in renExp."
 
 lookupInfixOp :: Name -> RN (Int, A.Fixity)
 lookupInfixOp op = do
