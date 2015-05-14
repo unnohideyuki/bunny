@@ -27,6 +27,9 @@ tFloat    = TCon (Tycon "Float" Star)
 tDouble  :: Type
 tDouble   = TCon (Tycon "Double" Star)
 
+tBool    :: Type
+tBool     = TCon (Tycon "Bool" Star)
+
 tList    :: Type
 tList     = TCon (Tycon "[]" (Kfun Star Star))
 tArrow   :: Type

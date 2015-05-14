@@ -23,6 +23,11 @@ consCfun  = "Prim.:" :>: (Forall [Star]
                             TAp tList (TGen 0) `fn`
                             TAp tList (TGen 0))))
 
+falseCfun :: Assump
+falseCfun  = "Prim.False" :>: (Forall [] ([] :=> tBool))
+trueCfun :: Assump
+trueCfun  = "Prim.True" :>: (Forall [] ([] :=> tBool))
+
 cShow :: String
 cShow  = "Prim.Show"
 
@@ -32,12 +37,16 @@ showMfun  = "Prim.show" :>: (Forall [Star]
                               (TGen 0 `fn` tString)))
 
 primConsMems :: [Assump]
-primConsMems  = [unitCfun, nilCfun, consCfun, showMfun]
+primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
+                , falseCfun, trueCfun
+                ]
 
 primConsNames :: [(Id, Id)]
 primConsNames  = [ ("()", "Prim.()")
                  , ("[]", "Prim.[]")
                  , (":", "Prim.:")
+                 , ("False", "Prim.False")
+                 , ("True", "Prim.True")
                  , ("Show", "Prim.Show")
                  , ("show", "Prim.show")
                  ]
