@@ -19,10 +19,16 @@ eNil :: Expr
 eNil  = econst nilCfun
 
 aTrue :: A.Exp
-aTrue = A.VarExp $ Name "True" "" (0,0) True
+aTrue  = A.VarExp $ Name "True" "" (0,0) True
 
 aFalse :: A.Exp
-aFalse = A.VarExp $ Name "False" "" (0,0) True
+aFalse  = A.VarExp $ Name "False" "" (0,0) True
+
+aThen :: A.Exp
+aThen  = A.VarExp $ Name ">>" "" (0,0) False
+
+aBind :: A.Exp
+aBind  = A.VarExp $ Name ">>=" "" (0,0) False
 
 data FixtyInfo = LeftAssoc  Int
                | RightAssoc Int
@@ -305,6 +311,26 @@ renExp (A.ListExp [e]) = renExp e'
     nil  = A.VarExp $ Name "[]" "" (0,0) True
     cons = A.VarExp $ Name ":" "" (0,0) True
     e' = A.FunAppExp (A.FunAppExp cons e) nil
+
+renExp (A.DoExp [stmt]) = case stmt of
+  A.ExpStmt e -> renExp e
+  _ -> fail "The last statement in a 'do' block must be an expression"
+
+renExp (A.DoExp (A.ExpStmt e:stmts)) =
+  renExp $ A.FunAppExp (A.FunAppExp aThen e) (A.DoExp stmts)
+
+renExp (A.DoExp ((A.BindStmt p e):stmts)) = renExp letexp
+  where
+    ok = Name "OK" "" (0,0) False
+    okp = A.FunAppExp (A.VarExp ok) p
+    rhs = A.UnguardedRhs (A.DoExp stmts) []
+    decl = A.ValDecl okp rhs
+    body = A.FunAppExp (A.FunAppExp aBind e) (A.VarExp ok)
+    letexp = A.LetExp [decl] body
+
+renExp (A.DoExp ((A.LetStmt decls):stmts)) = renExp letexp
+  where
+    letexp = A.LetExp decls (A.DoExp stmts)
 
 renExp e = trace (show e) $ error "Non-exhaustive patterns in renExp."
 
