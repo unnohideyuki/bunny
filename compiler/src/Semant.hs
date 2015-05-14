@@ -300,6 +300,12 @@ renExp (A.CaseExp c alts) = renExp (A.LetExp decls fc)
         decls = map (\(A.Match p rhs) ->
                       A.ValDecl (A.FunAppExp (A.VarExp f) p) rhs) alts
 
+renExp (A.ListExp [e]) = renExp e'
+  where
+    nil  = A.VarExp $ Name "[]" "" (0,0) True
+    cons = A.VarExp $ Name ":" "" (0,0) True
+    e' = A.FunAppExp (A.FunAppExp cons e) nil
+
 renExp e = trace (show e) $ error "Non-exhaustive patterns in renExp."
 
 lookupInfixOp :: Name -> RN (Int, A.Fixity)
