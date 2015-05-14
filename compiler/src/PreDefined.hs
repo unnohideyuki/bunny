@@ -36,9 +36,25 @@ showMfun  = "Prim.show" :>: (Forall [Star]
                              ([IsIn cShow (TGen 0)] :=>
                               (TGen 0 `fn` tString)))
 
+cOrd :: String
+cOrd  = "Ord"
+
+leMfun :: Assump
+leMfun
+  = "<=" :>: (Forall [Star]
+              ([IsIn cOrd (TGen 0)] :=>
+               (TGen 0 `fn` TGen 0 `fn` tBool)))
+
+gtMfun :: Assump
+gtMfun
+  = ">" :>: (Forall [Star]
+             ([IsIn cOrd (TGen 0)] :=>
+              (TGen 0 `fn` TGen 0 `fn` tBool)))
+
 primConsMems :: [Assump]
 primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
                 , falseCfun, trueCfun
+                , leMfun, gtMfun
                 ]
 
 primConsNames :: [(Id, Id)]
@@ -47,6 +63,8 @@ primConsNames  = [ ("()", "Prim.()")
                  , (":", "Prim.:")
                  , ("False", "Prim.False")
                  , ("True", "Prim.True")
+                 , ("<=", "Prim.<=")
+                 , (">", "Prim.>")
                  , ("Show", "Prim.Show")
                  , ("show", "Prim.show")
                  ]
