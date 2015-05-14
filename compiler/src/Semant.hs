@@ -169,10 +169,22 @@ renFExp (A.VarExp n) = do
   qname_f <- qname (orig_name n)
   return (qname_f, [])
 
-renFExp (A.FunAppExp (A.VarExp n) e) = do
-  qname_f <- qname (orig_name n)
-  pat <- renPat e
-  return (qname_f, [pat])
+renFExp e@(A.FunAppExp _ _) = do
+  renfexp' e []
+  where
+    renfexp' (A.FunAppExp e@(A.FunAppExp _ _) e') pats = do
+      pat <- renPat e'
+      renfexp' e (pat:pats)
+    renfexp' (A.FunAppExp (A.VarExp n) e) pats = do
+      qn <- qname (orig_name n)
+      pat <- renPat e
+      return (qn, pat:pats)
+
+renFExp (A.InfixExp le op re) = do
+  qname_op <- qname (orig_name op)
+  lpat <- renPat le
+  rpat <- renPat re
+  return (qname_op, [lpat, rpat])
 
 renFExp e = trace (show (e,"**hoge**")) $ error "renFExp"
 
