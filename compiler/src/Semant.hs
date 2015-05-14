@@ -27,6 +27,12 @@ aFalse  = A.VarExp $ Name "False" "" (0,0) True
 aThen :: A.Exp
 aThen  = A.VarExp $ Name ">>" "" (0,0) False
 
+aNil :: A.Exp
+aNil  = A.VarExp $ Name "[]" "" (0,0) True
+
+aCons :: A.Exp
+aCons  = A.VarExp $ Name ":" "" (0,0) True
+
 aBind :: A.Exp
 aBind  = A.VarExp $ Name ">>=" "" (0,0) False
 
@@ -306,11 +312,11 @@ renExp (A.CaseExp c alts) = renExp (A.LetExp decls fc)
         decls = map (\(A.Match p rhs) ->
                       A.ValDecl (A.FunAppExp (A.VarExp f) p) rhs) alts
 
-renExp (A.ListExp [e]) = renExp e'
-  where
-    nil  = A.VarExp $ Name "[]" "" (0,0) True
-    cons = A.VarExp $ Name ":" "" (0,0) True
-    e' = A.FunAppExp (A.FunAppExp cons e) nil
+renExp (A.ListExp [e]) =
+  renExp $ A.FunAppExp (A.FunAppExp aCons e) aNil
+
+renExp (A.ListExp (e:es)) =
+  renExp $ A.FunAppExp (A.FunAppExp aCons e) (A.ListExp es)
 
 renExp (A.DoExp [stmt]) = case stmt of
   A.ExpStmt e -> renExp e
