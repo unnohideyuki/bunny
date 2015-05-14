@@ -335,6 +335,9 @@ renExp (A.DoExp ((A.LetStmt decls):stmts)) = renExp letexp
 renExp (A.LitExp (A.LitString s _)) =
   return $ Lit (LitStr s)
 
+renExp (A.LitExp (A.LitInteger i _)) =
+  return $ Lit (LitInt i)
+
 renExp e = trace (show e) $ error "Non-exhaustive patterns in renExp."
 
 lookupInfixOp :: Name -> RN (Int, A.Fixity)
