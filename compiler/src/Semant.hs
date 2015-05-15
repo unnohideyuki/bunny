@@ -139,7 +139,7 @@ renProg m = do
   -- (ds, cds, ids) <- collectNames ([], [], []) body
   (ds, _, _) <- collectNames ([], [], []) body
   tbs <- renDecls ds
-  trace (show tbs) $ return (tbs, [])
+  return (tbs, [])
 
 renDecls :: [A.Decl] -> RN [TempBinds]
 renDecls [] = do
@@ -157,11 +157,12 @@ renDecl :: A.Decl -> RN TempBinds
 renDecl (A.ValDecl expr rhs) = do
   enterNewLevel
   (n, pats) <- renFExp expr
-  trace (show (n, pats)) $ return ()
   rexp      <- renRhs  rhs
   exitLevel
   return (n, Nothing, [(pats, rexp)])
-renDecl _ = return ("", Nothing, [])
+
+renDecl decls = trace (show ("non-exhaustive", decls)) $
+                return ("", Nothing, [])
 
 -- Todo:
 renFExp :: A.Exp -> RN (Id, [Pat])
@@ -187,7 +188,7 @@ renFExp (A.InfixExp le op re) = do
   rpat <- renPat re
   return (qname_op, [lpat, rpat])
 
-renFExp e = trace (show (e,"**hoge**")) $ error "renFExp"
+renFExp e = trace (show e) $ error "renFExp"
 
 renPat (A.VarExp n) | isConName n = do qn <- qname (orig_name n)
                                        Just a <- findCMs qn
@@ -230,6 +231,7 @@ renRhs (A.UnguardedRhs (A.VarExp n) []) = do
   c_pat   <- findCMs qname_c
   case c_pat of
     Just pat -> return (Const pat)
+    Nothing | not (isConName n) -> return (Var qname_c)
 
 renRhs (A.UnguardedRhs e []) = renExp e
 
@@ -269,9 +271,8 @@ renExp (A.LitExp (A.LitInteger i _)) = do
 renExp (A.LetExp ds e) = do
   enterNewLevel
   (ds', _, _) <- collectNames ([], [], []) ds
-  trace "renDecls for LetExp" $ renDecls ds'
+  renDecls ds'
   st <- get
-  trace (show (st, "oops")) $ return ()
   r <- renExp e
   exitLevel
   return r
