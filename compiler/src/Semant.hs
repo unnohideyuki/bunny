@@ -1,5 +1,6 @@
 module Semant where
 
+import Data.List (foldl')
 import Control.Monad.State.Strict (State, state, get, put)
 import Data.Maybe
 import Symbol
@@ -349,6 +350,12 @@ renExp (A.DoExp ((A.BindStmt p e):stmts)) = renExp letexp
 renExp (A.DoExp ((A.LetStmt decls):stmts)) = renExp letexp
   where
     letexp = A.LetExp decls (A.DoExp stmts)
+
+renExp (A.LamExp args e) = renExp (A.LetExp [decl] f)
+  where f = A.VarExp $ Name "F" "" (0,0) False
+        fexp = foldl' A.FunAppExp f args
+        rhs = A.UnguardedRhs e []
+        decl = A.ValDecl fexp rhs
 
 renExp (A.LitExp (A.LitString s _)) =
   return $ Lit (LitStr s)
