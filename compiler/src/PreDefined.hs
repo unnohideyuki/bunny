@@ -72,4 +72,7 @@ primConsNames  = [ ("()", "Prim.()")
 -- Primitive Names
 
 primNames :: Table Id
-primNames  = fromList primConsNames
+primNames  = fromList (primConsNames ++
+                       [ ("putStrLn", "Prim.putStrLn")
+                       ])
+
