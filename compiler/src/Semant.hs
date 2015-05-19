@@ -92,14 +92,11 @@ regFixity fixity i (n:ns) = do reg (f i) n; regFixity fixity i ns
           let
             qn = (lv_prefix lv) ++ "." ++ (orig_name name)
             ifxenv' = insert qn finfo ifxenv
-            -- TODO: shoud insert qname here? definition of op should do?
-            dict' = insert (orig_name name) qn (lv_dict lv)
-            lv' = lv{lv_dict=dict'}
           in
            if defined (tabLookup qn ifxenv) then
              error $ "duplicate fixity declaration:" ++ qn
            else
-             ((), st{rn_lvs=(lv':lvs), rn_ifxenv=ifxenv'})
+             ((), st{rn_ifxenv=ifxenv'})
 
 collectNames :: ([A.Decl], [A.Decl], [A.Decl]) -> [A.Decl]
                 -> RN ([A.Decl], [A.Decl], [A.Decl])
@@ -124,7 +121,16 @@ collectNames (ds, cds, ids) (decl:decls) = do
     collname (A.ForeignDecl _)          = error "not yet: ForeignDecl"
     collname (A.SynonymDecl _ _)        = error "not yet: SynonymDecl"
 
-    collname d@(A.ClassDecl _ _)        = return (ds, cds ++ [d], ids)
+
+    collname d@(A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds') = do
+      mapM_ colname' ds'
+      st <- get
+      trace (show st) $ return (ds, cds ++ [d], ids)
+      where colname' (A.ValDecl e _) = do _ <- renameVar (extrName e)
+                                          return ()
+            colname' _ = return ()
+
+
     collname d@(A.InstDecl _ _)         = return (ds, cds, ids ++ [d])
 
     collname (A.DataDecl _ _ _)         = error "not yet: DataDecl"
