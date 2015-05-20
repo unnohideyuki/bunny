@@ -243,6 +243,8 @@ renPat (A.FunAppExp e e') = renPCon (A.FunAppExp e e') []
           pat' <- renPat e'
           return $ PCon a (pat':pats)
 
+renPat A.WildcardPat = return PWildcard
+
 renPat e = trace (show e) $ error "renPat"
 
 renRhs :: A.Rhs -> RN Expr
