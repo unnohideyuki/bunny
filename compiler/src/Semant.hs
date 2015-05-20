@@ -123,9 +123,9 @@ collectNames (ds, cds, ids) (decl:decls) = do
 
 
     collname d@(A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds') = do
+      _ <- renameVar n
       mapM_ colname' ds'
-      st <- get
-      trace (show st) $ return (ds, cds ++ [d], ids)
+      return (ds, cds ++ [d], ids)
       where colname' (A.ValDecl e _) = do _ <- renameVar (extrName e)
                                           return ()
             colname' _ = return ()
@@ -142,10 +142,24 @@ type TempBinds = (Id, Maybe Scheme, [Alt])
 renProg  :: A.Module -> RN ([TempBinds], [Assump])
 renProg m = do
   let body = snd (A.body m)
-  -- (ds, cds, ids) <- collectNames ([], [], []) body
-  (ds, _, _) <- collectNames ([], [], []) body
+  (ds, cds, ids) <- collectNames ([], [], []) body
+  renCDecls cds
   tbs <- renDecls ds
   return (tbs, [])
+
+renCDecls :: [A.Decl] -> RN ()
+renCDecls [] = return ()
+renCDecls ((A.ClassDecl cls ds):cds) = do
+  clsadd cls
+  renDecls ds
+  renCDecls cds
+  where clsadd (ctx, (A.AppTy (A.Tycon n) _)) = do
+          cname <- qname $ orig_name n
+          st <- get
+          let ce = rn_ce st
+              Just ce' = addClass cname [] ce -- todo: super class?
+          put $ st{rn_ce=ce'}
+          trace (show ce') $ return ()
 
 renDecls :: [A.Decl] -> RN [TempBinds]
 renDecls [] = do
