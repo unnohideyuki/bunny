@@ -5,6 +5,7 @@ import Control.Monad.State.Strict (State, state, get, put)
 import Data.Maybe
 import Symbol
 import qualified Absyn as A
+import Types
 import Typing
 import PreDefined
 
@@ -151,7 +152,7 @@ renCDecls :: [A.Decl] -> RN ()
 renCDecls [] = return ()
 renCDecls ((A.ClassDecl cls ds):cds) = do
   clsadd cls
-  renDecls ds
+  renDecls $ addvar cls ds
   renCDecls cds
   where clsadd (ctx, (A.AppTy (A.Tycon n) _)) = do
           cname <- qname $ orig_name n
@@ -160,29 +161,90 @@ renCDecls ((A.ClassDecl cls ds):cds) = do
               Just ce' = addClass cname [] ce -- todo: super class?
           put $ st{rn_ce=ce'}
           trace (show ce') $ return ()
+        addvar cls ds = let (_, sigvar) = cls
+                            f (A.TypeSigDecl ns (_, sigdoc)) =
+                              A.TypeSigDecl ns (Just sigvar, sigdoc)
+                            f d = d
+                        in map f ds
 
 renDecls :: [A.Decl] -> RN [TempBinds]
 renDecls [] = do
   st <- get
   return $ rn_tbs st
 renDecls (d:ds) = do
-  tb <- renDecl d
+  ntbs <- renDecl d
   st <- get
   let tbs = rn_tbs st
-      tbs' = tbs++[tb]
+      tbs' = tbs++ntbs
   put st{rn_tbs=tbs'}
   renDecls ds
 
-renDecl :: A.Decl -> RN TempBinds
+renDecl :: A.Decl -> RN [TempBinds]
 renDecl (A.ValDecl expr rhs) = do
   enterNewLevel
   (n, pats) <- renFExp expr
   rexp      <- renRhs  rhs
   exitLevel
-  return (n, Nothing, [(pats, rexp)])
+  return [(n, Nothing, [(pats, rexp)])]
 
-renDecl decls = trace (show ("non-exhaustive", decls)) $
-                return ("", Nothing, [])
+renDecl (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) = do
+  trace (show (ns, maybe_sigvar, sigdoc)) $ return ()
+  ns' <- mapM renameVar ns
+  let kdict = kiExpr sigdoc []
+  kdict `seq` return ()
+  ps <- renSigvar maybe_sigvar kdict
+  t <- renSigdoc sigdoc kdict
+  let scheme = mkScheme (ps :=> t) kdict
+  t `seq` scheme `seq` return [(n, Just scheme, []) | n <- ns']
+
+renDecl decl = trace (show ("non-exhaustive", decl)) $
+               return [("", Nothing, [])]
+
+kiExpr :: A.Type -> [(Id, Kind)] -> [(Id, Kind)]
+kiExpr (A.FunTy t1 t2) dict =
+  let dict' = kiExpr t1 dict
+  in kiExpr t2 dict'
+kiExpr (A.AppTy t1 t2) dict = dict ++ [(extrid t1, Kfun Star Star)
+                                      ,(extrid t2, Star)]
+  where extrid (A.Tyvar n) = orig_name n
+kiExpr (A.Tyvar n) dict = dict ++ [(orig_name n, Star)]
+kiExpr (A.ParTy e) dict = kiExpr e dict
+kiExpr t dict = trace (show (t, "kiExpr")) $ error "kiExpr"
+
+renSigvar :: Maybe A.Type -> [(Id, Kind)] -> RN [Pred]
+renSigvar Nothing _ = return []
+renSigvar (Just (A.AppTy (A.Tycon n) (A.Tyvar m))) kdict = do
+  qn <- qname $ orig_name n
+  let vname = orig_name m
+      k = kindLookup vname kdict
+  return [IsIn qn (TVar (Tyvar vname k))]
+
+renSigvar _ _ = error "renSigvar"
+
+renSigdoc :: A.Type -> [(Id, Kind)] -> RN Type
+renSigdoc (A.FunTy e1 e2) kdict = do
+  t1 <- renSigdoc e1 kdict
+  t2 <- renSigdoc e2 kdict
+  return (t1 `fn` t2)
+renSigdoc (A.Tyvar n) kdict = let vname = orig_name n
+                                  k = kindLookup vname kdict
+                              in return (TVar (Tyvar vname k))
+renSigdoc (A.AppTy e1 e2) kdict = do
+  t1 <- renSigdoc e1 kdict
+  t2 <- renSigdoc e2 kdict
+  return (TAp t1 t2)
+
+renSigdoc (A.ParTy e) kdict = renSigdoc e kdict
+
+renSigdoc t kdict = trace (show t) $ error "renSigdoc"
+
+kindLookup n kdict = case lookup n kdict of
+  Just k -> k
+  Nothing -> error $ "Kind not infered" ++ n
+
+mkScheme :: (Qual Type) -> [(Id, Kind)] -> Scheme
+mkScheme qt kdict = let vs = map (\(n, k) -> Tyvar n k) kdict
+                    in quantify vs qt
 
 -- Todo:
 renFExp :: A.Exp -> RN (Id, [Pat])
