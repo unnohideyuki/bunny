@@ -209,6 +209,8 @@ kiExpr (A.AppTy t1 t2) dict = dict ++ [(extrid t1, Kfun Star Star)
   where extrid (A.Tyvar n) = orig_name n
 kiExpr (A.Tyvar n) dict = dict ++ [(orig_name n, Star)]
 kiExpr (A.ParTy e) dict = kiExpr e dict
+kiExpr (A.Tycon _) dict = dict
+kiExpr (A.ListTy e) dict = kiExpr e dict
 kiExpr t dict = trace (show (t, "kiExpr")) $ error "kiExpr"
 
 renSigvar :: Maybe A.Type -> [(Id, Kind)] -> RN [Pred]
@@ -235,6 +237,17 @@ renSigdoc (A.AppTy e1 e2) kdict = do
   return (TAp t1 t2)
 
 renSigdoc (A.ParTy e) kdict = renSigdoc e kdict
+
+-- TODO: should be fix this hard coding.
+renSigdoc (A.Tycon n) _ = case orig_name n of
+  "String" -> return tString
+  "IO" -> return $ TCon (Tycon "IO" (Kfun Star Star))
+  "()" -> return tUnit
+  s -> error $ "renSigDoc $ A.Tycon" ++ s
+
+renSigdoc (A.ListTy e) kdict = do
+  t <- renSigdoc e kdict
+  return $ list t
 
 renSigdoc t kdict = trace (show t) $ error "renSigdoc"
 
