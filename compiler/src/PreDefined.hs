@@ -51,6 +51,11 @@ gtMfun
              ([IsIn cOrd (TGen 0)] :=>
               (TGen 0 `fn` TGen 0 `fn` tBool)))
 
+errorCfun :: Assump
+errorCfun
+  = "Prim.error" :>: (Forall [Star]
+                      ([] :=> (tString `fn` TGen 0)))
+
 primConsMems :: [Assump]
 primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
                 , falseCfun, trueCfun
@@ -67,6 +72,7 @@ primConsNames  = [ ("()", "Prim.()")
                  , (">", "Prim.>")
                  , ("Show", "Prim.Show")
                  , ("show", "Prim.show")
+                 , ("error", "Prim.error")
                  ]
 
 -- Primitive Names
