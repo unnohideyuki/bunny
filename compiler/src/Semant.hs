@@ -1,6 +1,7 @@
 module Semant where
 
 import Data.List (foldl')
+import Control.Monad (when)
 import Control.Monad.State.Strict (State, state, get, put)
 import Data.Maybe
 import Symbol
@@ -66,6 +67,7 @@ data RnState = RnState { rn_modid  :: !Id
                        , rn_ce     :: !(ClassEnv)
                        , rn_cms    :: !([Assump])
                        , rn_tbs    :: !([TempBinds])
+                       , rn_kdict  :: !(Table Kind)
                        }
                deriving Show
 
@@ -145,6 +147,7 @@ renProg m = do
   let body = snd (A.body m)
   (ds, cds, ids) <- collectNames ([], [], []) body
   renCDecls cds
+  renIDecls ids
   tbs <- renDecls ds
   return (tbs, [])
 
@@ -158,7 +161,7 @@ renCDecls ((A.ClassDecl cls ds):cds) = do
           cname <- qname $ orig_name n
           st <- get
           let ce = rn_ce st
-              Just ce' = addClass cname [] ce -- todo: super class?
+              Just ce' = addClass cname [] ce -- todo: super class
           put $ st{rn_ce=ce'}
           trace (show ce') $ return ()
         addvar cls ds = let (_, sigvar) = cls
@@ -166,6 +169,33 @@ renCDecls ((A.ClassDecl cls ds):cds) = do
                               A.TypeSigDecl ns (Just sigvar, sigdoc)
                             f d = d
                         in map f ds
+
+renIDecls :: [A.Decl] -> RN ()
+renIDecls [] = return ()
+renIDecls ((A.InstDecl t ds):ids) = do
+  let (c, i) = case t of
+        (A.AppTy (A.Tycon n1) (A.Tycon n2)) -> (n1, n2)
+  qcn <- qname $ orig_name c
+  qin <- renameVar i
+  k <- lookupKdict qcn
+  instAdd [] (IsIn qcn (TCon (Tycon qin k)))
+  enterNewLevelWith $ "%" ++ (orig_name i)
+  (ds', _, _) <- collectNames ([], [], []) ds
+  renDecls ds'
+  exitLevel
+  renIDecls ids
+  where instAdd ps p = do
+          st <- get
+          let ce = rn_ce st
+              Just ce' = addInst ps p ce
+          put $ st{rn_ce=ce'}
+
+lookupKdict :: Id -> RN Kind
+lookupKdict n = do
+  st <- get
+  case tabLookup n (rn_kdict st) of
+    Just k -> return k
+    Nothing -> error $ "kind not found: " ++ n
 
 renDecls :: [A.Decl] -> RN [TempBinds]
 renDecls [] = do
@@ -213,12 +243,20 @@ kiExpr (A.Tycon _) dict = dict
 kiExpr (A.ListTy e) dict = kiExpr e dict
 kiExpr t dict = trace (show (t, "kiExpr")) $ error "kiExpr"
 
+insertKdict :: Id -> Kind -> RN ()
+insertKdict n k = do
+  st <- get
+  let kdict = rn_kdict st
+      kdict' = insert n k kdict
+  trace (show kdict') $ put st{rn_kdict=kdict'}
+
 renSigvar :: Maybe A.Type -> [(Id, Kind)] -> RN [Pred]
 renSigvar Nothing _ = return []
 renSigvar (Just (A.AppTy (A.Tycon n) (A.Tyvar m))) kdict = do
   qn <- qname $ orig_name n
   let vname = orig_name m
       k = kindLookup vname kdict
+  when (isConName n) (insertKdict qn k)
   return [IsIn qn (TVar (Tyvar vname k))]
 
 renSigvar _ _ = error "renSigvar"
