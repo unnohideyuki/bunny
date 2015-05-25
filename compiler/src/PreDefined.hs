@@ -56,10 +56,30 @@ errorCfun
   = "Prim.error" :>: (Forall [Star]
                       ([] :=> (tString `fn` TGen 0)))
 
+tIO :: Type
+tIO = TCon (Tycon "IO" (Kfun Star Star))
+
+primRetCfun :: Assump
+primRetCfun
+  = "Prim.primRetIO" :>: (Forall [Star]
+                          ([] :=> (TGen 0 `fn` TAp tIO (TGen 0))))
+primBindCfun :: Assump
+primBindCfun
+  = "Prim.primBindIO" :>:
+    (Forall [Star, Star]
+     ([] :=>
+      (TAp tIO (TGen 0) `fn` (TGen 0 `fn` TAp tIO (TGen 1)) `fn` TAp tIO (TGen 1))))
+
+primFailCfun :: Assump
+primFailCfun
+  = "Prim.primFailIO" :>: (Forall [Star]
+                      ([] :=> (tString `fn` (TAp tIO (TGen 0)))))
+
 primConsMems :: [Assump]
 primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
                 , falseCfun, trueCfun
                 , leMfun, gtMfun
+                , primRetCfun, primBindCfun, primFailCfun
                 ]
 
 primConsNames :: [(Id, Id)]
@@ -73,6 +93,9 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Show", "Prim.Show")
                  , ("show", "Prim.show")
                  , ("error", "Prim.error")
+                 , ("primRetIO", "Prim.primRetIO")
+                 , ("primBindIO", "Prim.primBindIO")
+                 , ("primFailIO", "Prim.primFailIO")
                  ]
 
 -- Primitive Names
