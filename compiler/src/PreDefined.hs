@@ -57,7 +57,7 @@ errorCfun
                       ([] :=> (tString `fn` TGen 0)))
 
 tIO :: Type
-tIO = TCon (Tycon "IO" (Kfun Star Star))
+tIO = TCon (Tycon "Main.IO" (Kfun Star Star)) -- todo: Prim.IO
 
 primRetCfun :: Assump
 primRetCfun

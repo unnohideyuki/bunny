@@ -60,14 +60,15 @@ initialLevel modid = Level { lv_prefix = case modid of
 
 -- Renaming Monad
 
-data RnState = RnState { rn_modid  :: !Id
-                       , rn_lvs    :: !([Level])
-                       , rn_tenv   :: !(Table Id)
-                       , rn_ifxenv :: !(Table FixtyInfo)
-                       , rn_ce     :: !(ClassEnv)
-                       , rn_cms    :: !([Assump])
-                       , rn_tbs    :: !([TempBinds])
-                       , rn_kdict  :: !(Table Kind)
+data RnState = RnState { rn_modid   :: !Id
+                       , rn_lvs     :: !([Level])
+                       , rn_tenv    :: !(Table Id)
+                       , rn_ifxenv  :: !(Table FixtyInfo)
+                       , rn_ce      :: !(ClassEnv)
+                       , rn_cms     :: !([Assump])
+                       , rn_tbs     :: !([TempBinds])
+                       , rn_kdict   :: !(Table Kind)
+                       , rn_curInst :: !(Maybe Pred)
                        }
                deriving Show
 
@@ -141,6 +142,38 @@ collectNames (ds, cds, ids) (decl:decls) = do
 
 type TempBinds = (Id, Maybe Scheme, [Alt])
 
+-- will reset by exitLevel
+setCurrentInstance :: Pred -> RN ()
+setCurrentInstance p = do
+  st <- get
+  put st{rn_curInst = Just p}
+
+resetCurrentInstance :: RN ()
+resetCurrentInstance = do
+  st <- get
+  put st{rn_curInst = Nothing}
+
+chkScheme :: Id -> RN (Maybe Scheme)
+chkScheme n = do
+  st <- get
+  case rn_curInst st of
+    Nothing -> return Nothing
+    Just p  -> getScheme n p
+  where getScheme n p = do
+          st <- get
+          let n' = name' n
+              xs = [(ps', qt')| (x, maybe_scm, _) <- rn_tbs st
+                              , n' == x
+                              , isJust maybe_scm
+                              , let Just (Forall _ (ps' :=> qt')) = maybe_scm]
+              (ps, qt) = head xs
+              Just subst = matchPred (head ps) p -- todo: head ps only?
+              qt' = apply subst qt
+          return $ Just $ Forall [] ([] :=> qt')
+        name' n = let (pfx, s) = span (/= '%') n
+                      bd = tail $ dropWhile (/= '.') s
+                  in pfx ++ bd
+
 
 renProg  :: A.Module -> RN ([TempBinds], [Assump])
 renProg m = do
@@ -178,10 +211,13 @@ renIDecls ((A.InstDecl t ds):ids) = do
   qcn <- qname $ orig_name c
   qin <- renameVar i
   k <- lookupKdict qcn
-  instAdd [] (IsIn qcn (TCon (Tycon qin k)))
+  let p = (IsIn qcn (TCon (Tycon qin k)))
+  instAdd [] p
   enterNewLevelWith $ "%" ++ (orig_name i)
+  setCurrentInstance p
   (ds', _, _) <- collectNames ([], [], []) ds
   renDecls ds'
+  resetCurrentInstance
   exitLevel
   renIDecls ids
   where instAdd ps p = do
@@ -215,7 +251,8 @@ renDecl (A.ValDecl expr rhs) = do
   (n, pats) <- renFExp expr
   rexp      <- renRhs  rhs
   exitLevel
-  return [(n, Nothing, [(pats, rexp)])]
+  scm <- chkScheme n
+  return [(n, scm, [(pats, rexp)])]
 
 renDecl (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) = do
   trace (show (ns, maybe_sigvar, sigdoc)) $ return ()
@@ -295,7 +332,8 @@ kindLookup n kdict = case lookup n kdict of
 
 mkScheme :: (Qual Type) -> [(Id, Kind)] -> Scheme
 mkScheme qt kdict = let vs = map (\(n, k) -> Tyvar n k) kdict
-                    in quantify vs qt
+                    in -- quantify vs qt
+                     Forall [] qt
 
 -- Todo:
 renFExp :: A.Exp -> RN (Id, [Pat])
