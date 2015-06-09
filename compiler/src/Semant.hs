@@ -66,7 +66,7 @@ data RnState = RnState { rn_modid   :: !Id
                        , rn_ifxenv  :: !(Table FixtyInfo)
                        , rn_ce      :: !(ClassEnv)
                        , rn_cms     :: !([Assump])
-                       , rn_tbs     :: !([TempBinds])
+                       , rn_tbs     :: !([TempBind])
                        , rn_kdict   :: !(Table Kind)
                        , rn_curInst :: !(Maybe Pred)
                        }
@@ -140,7 +140,7 @@ collectNames (ds, cds, ids) (decl:decls) = do
     collname (A.DataDecl _ _ _)         = error "not yet: DataDecl"
     collname (A.NewtypeDecl _ _ _)      = error "not yet: NewtypeDecl"
 
-type TempBinds = (Id, Maybe Scheme, [Alt])
+type TempBind = (Id, Maybe Scheme, [Alt])
 
 -- will reset by exitLevel
 setCurrentInstance :: Pred -> RN ()
@@ -174,15 +174,15 @@ chkScheme n = do
                       bd = tail $ dropWhile (/= '.') s
                   in pfx ++ bd
 
-
-renProg  :: A.Module -> RN ([TempBinds], [Assump])
+renProg  :: A.Module -> RN ([BindGroup], [Assump])
 renProg m = do
   let body = snd (A.body m)
   (ds, cds, ids) <- collectNames ([], [], []) body
   renCDecls cds
   renIDecls ids
   tbs <- renDecls ds
-  return (tbs, [])
+  let bs = toBg tbs
+  return (bs, [])
 
 renCDecls :: [A.Decl] -> RN ()
 renCDecls [] = return ()
@@ -233,7 +233,7 @@ lookupKdict n = do
     Just k -> return k
     Nothing -> error $ "kind not found: " ++ n
 
-renDecls :: [A.Decl] -> RN [TempBinds]
+renDecls :: [A.Decl] -> RN [TempBind]
 renDecls [] = do
   st <- get
   return $ rn_tbs st
@@ -245,7 +245,7 @@ renDecls (d:ds) = do
   put st{rn_tbs=tbs'}
   renDecls ds
 
-renDecl :: A.Decl -> RN [TempBinds]
+renDecl :: A.Decl -> RN [TempBind]
 renDecl (A.ValDecl expr rhs) = do
   enterNewLevel
   (n, pats) <- renFExp expr
@@ -595,5 +595,21 @@ exitLevel = do
   let lvs' = tail $ rn_lvs st
   put st{rn_lvs=lvs'}
 
-
-
+toBg :: [TempBind] -> [BindGroup]
+toBg tbs = toBg2 tbs' scdict
+  where (tbs', scdict) = toBg1 tbs [] empty
+        toBg1 :: [TempBind] -> [TempBind] -> Table Scheme -> ([TempBind], Table Scheme)
+        toBg1 [] tbs2 dct = (reverse tbs2, dct)
+        toBg1 (tb:tbs1) tbs2 dct = case tb of
+          (name, Just scm, alts) -> let dct' = insert name scm dct
+                                        tbs2' = tbAdd tbs2 name alts
+                                    in toBg1 tbs1 tbs2' dct'
+          (name, Nothing, alts)  -> let tbs2' = tbAdd tbs2 name alts
+                                    in toBg1 tbs1 tbs2' dct
+        tbAdd [] name alts = [(name, Nothing, alts)]
+        tbAdd tbs2@((n, _, a):ts) name alts
+          | n == name = (n, Nothing, a ++ alts) : ts
+          | otherwise = (name, Nothing, alts) : tbs2
+        toBg2 :: [TempBind] -> Table Scheme -> [BindGroup]
+        toBg2 tbs2 dct = trace (show (tbs2, dct)) $ error "toBg2"
+           
