@@ -601,7 +601,11 @@ toBg tbs = toBg2 tbs' scdict
         toBg1 :: [TempBind] -> [TempBind] -> Table Scheme -> ([TempBind], Table Scheme)
         toBg1 [] tbs2 dct = (reverse tbs2, dct)
         toBg1 (tb:tbs1) tbs2 dct = case tb of
-          (name, Just scm, alts) -> let dct' = insert name scm dct
+          (name, Just scm, alts) -> let qt = case scm of
+                                          Forall _ qt' -> qt'
+                                        ts = tv qt
+                                        scm' = quantify ts qt
+                                        dct' = insert name scm' dct
                                         tbs2' = tbAdd tbs2 name alts
                                     in toBg1 tbs1 tbs2' dct'
           (name, Nothing, alts)  -> let tbs2' = tbAdd tbs2 name alts
