@@ -140,7 +140,7 @@ collectNames (ds, cds, ids) (decl:decls) = do
     collname (A.DataDecl _ _ _)         = error "not yet: DataDecl"
     collname (A.NewtypeDecl _ _ _)      = error "not yet: NewtypeDecl"
 
-type TempBind = (Id, Maybe Scheme, [Alt])
+type TempBind = (Id, Maybe (Qual Type), [Alt])
 
 -- will reset by exitLevel
 setCurrentInstance :: Pred -> RN ()
@@ -153,23 +153,23 @@ resetCurrentInstance = do
   st <- get
   put st{rn_curInst = Nothing}
 
-chkScheme :: Id -> RN (Maybe Scheme)
-chkScheme n = do
+chkQualType :: Id -> RN (Maybe (Qual Type))
+chkQualType n = do
   st <- get
   case rn_curInst st of
     Nothing -> return Nothing
-    Just p  -> getScheme n p
-  where getScheme n p = do
+    Just p  -> getQt n p
+  where getQt n p = do
           st <- get
           let n' = name' n
-              xs = [(ps', qt')| (x, maybe_scm, _) <- rn_tbs st
+              xs = [(ps', qt')| (x, maybe_qt, _) <- rn_tbs st
                               , n' == x
-                              , isJust maybe_scm
-                              , let Just (Forall _ (ps' :=> qt')) = maybe_scm]
+                              , isJust maybe_qt
+                              , let Just (ps' :=> qt') = maybe_qt]
               (ps, qt) = head xs
               Just subst = matchPred (head ps) p -- todo: head ps only?
               qt' = apply subst qt
-          return $ Just $ Forall [] ([] :=> qt')
+          return $ Just $ ([] :=> qt')
         name' n = let (pfx, s) = span (/= '%') n
                       bd = tail $ dropWhile (/= '.') s
                   in pfx ++ bd
@@ -251,8 +251,8 @@ renDecl (A.ValDecl expr rhs) = do
   (n, pats) <- renFExp expr
   rexp      <- renRhs  rhs
   exitLevel
-  scm <- chkScheme n
-  return [(n, scm, [(pats, rexp)])]
+  qt <- chkQualType n
+  return [(n, qt, [(pats, rexp)])]
 
 renDecl (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) = do
   trace (show (ns, maybe_sigvar, sigdoc)) $ return ()
@@ -261,8 +261,7 @@ renDecl (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) = do
   kdict `seq` return ()
   ps <- renSigvar maybe_sigvar kdict
   t <- renSigdoc sigdoc kdict
-  let scheme = mkScheme (ps :=> t) kdict
-  t `seq` scheme `seq` return [(n, Just scheme, []) | n <- ns']
+  t `seq` return [(n, Just (ps :=> t), []) | n <- ns']
 
 renDecl decl = trace (show ("non-exhaustive", decl)) $
                return [("", Nothing, [])]
@@ -329,11 +328,6 @@ renSigdoc t kdict = trace (show t) $ error "renSigdoc"
 kindLookup n kdict = case lookup n kdict of
   Just k -> k
   Nothing -> error $ "Kind not infered" ++ n
-
-mkScheme :: (Qual Type) -> [(Id, Kind)] -> Scheme
-mkScheme qt kdict = let vs = map (\(n, k) -> Tyvar n k) kdict
-                    in -- quantify vs qt
-                     Forall [] qt
 
 -- Todo:
 renFExp :: A.Exp -> RN (Id, [Pat])
@@ -601,9 +595,7 @@ toBg tbs = toBg2 tbs' scdict
         toBg1 :: [TempBind] -> [TempBind] -> Table Scheme -> ([TempBind], Table Scheme)
         toBg1 [] tbs2 dct = (reverse tbs2, dct)
         toBg1 (tb:tbs1) tbs2 dct = case tb of
-          (name, Just scm, alts) -> let qt = case scm of
-                                          Forall _ qt' -> qt'
-                                        ts = tv qt
+          (name, Just qt, alts)  -> let ts = tv qt
                                         scm' = quantify ts qt
                                         dct' = insert name scm' dct
                                         tbs2' = tbAdd tbs2 name alts
@@ -612,8 +604,8 @@ toBg tbs = toBg2 tbs' scdict
                                     in toBg1 tbs1 tbs2' dct
         tbAdd [] name alts = [(name, Nothing, alts)]
         tbAdd tbs2@((n, _, a):ts) name alts
-          | n == name = (n, Nothing, a ++ alts) : ts
-          | otherwise = (name, Nothing, alts) : tbs2
+          | n == name = trace (show (91, n, name)) $ (n, Nothing, a ++ alts) : ts
+          | otherwise = trace (show (92, n, name)) $ (name, Nothing, alts) : tbs2
         toBg2 :: [TempBind] -> Table Scheme -> [BindGroup]
         toBg2 tbs2 dct = trace (show (tbs2, dct)) $ error "toBg2"
            
