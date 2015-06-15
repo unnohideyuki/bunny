@@ -603,9 +603,14 @@ toBg tbs = toBg2 tbs' scdict
           (name, Nothing, alts)  -> let tbs2' = tbAdd tbs2 name alts
                                     in toBg1 tbs1 tbs2' dct
         tbAdd [] name alts = [(name, Nothing, alts)]
-        tbAdd tbs2@((n, _, a):ts) name alts
-          | n == name = trace (show (91, n, name)) $ (n, Nothing, a ++ alts) : ts
-          | otherwise = trace (show (92, n, name)) $ (name, Nothing, alts) : tbs2
+        tbAdd tbs2 name alts =
+          let s2lv = length.(filter (== '.'))
+              flt (n, _, _) = s2lv n > s2lv name
+              (ts1, ts2) = span flt tbs2
+          in case ts2 of
+            ((n, _, a):ts) | n == name -> ts1 ++ (n, Nothing, a ++ alts) : ts
+                           | otherwise -> (name, Nothing, alts) : tbs2
+            _ -> (name, Nothing, alts) : tbs2
         toBg2 :: [TempBind] -> Table Scheme -> [BindGroup]
         toBg2 tbs2 dct = trace (show (tbs2, dct)) $ error "toBg2"
            
