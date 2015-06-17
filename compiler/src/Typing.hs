@@ -278,7 +278,7 @@ instance Types Assump where
   tv (_ :>: sc)      = tv sc
 
 find                   :: Monad m => Id -> [Assump] -> m Scheme
-find i []               = fail $ "unboud identifier" ++ i
+find i []               = fail $ "unbound identifier: " ++ i
 find i ((i' :>: sc):as) = if i == i' then return sc else find i as
 
 -------------------------------------------------------------------------------

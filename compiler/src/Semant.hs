@@ -181,8 +181,12 @@ renProg m = do
   renCDecls cds
   renIDecls ids
   tbs <- renDecls ds
-  let bs = toBg tbs
-  return (bs, [])
+  let bgs = toBg tbs
+  st <- get
+  let ce = rn_ce st
+      as = rn_cms st
+      as' = tiProgram ce as bgs
+  return (bgs, as')
 
 renCDecls :: [A.Decl] -> RN ()
 renCDecls [] = return ()
