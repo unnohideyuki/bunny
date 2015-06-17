@@ -196,7 +196,7 @@ renCDecls ((A.ClassDecl cls ds):cds) = do
           let ce = rn_ce st
               Just ce' = addClass cname [] ce -- todo: super class
           put $ st{rn_ce=ce'}
-          trace (show ce') $ return ()
+          return ()
         addvar cls ds = let (_, sigvar) = cls
                             f (A.TypeSigDecl ns (_, sigdoc)) =
                               A.TypeSigDecl ns (Just sigvar, sigdoc)
@@ -255,7 +255,6 @@ renDecl (A.ValDecl expr rhs) = do
   return [(n, qt, [(pats, rexp)])]
 
 renDecl (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) = do
-  trace (show (ns, maybe_sigvar, sigdoc)) $ return ()
   ns' <- mapM renameVar ns
   let kdict = kiExpr sigdoc []
   kdict `seq` return ()
@@ -284,7 +283,7 @@ insertKdict n k = do
   st <- get
   let kdict = rn_kdict st
       kdict' = insert n k kdict
-  trace (show kdict') $ put st{rn_kdict=kdict'}
+  put st{rn_kdict=kdict'}
 
 renSigvar :: Maybe A.Type -> [(Id, Kind)] -> RN [Pred]
 renSigvar Nothing _ = return []
@@ -612,5 +611,11 @@ toBg tbs = toBg2 tbs' scdict
                            | otherwise -> (name, Nothing, alts) : tbs2
             _ -> (name, Nothing, alts) : tbs2
         toBg2 :: [TempBind] -> Table Scheme -> [BindGroup]
-        toBg2 tbs2 dct = trace (show (tbs2, dct)) $ error "toBg2"
+        toBg2 tbs2 dct = tobg2 [([], [[]])] tbs2
+          where tobg2 bg [] = bg
+                tobg2 [(es, [is])] (tb:tbs) = case tb of
+                  (_, _, []) -> tobg2 [(es, [is])] tbs
+                  (n, _, as) -> case tabLookup n dct of
+                    Just scm -> tobg2 [((n, scm, as):es, [is])] tbs
+                    Nothing  -> tobg2 [(es, [(n, as):is])] tbs
            
