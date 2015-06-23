@@ -67,12 +67,30 @@ data RnState = RnState { rn_modid   :: !Id
                        , rn_ce      :: !(ClassEnv)
                        , rn_cms     :: !([Assump])
                        , rn_tbs     :: !([TempBind])
+                       , rn_tbstack :: !([[TempBind]])
                        , rn_kdict   :: !(Table Kind)
                        , rn_curInst :: !(Maybe Pred)
                        }
                deriving Show
 
 type RN a = State RnState a
+
+pushTbs :: RN ()
+pushTbs = do
+  st <- get
+  let tbs = rn_tbs st
+      tbstack = rn_tbstack st
+  put st{rn_tbs=[], rn_tbstack=(tbs:tbstack)}
+
+popTbs :: RN [TempBind]
+popTbs = do
+  st <- get
+  let tbs = rn_tbs st
+      (tbs', tbstack') = case rn_tbstack st of
+        (x:xs) -> (x, xs)
+        [] -> error "popTbs from empty stack."
+  put st{rn_tbs=tbs', rn_tbstack=tbstack'}
+  return tbs
 
 renameVar :: Name -> RN Id
 renameVar name = state $ \st@RnState{rn_lvs=(lv:lvs)} ->
@@ -441,11 +459,13 @@ renExp (A.LitExp (A.LitInteger i _)) = do
 renExp (A.LetExp ds e) = do
   enterNewLevel
   (ds', _, _) <- collectNames ([], [], []) ds
+  pushTbs
   renDecls ds'
-  st <- get
-  r <- renExp e
+  tbs <- popTbs
+  e' <- renExp e
   exitLevel
-  return r
+  let bgs = toBg tbs
+  return (Let (head bgs) e') -- TODO: (head bgs) is temporary
 
 -- List comprehension
 -- [e | True] = [e]

@@ -225,7 +225,7 @@ inHnf (IsIn _ t) = hnf t
   where hnf (TVar _)   = True
         hnf (TCon _)   = False
         hnf (TAp t' _) = hnf t'
-        hnf _          = undefined
+        hnf _          = error "must not happen in inHnf"
 
 toHnfs      :: Monad m => ClassEnv -> [Pred] -> m [Pred]
 toHnfs ce ps = do pss <- mapM (toHnf ce) ps
