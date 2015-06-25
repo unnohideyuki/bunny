@@ -41,19 +41,19 @@ cOrd  = "Ord"
 
 leMfun :: Assump
 leMfun
-  = "<=" :>: (Forall [Star]
-              ([IsIn cOrd (TGen 0)] :=>
-               (TGen 0 `fn` TGen 0 `fn` tBool)))
+  = "Prim.<=" :>: (Forall [Star]
+                   ([IsIn cOrd (TGen 0)] :=>
+                    (TGen 0 `fn` TGen 0 `fn` tBool)))
 
 gtMfun :: Assump
 gtMfun
-  = ">" :>: (Forall [Star]
-             ([IsIn cOrd (TGen 0)] :=>
-              (TGen 0 `fn` TGen 0 `fn` tBool)))
+  = "Prim.>" :>: (Forall [Star]
+                  ([IsIn cOrd (TGen 0)] :=>
+                   (TGen 0 `fn` TGen 0 `fn` tBool)))
 
 errorCfun :: Assump
 errorCfun
-  = "Prim.error" :>: (Forall [Star]
+  = "Main.error" :>: (Forall [Star]
                       ([] :=> (tString `fn` TGen 0)))
 
 tIO :: Type
@@ -88,14 +88,14 @@ primConsNames  = [ ("()", "Prim.()")
                  , (":", "Prim.:")
                  , ("False", "Prim.False")
                  , ("True", "Prim.True")
-                 , ("<=", "Prim.<=")
-                 , (">", "Prim.>")
                  , ("Show", "Prim.Show")
                  , ("show", "Prim.show")
                  , ("error", "Prim.error")
                  , ("primRetIO", "Prim.primRetIO")
                  , ("primBindIO", "Prim.primBindIO")
                  , ("primFailIO", "Prim.primFailIO")
+                 , ("PrimGt", "Prim.>")
+                 , ("PrimLe", "Prim.<=")
                  ]
 
 -- Primitive Names

@@ -127,12 +127,14 @@ classes ce i = case tabLookup i (ce_map ce) of
                 Nothing -> fail "class not defined"
 
 super     :: ClassEnv -> Id -> [Id]
-super ce i = case classes ce i of Just (is, _) -> is
-                                  _            -> undefined
+super ce i = case classes ce i of
+  Just (is, _) -> is
+  _            -> error $"super: " ++ i
 
 insts     :: ClassEnv -> Id -> [Inst]
-insts ce i = case classes ce i of Just (_, its) -> its
-                                  _             -> undefined
+insts ce i = case classes ce i of
+  Just (_, its) -> its
+  _             -> error $ "insts: " ++ i
 
 defined :: Maybe a -> Bool
 defined (Just _) = True

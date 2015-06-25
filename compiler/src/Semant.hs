@@ -338,6 +338,7 @@ renSigdoc (A.Tycon n) _ = case orig_name n of
   "String" -> return tString
   "IO" -> return $ TCon (Tycon "IO" (Kfun Star Star))
   "()" -> return tUnit
+  "Bool" -> return tBool
   s -> error $ "renSigDoc $ A.Tycon" ++ s
 
 renSigdoc (A.ListTy e) kdict = do
