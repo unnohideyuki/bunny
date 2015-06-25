@@ -2,7 +2,9 @@ module Typing where
 
 import Data.List (nub, (\\), intersect, union, partition)
 import Control.Monad (msum)
-import Control.Monad.State (State, state, runState)
+import Control.Monad.State.Strict (State, state, runState, get, put)
+
+import Debug.Trace
 
 import Types
 import Symbol
@@ -286,13 +288,13 @@ find i ((i' :>: sc):as) = if i == i' then return sc else find i as
 -------------------------------------------------------------------------------
 -- Type inference monad
 
-type TI a = State (Subst, Int) a
+type TI a = State (Subst, Int, [Assump]) a
 
 runTI :: TI a -> a
-runTI ti = x where (x, _) = runState ti (nullSubst, 0)
+runTI ti = x where (x, _) = runState ti (nullSubst, 0, [])
 
 getSubst :: TI Subst
-getSubst  = state $ \st@(s, _) -> (s, st)
+getSubst  = state $ \st@(s, _, as) -> (s, st)
 
 unify      :: Type -> Type -> TI ()
 unify t1 t2 = do s <- getSubst
@@ -300,18 +302,28 @@ unify t1 t2 = do s <- getSubst
                  extSubst u
 
 extSubst   :: Subst -> TI ()
-extSubst s' = state $ \(s, n) -> ((), (s'@@s, n))
+extSubst s' = state $ \(s, n, as) -> ((), (s'@@s, n, as))
 
 enumId :: Int -> Id
 enumId n = ".v" ++ show n
 
 newTVar :: Kind -> TI Type
-newTVar k = state $ \(s, n) -> let v = Tyvar (enumId n) k
-                               in (TVar v, (s, n+1))
+newTVar k = state $ \(s, n, as) -> let v = Tyvar (enumId n) k
+                                   in (TVar v, (s, n+1, as))
 
 freshInst :: Scheme -> TI (Qual Type)
 freshInst (Forall ks qt) = do ts <- mapM newTVar ks
                               return (inst ts qt)
+
+appendAssump :: [Assump] -> TI ()
+appendAssump as' = do
+  (s, n, as) <- get
+  put (s, n, as ++ as')
+
+getAssump :: TI [Assump]
+getAssump = do
+  (_, _, as) <- get
+  return as
 
 class Instantiate t where
   inst :: [Type] -> t -> t
@@ -408,6 +420,7 @@ tiExpr ce as (Ap e f)         = do (ps, te) <- tiExpr ce as e
                                    return (ps ++ qs, t)
 tiExpr ce as (Let bg e)       = do (ps, as') <- tiBindGroup ce as bg
                                    (qs, t)   <- tiExpr ce (as' ++ as) e
+                                   appendAssump as'
                                    return (ps ++ qs, t)
 
 -- Alternatives
@@ -551,4 +564,5 @@ tiProgram ce as bgs = runTI $
                          s         <- getSubst
                          rs        <- reduce ce (apply s ps)
                          s'        <- defaultSubst ce [] rs
-                         return (apply (s'@@s) as')
+                         as''      <- getAssump
+                         return (apply (s'@@s) as' ++ as'')
