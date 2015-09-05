@@ -36,3 +36,9 @@ foldr k z = go
             where go []     = z
                   go (y:ys) = y `k` go ys
 
+infix 4 >, <=
+a > b = PrimGt a b
+a <= b = PrimLe a b
+
+
+
