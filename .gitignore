@@ -8,3 +8,4 @@ compiler/sample/drive_semant
 *.hi
 *.o
 *~
+*.exe
