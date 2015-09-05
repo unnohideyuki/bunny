@@ -5,8 +5,10 @@ objs = src/Lexer.o src/Parser.o src/Absyn.o src/Types.o src/Symbol.o \
        src/Typing.o src/Semant.o src/PreDefined.o
 all: $(samples)
 
+OPTIONS = -Wall -XFlexibleContexts
+
 %.o:	%.hs
-	ghc -Wall -isrc $<
+	ghc $(OPTIONS) -isrc $<
 
 src/Lexer.o:	src/Lexer.hs
 
@@ -28,10 +30,10 @@ src/Semant.o:	src/Semant.hs
 src/PreDefined.o:	src/PreDefined.hs
 
 sample/parser_sample:	sample/parser_sample.hs $(objs)
-	ghc -Wall -isrc $<
+	ghc $(OPTIONS) -isrc $<
 
 sample/drive_semant:	sample/drive_semant.hs $(objs)
-	ghc -Wall -isrc $<
+	ghc $(OPTIONS) -isrc $<
 
 clean:	
 	rm -f src/*.hi src/*.o sample/*.o $(samples) $(temps) $(objs)
