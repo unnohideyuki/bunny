@@ -6,7 +6,8 @@ import Symbol
 -- preludeClasses
 
 preludeClasses :: ClassEnv
-preludeClasses  = initialEnv
+preludeClasses  = case exampleInsts initialEnv of
+  Just ce -> ce
 
 -- Primitive Constructors and Member Functions
 
