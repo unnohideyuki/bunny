@@ -72,7 +72,7 @@ mgu (TAp l r) (TAp l' r') = do s1 <- mgu l l'
 mgu (TVar u) t            = varBind u t
 mgu t (TVar u)            = varBind u t
 mgu (TCon tc1) (TCon tc2) | tc1 == tc2 = return nullSubst
-mgu _ _                   = fail "types do not unify"
+mgu t1 t2                 = fail $ "types do not unify: " ++ show (t1, t2)
 
 varBind u t | t == TVar u      = return nullSubst
             | u `elem` tv t    = fail "occurs check fails"
@@ -167,7 +167,7 @@ addPreludeClasses  = addCoreClasses <:> addNumClasses
 addCoreClasses :: EnvTransformer
 addCoreClasses  = addClass "Eq" []
               <:> addClass "Ord" ["Eq"]
-              <:> addClass "Show" []
+              <:> addClass "Prim.Show" []
               <:> addClass "Read" []
               <:> addClass "Bounded" []
               <:> addClass "Enum" []
@@ -175,7 +175,7 @@ addCoreClasses  = addClass "Eq" []
               <:> addClass "Monad" []
 
 addNumClasses :: EnvTransformer
-addNumClasses  = addClass "Num" ["Eq", "Show"]
+addNumClasses  = addClass "Num" ["Eq", "Prim.Show"]
              <:> addClass "Real" ["Num", "Ord"]
              <:> addClass "Fractional" ["Num"]
              <:> addClass "Integral" ["Real", "Enum"]
@@ -204,6 +204,7 @@ exampleInsts  = addPreludeClasses
                         , IsIn "Ord" (TVar (Tyvar "b" Star))]
                         (IsIn "Ord" (pair (TVar (Tyvar "a" Star))
                                           (TVar (Tyvar "b" Star))))
+
 
 -------------------------------------------------------------------------------
 

@@ -81,6 +81,9 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
                 , falseCfun, trueCfun
                 , leMfun, gtMfun
                 , primRetCfun, primBindCfun, primFailCfun
+                , "Prim.putStrLn" :>:
+                  (Forall []
+                   ([] :=> (TAp tList tChar `fn` TAp tIO tUnit)))
                 ]
 
 primConsNames :: [(Id, Id)]
