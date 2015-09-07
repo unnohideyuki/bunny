@@ -54,7 +54,7 @@ gtMfun
 
 errorCfun :: Assump
 errorCfun
-  = "Main.error" :>: (Forall [Star]
+  = "Prim.error" :>: (Forall [Star]
                       ([] :=> (tString `fn` TGen 0)))
 
 tIO :: Type
@@ -81,6 +81,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
                 , falseCfun, trueCfun
                 , leMfun, gtMfun
                 , primRetCfun, primBindCfun, primFailCfun
+                , errorCfun
                 , "Prim.putStrLn" :>:
                   (Forall []
                    ([] :=> (TAp tList tChar `fn` TAp tIO tUnit)))
