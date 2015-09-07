@@ -204,6 +204,12 @@ exampleInsts  = addPreludeClasses
                         , IsIn "Ord" (TVar (Tyvar "b" Star))]
                         (IsIn "Ord" (pair (TVar (Tyvar "a" Star))
                                           (TVar (Tyvar "b" Star))))
+            <:> addInst [] (IsIn "Prim.Show" tChar)
+            <:> addInst [] (IsIn "Prim.Show" tInt)
+            <:> addInst [ IsIn "Prim.Show" (TVar (Tyvar "a" Star))]
+                        (IsIn "Prim.Show" (list (TVar (Tyvar "a" Star))))
+            <:> addInst [] (IsIn "Num" tChar)
+            <:> addInst [] (IsIn "Num" tInt)
 
 
 -------------------------------------------------------------------------------
@@ -239,7 +245,8 @@ toHnfs ce ps = do pss <- mapM (toHnf ce) ps
 toHnf :: Monad m => ClassEnv -> Pred -> m [Pred]
 toHnf ce p | inHnf p   = return [p]
            | otherwise = case byInst ce p of
-                           Nothing -> fail "context reduction"
+                           Nothing -> fail $ "context reduction\n" ++
+                                             show ce ++ "\n" ++ show p
                            Just ps -> toHnfs ce ps
 
 simplify   :: ClassEnv -> [Pred] -> [Pred]
