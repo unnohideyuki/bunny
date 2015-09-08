@@ -196,22 +196,22 @@ renProg  :: A.Module -> RN ([BindGroup], [Assump])
 renProg m = do
   let body = snd (A.body m)
   (ds, cds, ids) <- collectNames ([], [], []) body
-  renCDecls cds
+  ctbs <- renCDecls cds []
   renIDecls ids
   tbs <- renDecls ds
-  let bgs = toBg tbs
+  let bgs = toBg $ ctbs ++ tbs
   st <- get
   let ce = rn_ce st
       as = rn_cms st
       as' = tiProgram ce as bgs
   return (bgs, as')
 
-renCDecls :: [A.Decl] -> RN ()
-renCDecls [] = return ()
-renCDecls ((A.ClassDecl cls ds):cds) = do
+renCDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]
+renCDecls [] tbs = return tbs
+renCDecls ((A.ClassDecl cls ds):cds) tbs = do
   clsadd cls
-  renDecls $ addvar cls ds
-  renCDecls cds
+  tbs <- renDecls $ addvar cls ds
+  renCDecls cds tbs
   where clsadd (ctx, (A.AppTy (A.Tycon n) _)) = do
           cname <- qname $ orig_name n
           st <- get
