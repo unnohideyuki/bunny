@@ -1,4 +1,4 @@
-module CoreLang where
+module Core where
 
 import Symbol
 
