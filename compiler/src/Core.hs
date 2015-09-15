@@ -1,6 +1,7 @@
 module Core where
 
 import Symbol
+import Text.PrettyPrint.ANSI.Leijen
 
 data Module = Module Id [TypeDefn] [ValueDefn]
 
@@ -55,3 +56,5 @@ data Kind = AKind AtomKind
           | ArrKind AtomKind Kind
 
 
+ppModule (Module modident _ _) =
+  text "Module" <+> text modident <> line
