@@ -431,6 +431,17 @@ tiExpr ce as (Let bg e)       = do (ps, as') <- tiBindGroup ce as bg
                                    appendAssump as'
                                    return (ps ++ qs, t)
 
+-- substitution, used from Pattern.hs
+subst :: Expr -> Id -> Id -> Expr
+subst var@(Var v) vnew vold | v == vold = Var vnew
+                            | otherwise = var
+
+subst lit@(Lit _) _ _ = lit
+
+subst c@(Const _) _ _ = c
+
+subst (Ap e1 e2) vnew vold = Ap (subst e1 vnew vold) (subst e2 vnew vold)
+
 -- Alternatives
 
 type Alt = ([Pat], Expr)
