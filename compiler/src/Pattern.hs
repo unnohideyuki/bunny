@@ -49,7 +49,7 @@ subst expr vnew vold =
 
     subst_cs cs = fmap (\c -> subst_c c) cs
 
-    subst_expr e = Typing.subst e vnew vold
+    subst_expr e = Typing.vsubst e vnew vold
   in
    case expr of
      Case v cs -> Case (subst_var v) (subst_cs cs)

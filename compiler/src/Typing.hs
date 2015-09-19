@@ -302,7 +302,7 @@ runTI :: TI a -> a
 runTI ti = x where (x, _) = runState ti (nullSubst, 0, [])
 
 getSubst :: TI Subst
-getSubst  = state $ \st@(s, _, as) -> (s, st)
+getSubst  = state $ \st@(s, _, _) -> (s, st)
 
 unify      :: Type -> Type -> TI ()
 unify t1 t2 = do s <- getSubst
@@ -431,16 +431,46 @@ tiExpr ce as (Let bg e)       = do (ps, as') <- tiBindGroup ce as bg
                                    appendAssump as'
                                    return (ps ++ qs, t)
 
--- substitution, used from Pattern.hs
-subst :: Expr -> Id -> Id -> Expr
-subst var@(Var v) vnew vold | v == vold = Var vnew
+-- Substitution (for variable, not for type vars), used from Pattern.hs
+vsubst :: Expr -> Id -> Id -> Expr
+vsubst var@(Var v) vnew vold | v == vold = Var vnew
                             | otherwise = var
 
-subst lit@(Lit _) _ _ = lit
+vsubst lit@(Lit _) _ _ = lit
 
-subst c@(Const _) _ _ = c
+vsubst c@(Const _) _ _ = c
 
-subst (Ap e1 e2) vnew vold = Ap (subst e1 vnew vold) (subst e2 vnew vold)
+vsubst (Ap e1 e2) vnew vold = Ap (vsubst e1 vnew vold) (vsubst e2 vnew vold)
+
+vsubst (Let bg e) vnew vold
+  | isFree bg vold = Let (vsubst_bg bg vnew vold) (vsubst e vnew vold)
+  | otherwise      = Let bg e
+  where
+    isFree (es, iss) n =
+      not $ elem n $ fmap (\(s,_,_) -> s) es ++ fmap fst (concat iss)
+
+    isFree_p (PVar s) n = (s /= n)
+    isFree_p (PAs s pat) n = (s /= n) && isFree_p pat n
+    isFree_p (PCon _ ps) n = isFree_ps ps n
+    isFree_p _ _ = True
+
+    isFree_ps ps n = and $ fmap (\pat -> isFree_p pat n) ps
+
+    -- Caution: User must guaranntee that vnew is free in ps
+    vsubst_alt alt@(ps, expr) vn vo
+      | isFree_ps ps vo = (ps, vsubst expr vn vo)
+      | otherwise       = alt
+
+    vsubst_alts alts vn vo = fmap (\alt -> vsubst_alt alt vn vo) alts
+
+    vsubst_bg :: BindGroup -> Id -> Id -> BindGroup
+    vsubst_bg (es, iss) vn vo = (es', iss')
+      where
+        es' = fmap (\(n, sc, alts) -> (n, sc, vsubst_alts alts vn vo)) es
+        iss' = fmap 
+               (\is ->
+                 fmap (\(n, alts) -> (n, vsubst_alts alts vn vo)) is)
+               iss
 
 -- Alternatives
 
