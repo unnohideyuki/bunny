@@ -29,4 +29,4 @@ main = do
   case r of
     Left  mes -> putStrLn $ "Error: " ++ mes
     Right m -> do do_semant m
-                  
+

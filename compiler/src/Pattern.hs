@@ -30,6 +30,7 @@ constructors (c Typing.:>: _) =
 data Expression = Case Variable [Clause]
                 | Fatbar Expression Expression
                 | OtherExpression Typing.Expr
+                | Error
                 deriving Show
 
 type Variable = Id
