@@ -7,21 +7,21 @@ import Pattern
 
 import Debug.Trace
 
-desModule :: Id -> Ty.Program -> [Ty.Assump] -> Core.Module
-desModule modident bgs as =
+dsgModule :: Id -> Ty.Program -> [Ty.Assump] -> Core.Module
+dsgModule modident bgs as =
   let
     [(es, iss)] = bgs
     [is] = iss
-    vdefs = desIs [] is
+    vdefs = dsgIs [] is
   in
-   trace (show vdefs) Core.Module modident [] []
+   trace (show vdefs) Core.Module modident []
 
-desIs vds [] = vds
-desIs vds (impl:is) = desIs (desis impl:vds) is
+dsgIs vds [] = vds
+dsgIs vds (impl:is) = dsgIs (desis impl:vds) is
   where
-    desis (n, alts) = (n, desAlts $ cnvalts alts)
+    desis (n, alts) = (n, dsgAlts $ cnvalts alts)
 
-desAlts alts@((pats,_):_) =
+dsgAlts alts@((pats,_):_) =
   let
     k = length pats
     us = [mkVar i | i <- [1..k]]

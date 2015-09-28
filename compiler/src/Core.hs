@@ -3,64 +3,46 @@ module Core where
 import Symbol
 import Text.PrettyPrint.ANSI.Leijen
 
-data Module = Module Id [TypeDefn] [ValueDefn]
+data Module = Module Id [Bind] {- [Axiom] -}
 
-data TypeDefn = DataDefn Id [TypeBinder] [ConstrDefn]
-              | NewtypeDefn Id Id [TypeBinder] Type
+data Var = TermVar Id Type
+         | TypeVar Id Kind
 
-data ConstrDefn = ConstrDefn Id [TypeBinder] [AtomType]
+data Kind = Star | Kfun Kind Kind
 
-data ValueDefn = ValueDefn Id Type Expr
+data TyCon = TyCon Id Kind
 
-data AtomExpr = VarExpr Id
-              | ConExpr Id
-              | LitExpr Literal
-              | ParExpr Expr
-
-data Expr = AExpr AtomExpr
-          | AppExpr AtomExpr [Arg]
-          | LamExpr [Binder] Expr
-          | LetExpr [ValueDefn] Expr
-          | CaseExpr AtomType Expr ValueBinder [CaseAlt]
-          | CastExpr Expr AtomType
-
-data Arg = TypeArg AtomType
-         | ValueArg AtomExpr
-
-data CaseAlt = ConAlt Id [TypeBinder] [ValueBinder] Expr
-             | LitAlt Literal Expr
-             | DefaultAlt Expr
-
-data Binder = TBind TypeBinder
-            | VBind ValueBinder
-
-data TypeBinder = TypeBinder Id Kind
-
-data ValueBinder = ValueBinder Id Type
+data Type = TyVarTy Var
+          | AppTy Type Type
+          | TyConApp TyCon [Type]
+          | FunTy Type Type
+          | ForAllTy Var Type
 
 data Literal = LitInt  Integer  Type
              | LitChar Char     Type
              | LitRat  Rational Type
              | LitStr  String   Type
 
-data AtomType = Tyvar Id
-              | Tycon Id
-              | ParType Type
+data Expr = Var Var
+          | Lit Literal
+          | App Expr Expr
+          | Lam Var Expr
+          | Let Bind Expr
+          | Case Expr Var [Alt]
+          | Cast Expr Type
+          | Type Type
 
-data BasicType = AType AtomType
-               | AppType BasicType AtomType
+data Bind = NoRec Var Expr
+          | Rec [(Var, Expr)]
 
-data Type = BType BasicType
-          | TypeScheme [TypeBinder] Type
-          | ArrType BasicType Type
+type Alt = (AltCon, [Var], Expr)
 
-data AtomKind = Star
-              | ParKind Kind
+data AltCon = DataAlt DataCon
+            | LitAlt Literal
+            | DEFAULT
 
-data Kind = AKind AtomKind
-          | ArrKind AtomKind Kind
-
+data DataCon = DataCon Id [Var] Type
 
 ppModule :: Module -> Doc
-ppModule (Module modident _ _) =
+ppModule (Module modident _) =
   text "Module" <+> text modident <> line
