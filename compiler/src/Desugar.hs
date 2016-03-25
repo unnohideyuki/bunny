@@ -4,6 +4,7 @@ import Symbol
 import qualified Typing as Ty
 import qualified Core
 import Pattern
+import TrCore
 
 import Debug.Trace
 
@@ -13,8 +14,13 @@ dsgModule modident bgs as =
     [(es, iss)] = bgs
     [is] = iss
     vdefs = dsgIs [] is
+    bs = map trBind vdefs
   in
-   trace (show vdefs) Core.Module modident []
+   trace (show vdefs) Core.Module modident bs
+
+trBind :: (Id, Expression) -> Core.Bind
+trBind (n, e) = let
+  n = 
 
 dsgIs vds [] = vds
 dsgIs vds (impl:is) = dsgIs (desis impl:vds) is

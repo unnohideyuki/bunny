@@ -44,5 +44,11 @@ data AltCon = DataAlt DataCon
 data DataCon = DataCon Id [Var] Type
 
 ppModule :: Module -> Doc
-ppModule (Module modident _) =
-  text "Module" <+> text modident <> line
+ppModule (Module modident bs) =
+  text "Module" <+> text modident <> line <$> ppBinds bs
+
+ppBinds :: [Bind] -> Doc
+ppBinds bs = list $ map ppBind bs
+
+ppBind :: Bind -> Doc
+ppBind b = text "b"

@@ -3,7 +3,7 @@ samples = sample/parser_sample sample/drive_semant sample/parse2core
 temps = src/Lexer.x src/Lexer.hs src/Parser.hs
 objs = src/Lexer.o src/Parser.o src/Absyn.o src/Types.o src/Symbol.o \
        src/Typing.o src/Semant.o src/PreDefined.o \
-       src/Core.o src/Desugar.o
+       src/Core.o src/Desugar.o src/TrCore.o
 all: $(samples)
 
 OPTIONS = -Wall -XFlexibleContexts
