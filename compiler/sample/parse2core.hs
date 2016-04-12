@@ -18,7 +18,7 @@ do_semant m = do
       ((bgs, as), st') = runState (renProg m) st
   -- print st'
   -- print bgs
-  -- print as
+  print as
   let cmod = dsgModule (rn_modid st') bgs as
   putStrLn $ show $ ppModule cmod
 

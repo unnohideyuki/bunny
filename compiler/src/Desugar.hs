@@ -19,8 +19,7 @@ dsgModule modident bgs as =
    trace (show vdefs) Core.Module modident bs
 
 trBind :: (Id, Expression) -> Core.Bind
-trBind (n, e) = let
-  n = 
+trBind = undefined
 
 dsgIs vds [] = vds
 dsgIs vds (impl:is) = dsgIs (desis impl:vds) is
