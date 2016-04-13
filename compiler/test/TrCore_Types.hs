@@ -33,6 +33,7 @@ t0 = Ty.TAp
       (Ty.TCon (Ty.Tycon "B" Ty.Star)))
      (Ty.TCon (Ty.Tycon "C" Ty.Star))
 
+-- for push test
      
 
               
