@@ -7,16 +7,20 @@ data Module = Module Id [Bind] {- [Axiom] -}
 
 data Var = TermVar Id Type
          | TypeVar Id Kind
+         deriving Show
 
 data Kind = Star | Kfun Kind Kind
+          deriving Show
 
 data TyCon = TyCon Id Kind
+           deriving Show
 
 data Type = TyVarTy Var
           | AppTy Type Type
           | TyConApp TyCon [Type]
           | FunTy Type Type
           | ForAllTy Var Type
+          deriving Show
 
 data Literal = LitInt  Integer  Type
              | LitChar Char     Type
