@@ -33,7 +33,16 @@ t0 = Ty.TAp
       (Ty.TCon (Ty.Tycon "B" Ty.Star)))
      (Ty.TCon (Ty.Tycon "C" Ty.Star))
 
--- for push test
+t0e :: Type
+t0e = TyConApp (TyCon "A" (Kfun Star (Kfun Star Star))) [ TyConApp (TyCon "B" Star) []
+                                                        , TyConApp (TyCon "C" Star) []
+                                                        ]
+
+main :: IO ()
+main = hspec $ do
+  describe "TrCore.trType" $ do
+    it "converts from t0::Typing.Type to t0e::Core.Type " $ do
+      trType t0 `shouldBe` t0e
      
 
               
