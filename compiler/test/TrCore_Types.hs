@@ -43,6 +43,8 @@ main = hspec $ do
   describe "TrCore.trType" $ do
     it "converts from t0::Typing.Type to t0e::Core.Type " $ do
       trType t0 `shouldBe` t0e
+    it "converts from t1::Typing.Type to t1e::Core.Type " $ do
+      trType t1 `shouldBe` t1e
      
 
               
