@@ -1,5 +1,7 @@
 module Core where
 
+import Prelude hiding ((<$>))
+
 import Symbol
 import Text.PrettyPrint.ANSI.Leijen
 
