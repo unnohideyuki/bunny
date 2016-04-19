@@ -27,3 +27,13 @@ trType (Ty.TAp t1 t2) =
      TyConApp tycon ts | isFunTyCon tycon && length ts == 1 -> FunTy (head ts) t2'
                        | otherwise                          -> TyConApp tycon (ts ++ [t2'])
      _                 -> AppTy t1' t2'
+
+tyLookup :: Id -> [Ty.Assump] -> Type
+tyLookup n as = let
+  sc = case Ty.find n as of
+    Just sc -> sc
+    Nothing -> error $ "type not found: " ++ n
+  in
+   case sc of
+     Ty.Forall [] ([] Ty.:=> t) -> trType t
+     _                       -> error $ "forall not supported yet: " ++ show sc

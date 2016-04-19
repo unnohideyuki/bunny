@@ -57,4 +57,6 @@ main = hspec $ do
       trType t1 `shouldBe` t1e
     it "converts from t2::Typing.Type to t2e::Core.Type " $ do
       trType t2 `shouldBe` t2e
- 
+
+    it "finds the type of Main.main " $ do
+      tyLookup "Main.main" as1 `shouldBe` t1e
