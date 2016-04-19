@@ -16,7 +16,6 @@ isFunTyCon :: TyCon -> Bool
 isFunTyCon (TyCon "(->)" (Kfun Star (Kfun Star Star))) = True
 isFunTyCon _                                           = False
 
-
 trType :: Ty.Type -> Type
 trType (Ty.TCon (Ty.Tycon n k)) = TyConApp (TyCon n (trKind k)) []
 trType (Ty.TAp t1 t2) =
@@ -28,5 +27,3 @@ trType (Ty.TAp t1 t2) =
      TyConApp tycon ts | isFunTyCon tycon && length ts == 1 -> FunTy (head ts) t2'
                        | otherwise                          -> TyConApp tycon (ts ++ [t2'])
      _                 -> AppTy t1' t2'
-
-trType _ = TyVarTy (TypeVar "a" Star) -- Dummy value that make the test fail.
