@@ -24,6 +24,16 @@ t1 = Ty.TAp
 t1e :: Type
 t1e = TyConApp (TyCon "Main.IO" (Kfun Star Star)) [TyConApp (TyCon "()" Star) []]
 
+-- t2 -- Sample type from testcases/sample4.hs
+
+t2 = Ty.TAp
+     (Ty.TAp
+      (Ty.TCon (Ty.Tycon "(->)" (Ty.Kfun Ty.Star (Ty.Kfun Ty.Star Ty.Star))))
+      (Ty.TCon (Ty.Tycon "Bool" Ty.Star)))
+     (Ty.TAp (Ty.TCon (Ty.Tycon "[]" (Ty.Kfun Ty.Star Ty.Star))) (Ty.TCon (Ty.Tycon "Char" Ty.Star)))
+
+t2e = FunTy (TyConApp (TyCon "Bool" Star) []) (TyConApp (TyCon "[]" (Kfun Star Star)) [TyConApp (TyCon "Char" Star) []])
+
 -- t0 -- Sample Type
 
 t0 :: Ty.Type
@@ -45,8 +55,6 @@ main = hspec $ do
       trType t0 `shouldBe` t0e
     it "converts from t1::Typing.Type to t1e::Core.Type " $ do
       trType t1 `shouldBe` t1e
-     
-
-              
-              
-      
+    it "converts from t2::Typing.Type to t2e::Core.Type " $ do
+      trType t2 `shouldBe` t2e
+ 
