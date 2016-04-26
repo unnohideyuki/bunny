@@ -28,6 +28,7 @@ data Literal = LitInt  Integer  Type
              | LitChar Char     Type
              | LitRat  Rational Type
              | LitStr  String   Type
+             deriving Show
 
 data Expr = Var Var
           | Lit Literal
@@ -37,17 +38,21 @@ data Expr = Var Var
           | Case Expr Var [Alt]
           | Cast Expr Type
           | Type Type
+          deriving Show
 
 data Bind = NoRec Var Expr
           | Rec [(Var, Expr)]
+          deriving Show
 
 type Alt = (AltCon, [Var], Expr)
 
 data AltCon = DataAlt DataCon
             | LitAlt Literal
             | DEFAULT
+            deriving Show
 
 data DataCon = DataCon Id [Var] Type
+             deriving Show
 
 ppModule :: Module -> Doc
 ppModule (Module modident bs) =
@@ -57,4 +62,4 @@ ppBinds :: [Bind] -> Doc
 ppBinds bs = list $ map ppBind bs
 
 ppBind :: Bind -> Doc
-ppBind b = text "b"
+ppBind b = text (show b)

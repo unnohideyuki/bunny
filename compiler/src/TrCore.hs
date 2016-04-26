@@ -28,6 +28,7 @@ trType (Ty.TAp t1 t2) =
                        | otherwise                          -> TyConApp tycon (ts ++ [t2'])
      _                 -> AppTy t1' t2'
 
+-- fix me : the order of ID and [Assump]
 tyLookup :: Id -> [Ty.Assump] -> Type
 tyLookup n as = let
   sc = case Ty.find n as of
@@ -37,3 +38,19 @@ tyLookup n as = let
    case sc of
      Ty.Forall [] ([] Ty.:=> t) -> trType t
      _                       -> error $ "forall not supported yet: " ++ show sc
+
+trExpr :: [Ty.Assump] -> Pat.Expression -> Expr
+trExpr as (Pat.Fatbar e Pat.Error) = trExpr as e
+
+trExpr as (Pat.OtherExpression e ) =
+  let
+    trexpr (Ty.Ap e1 e2) = App (trexpr e1) (trexpr e2)
+    trexpr (Ty.Var n) = Var (TermVar n (tyLookup n as))
+    trexpr (Ty.Lit (Ty.LitStr s)) = Lit $
+      LitStr
+      s
+      (TyConApp (TyCon "[]" (Kfun Star Star)) [TyConApp (TyCon "Char" Star) []])
+  in
+   trexpr e
+
+trExpr as e = error $ "Non-exaustive patterns in trExpr, " ++ show e

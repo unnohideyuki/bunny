@@ -2,24 +2,29 @@ module Desugar where
 
 import Symbol
 import qualified Typing as Ty
-import qualified Core
+import Core
 import Pattern
 import TrCore
 
 import Debug.Trace
 
-dsgModule :: Id -> Ty.Program -> [Ty.Assump] -> Core.Module
+dsgModule :: Id -> Ty.Program -> [Ty.Assump] -> Module
 dsgModule modident bgs as =
   let
     [(es, iss)] = bgs
     [is] = iss
     vdefs = dsgIs [] is
-    bs = map trBind vdefs
+    bs = map (trBind as) vdefs
   in
-   trace (show vdefs) Core.Module modident bs
+   trace (show bs) Core.Module modident bs
 
-trBind :: (Id, Expression) -> Core.Bind
-trBind = undefined
+trBind :: [Ty.Assump] -> (Id, Expression) -> Core.Bind
+trBind as (n, e) =
+  let
+    v = TermVar n (tyLookup n as)
+    e' = trExpr as e
+  in
+   NoRec v e'
 
 dsgIs vds [] = vds
 dsgIs vds (impl:is) = dsgIs (desis impl:vds) is

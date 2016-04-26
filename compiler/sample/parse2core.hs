@@ -19,7 +19,7 @@ do_semant m = do
   -- print st'
   -- print bgs
   print as
-  let cmod = dsgModule (rn_modid st') bgs as
+  let cmod = dsgModule (rn_modid st') bgs (as ++ primConsMems)
   putStrLn $ show $ ppModule cmod
 
 main :: IO ()
