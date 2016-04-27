@@ -14,7 +14,7 @@ dsgModule modident bgs as =
     [(es, iss)] = bgs
     [is] = iss
     vdefs = dsgIs [] is
-    bs = map (trBind as) vdefs
+    bs = trace (show (is, vdefs)) $ map (trBind as) vdefs
   in
    trace (show bs) Core.Module modident bs
 
@@ -35,8 +35,9 @@ dsgAlts alts@((pats,_):_) =
   let
     k = length pats
     us = [mkVar i | i <- [1..k]]
+    e = match k us alts Error
   in
-   match k us alts Error
+   Lambda us e
 
 cnvalts alts =
   fmap (\(pats, e) -> (pats, OtherExpression e)) alts

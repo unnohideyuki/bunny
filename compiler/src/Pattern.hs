@@ -31,6 +31,7 @@ data Expression = Case Variable [Clause]
                 | Fatbar Expression Expression
                 | OtherExpression Typing.Expr
                 | Error
+                | Lambda [Variable] Expression
                 deriving Show
 
 type Variable = Id
