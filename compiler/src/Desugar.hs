@@ -2,6 +2,7 @@ module Desugar where
 
 import Symbol
 import qualified Typing as Ty
+import qualified Types as Ty
 import Core
 import Pattern
 import TrCore
@@ -41,4 +42,8 @@ dsgAlts alts@((pats,_):_) =
 
 cnvalts alts =
   fmap (\(pats, e) -> (pats, OtherExpression e)) alts
-  
+
+ptypes :: Ty.Type -> [Ty.Type]
+ptypes = undefined
+
+
