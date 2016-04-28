@@ -1,8 +1,8 @@
-module Desugar_ptypes where
+module TrCore_ptypes where
 
 import Typing
 import Types
-import Desugar
+import TrCore
 
 import Test.Hspec
 

@@ -39,10 +39,10 @@ tyLookup n as = let
      Ty.Forall [] ([] Ty.:=> t) -> trType t
      _                       -> error $ "forall not supported yet: " ++ show sc
 
-trExpr :: [Ty.Assump] -> Pat.Expression -> Expr
-trExpr as (Pat.Fatbar e Pat.Error) = trExpr as e
+trExpr :: [Ty.Assump] -> (Id, Pat.Expression) -> Expr
+trExpr as (n, (Pat.Fatbar e Pat.Error)) = trExpr as (n, e)
 
-trExpr as (Pat.OtherExpression e ) =
+trExpr as (n, (Pat.OtherExpression e)) =
   let
     trexpr (Ty.Ap e1 e2) = App (trexpr e1) (trexpr e2)
     trexpr (Ty.Var n) = Var (TermVar n (tyLookup n as))
@@ -53,4 +53,42 @@ trExpr as (Pat.OtherExpression e ) =
   in
    trexpr e
 
+trExpr as (n, (Pat.Lambda ns expr)) =
+  let
+    -- fixe me : use tyLookup here rather than Ty.find
+    sc = case Ty.find n as of
+      Just sc -> sc
+      Nothing -> error $ "type not found: " ++ n
+    ts = case sc of
+      Ty.Forall [] ([] Ty.:=> t') -> ptypes t'
+      _ -> error $ "forall not supported yet (2): " ++ show sc
+    vs = map (\(n, t) -> TermVar n (trType t)) $ zip ns ts
+
+    lam' (v:vs) e = Lam v $ lam' vs e
+    lam' [] e = e
+
+    expr' = Var (TypeVar "dummy" Star)
+    {-
+    It can not as "expr' = trExpr as ("", expr)" because
+    ns and ts information is needed to translate the expr here.
+    -- expr' = trpat expr
+    -}
+  in
+   lam' vs expr'
+
+
 trExpr as e = error $ "Non-exaustive patterns in trExpr, " ++ show e
+
+ptypes :: Ty.Type -> [Ty.Type]
+ptypes t =
+ let
+   ptypes' ts (Ty.TAp
+               (Ty.TAp
+                (Ty.TCon (Ty.Tycon "(->)" (Ty.Kfun Ty.Star (Ty.Kfun Ty.Star Ty.Star))))
+                t1)
+               t2)
+     = ptypes' (ts ++ [t1]) t2
+   ptypes' ts _ = ts
+ in
+  ptypes' [] t
+

@@ -23,7 +23,7 @@ trBind :: [Ty.Assump] -> (Id, Expression) -> Core.Bind
 trBind as (n, e) =
   let
     v = TermVar n (tyLookup n as)
-    e' = trExpr as e
+    e' = trExpr as (n, e)
   in
    NoRec v e'
 
@@ -42,19 +42,4 @@ dsgAlts alts@((pats,_):_) =
 
 cnvalts alts =
   fmap (\(pats, e) -> (pats, OtherExpression e)) alts
-
-ptypes :: Ty.Type -> [Ty.Type]
-ptypes t =
- let
-   ptypes' ts (Ty.TAp
-               (Ty.TAp
-                (Ty.TCon (Ty.Tycon "(->)" (Ty.Kfun Ty.Star (Ty.Kfun Ty.Star Ty.Star))))
-                t1)
-               t2)
-     = ptypes' (ts ++ [t1]) t2
-   ptypes' ts _ = ts
- in
-  ptypes' [] t
-  
-
 
