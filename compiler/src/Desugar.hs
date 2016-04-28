@@ -44,6 +44,17 @@ cnvalts alts =
   fmap (\(pats, e) -> (pats, OtherExpression e)) alts
 
 ptypes :: Ty.Type -> [Ty.Type]
-ptypes = undefined
+ptypes t =
+ let
+   ptypes' ts (Ty.TAp
+               (Ty.TAp
+                (Ty.TCon (Ty.Tycon "(->)" (Ty.Kfun Ty.Star (Ty.Kfun Ty.Star Ty.Star))))
+                t1)
+               t2)
+     = ptypes' (ts ++ [t1]) t2
+   ptypes' ts _ = ts
+ in
+  ptypes' [] t
+  
 
 
