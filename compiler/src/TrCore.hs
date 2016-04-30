@@ -69,35 +69,26 @@ trExpr as (n, (Pat.Lambda ns expr)) =
     lam' (v:vs) e = Lam v $ lam' vs e
     lam' [] e = e
 
-    trpat (Pat.Case n cs) =
-      let
-        vt = case lookup n $ zip ns ts of
-          Just t -> trType t
-          Nothing -> error $ "variable not found: " ++ n
-        scrut = Var (TermVar n vt)
-        case_bndr = TermVar (n++"b") vt
-        alts = map trclause cs
-      in
-       Case scrut case_bndr alts
+    as' = as ++ [n Ty.:>: Ty.toScheme t | (n, t) <- zip ns ts]
 
-    trpat e = trExpr as ("", e)
+    expr' = trExpr as' ("", expr)
+  in
+   lam' vs expr'
+
+trExpr as (_, (Pat.Case n cs)) =
+  let
+    vt = tyLookup n as
+    scrut = Var (TermVar n vt)
+    case_bndr = TermVar (n++"b") vt -- todo: it's just a dummy!
+    alts = map trclause cs
 
     trclause (Pat.Clause a@(n Ty.:>: _) vs e) =
       let
         t = tyLookup n [a]
       in
        (DataAlt (DataCon n [] t), [], trExpr as (n,e))
-    {-
-    かなりくるしまぎれ。
-    さいしょ、expr' = trExpr as ("", expr) のようには書けないと思い、
-    zip ns ts ができるローカル環境ないでと思って trpat にしたが、
-    ns, ts の情報を as ([Assump]) に追加して、普通に trExpr にまわすべき。
-    また、Pattern, Core 双方の Case 式の仕様がよくわかってない。2016-04-29
-    -}
-    expr' = trpat expr
   in
-   lam' vs expr'
-
+   Case scrut case_bndr alts
 
 trExpr as e = error $ "Non-exaustive patterns in trExpr, " ++ show e
 
