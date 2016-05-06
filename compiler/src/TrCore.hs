@@ -31,70 +31,6 @@ trType (Ty.TAp t1 t2) =
                          -> TyConApp tycon (ts ++ [t2'])
      _                 -> AppTy t1' t2'
 
--- fix me : the order of ID and [Assump]
-tyLookup :: Id -> [Ty.Assump] -> Type
-tyLookup n as = let
-  sc = case Ty.find n as of
-    Just sc -> sc
-    Nothing -> error $ "type not found: " ++ n
-  in
-   case sc of
-     Ty.Forall [] ([] Ty.:=> t) -> trType t
-     _ -> error $ "forall not supported yet: " ++ show sc
-
-trExpr :: [Ty.Assump] -> (Id, Pat.Expression) -> Expr
-trExpr as (n, (Pat.Fatbar e Pat.Error)) = trExpr as (n, e)
-
-trExpr as (n, (Pat.OtherExpression e)) =
-  let
-    trexpr (Ty.Ap e1 e2) = App (trexpr e1) (trexpr e2)
-    trexpr (Ty.Var n) = Var (TermVar n (tyLookup n as))
-    trexpr (Ty.Lit (Ty.LitStr s)) = Lit $
-      LitStr
-      s
-      (TyConApp (TyCon "[]" (Kfun Star Star)) [TyConApp (TyCon "Char" Star) []])
-
-    trexpr expr = error $ "Non-exaustive patterns in trexpr: " ++ show expr
-  in
-   trexpr e
-
-trExpr as (n, (Pat.Lambda ns expr)) =
-  let
-    -- fixe me : use tyLookup here rather than Ty.find
-    sc = case Ty.find n as of
-      Just sc -> sc
-      Nothing -> error $ "type not found: " ++ n
-    ts = case sc of
-      Ty.Forall [] ([] Ty.:=> t') -> ptypes t'
-      _ -> error $ "forall not supported yet (2): " ++ show sc
-    vs = map (\(n, t) -> TermVar n (trType t)) $ zip ns ts
-
-    lam' (v:vs) e = Lam v $ lam' vs e
-    lam' [] e = e
-
-    as' = as ++ [n Ty.:>: Ty.toScheme t | (n, t) <- zip ns ts]
-
-    expr' = trExpr as' ("", expr)
-  in
-   lam' vs expr'
-
-trExpr as (_, (Pat.Case n cs)) =
-  let
-    vt = tyLookup n as
-    scrut = Var (TermVar n vt)
-    case_bndr = TermVar (n++"b") vt -- todo: it's just a dummy!
-    alts = map trclause cs
-
-    trclause (Pat.Clause a@(n Ty.:>: _) vs e) =
-      let
-        t = tyLookup n [a]
-      in
-       (DataAlt (DataCon n [] t), [], trExpr as (n,e))
-  in
-   Case scrut case_bndr alts
-
-trExpr as e = error $ "Non-exaustive patterns in trExpr, " ++ show e
-
 ptypes :: Ty.Type -> [Ty.Type]
 ptypes t =
  let
@@ -203,6 +139,17 @@ transExpr (Pat.OtherExpression e) =
       (TyConApp (TyCon "[]" (Kfun Star Star)) [TyConApp (TyCon "Char" Star) []])
 
     trexpr _ expr = error $ "Non-exaustive patterns in trexpr: " ++ show expr
+
+    -- fix me : the order of ID and [Assump]
+    tyLookup :: Id -> [Ty.Assump] -> Type
+    tyLookup n as = let
+      sc = case Ty.find n as of
+        Just sc -> sc
+        Nothing -> error $ "type not found: " ++ n
+      in
+       case sc of
+         Ty.Forall [] ([] Ty.:=> t) -> trType t
+         _ -> error $ "forall not supported yet: " ++ show sc
 
 transExpr (Pat.Case n cs) = do
   vt <- typeLookup n

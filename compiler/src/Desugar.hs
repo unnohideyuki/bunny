@@ -15,18 +15,9 @@ dsgModule modident bgs as =
     [(es, iss)] = bgs
     [is] = iss
     vdefs = dsgIs [] is
-    -- bs = trace (show (is, vdefs)) $ map (trBind as) vdefs
     bs = trace (show (is, vdefs)) $ translateVdefs as vdefs
   in
    trace (show bs) Core.Module modident bs
-
-trBind :: [Ty.Assump] -> (Id, Expression) -> Core.Bind
-trBind as (n, e) =
-  let
-    v = TermVar n (tyLookup n as)
-    e' = trExpr as (n, e)
-  in
-   NoRec v e'
 
 dsgIs vds [] = vds
 dsgIs vds (impl:is) = dsgIs (desis impl:vds) is
