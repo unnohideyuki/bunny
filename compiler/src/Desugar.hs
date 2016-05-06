@@ -19,19 +19,3 @@ dsgModule modident bgs as =
   in
    trace (show bs) Core.Module modident bs
 
-dsgIs vds [] = vds
-dsgIs vds (impl:is) = dsgIs (desis impl:vds) is
-  where
-    desis (n, alts) = (n, dsgAlts $ cnvalts alts)
-
-dsgAlts alts@((pats,_):_) =
-  let
-    k = length pats
-    us = [mkVar i | i <- [1..k]]
-    e = match k us alts Error
-  in
-   Lambda us e
-
-cnvalts alts =
-  fmap (\(pats, e) -> (pats, OtherExpression e)) alts
-

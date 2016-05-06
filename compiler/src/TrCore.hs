@@ -129,27 +129,7 @@ transExpr (Pat.Fatbar e Pat.Error) = transExpr e
 transExpr (Pat.OtherExpression e) =
   do
     as <- getAs
-    return $ trexpr as e
-  where
-    trexpr as (Ty.Ap e1 e2) = App (trexpr as e1) (trexpr as e2)
-    trexpr as (Ty.Var n) = Var (TermVar n (tyLookup n as))
-    trexpr as (Ty.Lit (Ty.LitStr s)) = Lit $
-      LitStr
-      s
-      (TyConApp (TyCon "[]" (Kfun Star Star)) [TyConApp (TyCon "Char" Star) []])
-
-    trexpr _ expr = error $ "Non-exaustive patterns in trexpr: " ++ show expr
-
-    -- fix me : the order of ID and [Assump]
-    tyLookup :: Id -> [Ty.Assump] -> Type
-    tyLookup n as = let
-      sc = case Ty.find n as of
-        Just sc -> sc
-        Nothing -> error $ "type not found: " ++ n
-      in
-       case sc of
-         Ty.Forall [] ([] Ty.:=> t) -> trType t
-         _ -> error $ "forall not supported yet: " ++ show sc
+    trExpr2 e
 
 transExpr (Pat.Case n cs) = do
   vt <- typeLookup n
@@ -168,5 +148,50 @@ transExpr (Pat.Case n cs) = do
       trClauses cs (alt:alts)
 
 transExpr e = error $ "Non-exaustive Patterns in transExpr: " ++ show e
+
+
+trExpr2 :: Ty.Expr -> TRC Expr
+trExpr2 (Ty.Var n) = do
+  t <- typeLookup n
+  return $ Var (TermVar n t)
+
+trExpr2 (Ty.Lit (Ty.LitStr s)) = return e
+  where
+    t = (TyConApp
+         (TyCon "[]" (Kfun Star Star)) [TyConApp (TyCon "Char" Star) []])
+    e = Lit $ LitStr s t
+
+trExpr2 (Ty.Ap e1 e2) = do
+  e1' <- trExpr2 e1
+  e2' <- trExpr2 e2
+  return $ App e1' e2'
+
+trExpr2 (Ty.Let bg e) = do
+  transVdefs vdefs
+  trExpr2 e
+  where
+    (es, iss) = bg
+    [is] = iss
+    vdefs = dsgIs [] is
+
+trExpr2 expr = error $ "Non-exaustive patterns in trExpr2: " ++ show expr
+
+
+dsgIs vds [] = vds
+dsgIs vds (impl:is) = dsgIs (desis impl:vds) is
+  where
+    desis (n, alts) = (n, dsgAlts $ cnvalts alts)
+
+dsgAlts alts@((pats,_):_) =
+  let
+    k = length pats
+    us = [Pat.mkVar i | i <- [1..k]]
+    e = Pat.match k us alts Pat.Error
+  in
+   Pat.Lambda us e
+
+cnvalts alts =
+  fmap (\(pats, e) -> (pats, Pat.OtherExpression e)) alts
+
 
 
