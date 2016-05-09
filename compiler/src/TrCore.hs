@@ -48,7 +48,8 @@ ptypes t =
 -- Translation Monad
 
 data TrcState = TrcState { trc_as :: [Ty.Assump]
-                         , trc_binds :: Bind
+                         , trc_bind :: Bind
+                         , trc_bstack :: [Bind]
                          }
 
 type TRC a = State TrcState a
@@ -56,10 +57,10 @@ type TRC a = State TrcState a
 translateVdefs :: [Ty.Assump] -> [(Id, Pat.Expression)] -> Bind
 translateVdefs as vdefs = 
   let
-    st = TrcState as (Rec [])
+    st = TrcState as (Rec []) []
     (_, st') = runState (transVdefs vdefs) st
   in
-   trc_binds st'
+   trc_bind st'
 
 typeLookup :: Id -> TRC Type
 typeLookup n = do
@@ -93,13 +94,28 @@ appendBind :: (Id, Expr) -> TRC ()
 appendBind (n, e) = do
   st <- get
   t <- typeLookup n
-  let b = NoRec 
-      bs = case trc_binds st of
+  let bs = case trc_bind st of
         Rec bs' -> bs'
         _ -> error "must not reach."
       bs' = bs ++ [(TermVar n t, e)]
-  put st{trc_binds = Rec bs'}
+  put st{trc_bind = Rec bs'}
 
+pushBind :: TRC ()
+pushBind = do
+  st <- get
+  let bs = trc_bstack st
+      b = trc_bind st
+      st' = st{trc_bind = Rec [], trc_bstack = (b:bs)}
+  put st'
+
+popBind :: TRC Bind
+popBind = do
+  st <- get
+  let (b:bs) = trc_bstack st
+      st' = st{trc_bind=b, trc_bstack=bs}
+  put st'
+  return $ trc_bind st
+      
 transVdef :: (Id, Pat.Expression) -> TRC ()
 transVdef (n, Pat.Lambda ns expr) = do
   as <- getAs
@@ -170,8 +186,11 @@ trExpr2 (Ty.Ap e1 e2) = do
   return $ App e1' e2'
 
 trExpr2 (Ty.Let bg e) = do
+  pushBind
   transVdefs vdefs
-  trExpr2 e
+  b' <- popBind
+  e' <- trExpr2 e
+  return $ Let b' e'
   where
     (es, iss) = bg
     [is] = iss
