@@ -15,7 +15,7 @@ dsgModule modident bgs as =
     [(es, iss)] = bgs
     [is] = iss
     vdefs = dsgIs [] is
-    bs = trace (show (is, vdefs)) $ translateVdefs as vdefs
+    b = trace (show (is, vdefs)) $ translateVdefs as vdefs
   in
-   trace (show bs) Core.Module modident bs
+   trace (show b) Core.Module modident [b]
 
