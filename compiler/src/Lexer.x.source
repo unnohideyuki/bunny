@@ -460,7 +460,7 @@ act_esc_string (_, _, _, s) len = do
     (_:esc) = take len s
 
 act_char :: AlexAction Token
-act_char (pos, _, _, (c:_)) _ = return $ TChar (c, pos)
+act_char (pos, _, _, (_:(c:_))) _ = return $ TChar (c, pos)
 
 act_esc_char :: AlexAction Token
 act_esc_char (pos, _, _, s) len = do
