@@ -555,6 +555,9 @@ renExp (A.LitExp (A.LitString s _)) =
 renExp (A.LitExp (A.LitInteger i _)) =
   return $ Lit (LitInt i)
 
+renExp (A.LitExp (A.LitChar c _)) =
+  return $ Lit (LitChar c)
+
 renExp (A.ParExp e) = renExp e
 
 renExp e = trace (show e) $ error "Non-exhaustive patterns in renExp."
