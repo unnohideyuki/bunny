@@ -1,8 +1,10 @@
 main = x
   where
+    s = "Hello, free variables"
     x =
       let
         f = putStrLn
-        s = "Hello, free variables!"
       in
        f s
+
+      
