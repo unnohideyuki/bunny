@@ -180,6 +180,11 @@ trExpr2 (Ty.Lit (Ty.LitStr s)) = return e
          (TyCon "[]" (Kfun Star Star)) [TyConApp (TyCon "Char" Star) []])
     e = Lit $ LitStr s t
 
+trExpr2 (Ty.Lit (Ty.LitChar c)) = return e
+  where
+    t = TyConApp (TyCon "Char" Star) []
+    e = Lit $ LitChar c t
+
 trExpr2 (Ty.Ap e1 e2) = do
   e1' <- trExpr2 e1
   e2' <- trExpr2 e2
