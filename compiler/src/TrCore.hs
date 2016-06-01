@@ -17,12 +17,12 @@ isFunTyCon :: TyCon -> Bool
 isFunTyCon (TyCon "(->)" (Kfun Star (Kfun Star Star))) = True
 isFunTyCon _                                           = False
 
-trType :: Ty.Type -> Type
-trType (Ty.TCon (Ty.Tycon n k)) = TyConApp (TyCon n (trKind k)) []
-trType (Ty.TAp t1 t2) =
+trType :: Ty.Type -> [Var] -> Type
+trType (Ty.TCon (Ty.Tycon n k)) _ = TyConApp (TyCon n (trKind k)) []
+trType (Ty.TAp t1 t2) vs =
   let
-    t1' = trType t1
-    t2' = trType t2
+    t1' = trType t1 vs
+    t2' = trType t2 vs
   in
    case t1' of
      TyConApp tycon ts | isFunTyCon tycon && length ts == 1
@@ -30,6 +30,15 @@ trType (Ty.TAp t1 t2) =
                        | otherwise
                          -> TyConApp tycon (ts ++ [t2'])
      _                 -> AppTy t1' t2'
+     
+trType (Ty.TGen n) vs =
+  if length vs > n
+  then TyVarTy $ vs !! n 
+  else error $ "(!!): index too large: " ++ show (vs, n)
+
+trType (Ty.TVar (Ty.Tyvar n k)) _ = TyVarTy $ TypeVar n $ trKind k
+
+trType t _ = error $ "Non-exhaustive patterns in trType: " ++ show t
 
 ptypes :: Ty.Type -> [Ty.Type]
 ptypes t =
@@ -64,15 +73,21 @@ translateVdefs as vdefs =
 
 typeLookup :: Id -> TRC Type
 typeLookup n = do
-  st <- get
-  let as = trc_as st
-      sc = case Ty.find n as of
+  as <- getAs
+  let sc = case Ty.find n as of
         Just sc' -> sc'
         Nothing  -> error $ "type not found:" ++ n
       t = case sc of
-        Ty.Forall [] ([] Ty.:=> t) -> trType t
-        _ -> error $ "forall not supported yet: " ++ show sc
+        -- todo: how to handle Qual?
+        Ty.Forall ks (_ Ty.:=> t) -> trType t (ks2TVars ks)
   return t
+
+ks2TVars ks = ks2tvars $ zip ks [0,1..]
+  where
+    ks2tvars [] = []
+    ks2tvars ((k,n):xs) =
+      TypeVar ("a" ++ show n) (trKind k) : ks2tvars xs
+  
 
 getAs :: TRC [Ty.Assump]
 getAs = do
@@ -86,9 +101,8 @@ putAs as = do
 
 appendAs :: [Ty.Assump] -> TRC ()
 appendAs as' = do
-  st <- get
   as <- getAs
-  put st{trc_as = as ++ as'}
+  putAs (as' ++ as)
 
 appendBind :: (Id, Expr) -> TRC ()
 appendBind (n, e) = do
@@ -120,15 +134,19 @@ transVdef :: (Id, Pat.Expression) -> TRC ()
 transVdef (n, Pat.Lambda ns expr) = do
   as <- getAs
   let sc = case Ty.find n as of Just sc' -> sc'
-                                Nothing  -> error $ "type not found:" ++ show n
-      ts = case sc of
-        Ty.Forall [] ([] Ty.:=> t') -> ptypes t'
-        _ -> error $ "forall types not supported yet (transVdef):" ++ show sc
-      vs = map (\(n', t') -> TermVar n' (trType t')) $ zip ns ts
-      as' = [n' Ty.:>: Ty.toScheme t' | (n', t') <- zip ns ts]
+                                Nothing  -> error $ "type not found 1:" ++ show (n, as)
+      (ts, ks) = case sc of
+        Ty.Forall ks' ([] Ty.:=> t') -> (ptypes t', ks')
+        _ -> error $ "qual types not supported yet (transVdef):" ++ show sc
+      vs = map (\(n', t') -> TermVar n' (trType t' (ks2TVars ks))) $ zip ns ts
+      as' = [n' Ty.:>: (Ty.Forall ks ([] Ty.:=> t')) | (n', t') <- zip ns ts]
   appendAs as'
+  trace (show (ns, expr)) $ return ()
   expr' <- transExpr expr
+  trace "-" $ return ()
   appendBind (n, lam' vs expr')
+  trace "--" $ return ()
+  putAs as
   where lam' (v:vs) e = Lam v $ lam' vs e
         lam' [] e = e
 
@@ -158,11 +176,20 @@ transExpr (Pat.Case n cs) = do
   return $ Case scrut case_bndr alts
   where 
     trClauses [] alts = return alts
-    trClauses ((Pat.Clause a@(n Ty.:>: sc) vs expr):cs) alts = do
+    trClauses ((Pat.Clause a@(n Ty.:>: sc) ns expr):cs) alts = do
+      let
+        (ts, ks) = case sc of
+          Ty.Forall ks' ([] Ty.:=> t') -> (ptypes t', ks')
+          _ -> error $ "qual types not supported yet (transVdef):" ++ show sc
+        vs = map (\(n', t') -> TermVar n' (trType t' (ks2TVars ks))) $ zip ns ts
+        as' = [n' Ty.:>: (Ty.Forall ks ([] Ty.:=> t')) | (n', t') <- zip ns ts]
+      as <- getAs
+      appendAs as'
       expr' <- transExpr expr
+      putAs as
       let t = case sc of
-            Ty.Forall [] ([] Ty.:=> t') -> trType t'
-            _ -> error $ "forall not supported yet: " ++ show sc
+            Ty.Forall ks ([] Ty.:=> t') -> trType t' (ks2TVars ks)
+            _ -> error $ "qual types not supported yet(2): " ++ show sc
           alt = (DataAlt (DataCon n [] t), [], expr')
       trClauses cs (alt:alts)
 
@@ -185,6 +212,11 @@ trExpr2 (Ty.Lit (Ty.LitChar c)) = return e
     t = TyConApp (TyCon "Char" Star) []
     e = Lit $ LitChar c t
 
+trExpr2 (Ty.Lit (Ty.LitInt n)) = return e
+  where
+    t = TyConApp (TyCon "Integer" Star) [] -- Shoud be?: Num a => a
+    e = Lit $ LitInt n t
+
 trExpr2 (Ty.Ap e1 e2) = do
   e1' <- trExpr2 e1
   e2' <- trExpr2 e2
@@ -200,6 +232,14 @@ trExpr2 (Ty.Let bg e) = do
     (es, iss) = bg
     [is] = iss
     vdefs = dsgIs [] is
+
+trExpr2 (Ty.Const (n Ty.:>: sc)) = do
+  return $ Var $ TermVar n t
+  where
+    t = case sc of
+      Ty.Forall ks ([] Ty.:=> t') -> trType t' (ks2TVars ks)
+      _ -> error $ "qual types not supported yet(3): " ++ show sc
+
 
 trExpr2 expr = error $ "Non-exaustive patterns in trExpr2: " ++ show expr
 
