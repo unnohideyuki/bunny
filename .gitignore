@@ -9,3 +9,4 @@ compiler/sample/drive_semant
 *.o
 *~
 *.exe
+*.class
