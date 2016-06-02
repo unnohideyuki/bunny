@@ -10,8 +10,6 @@ import Types
 import Typing
 import PreDefined
 
-import Debug.Trace
-
 econst  :: Assump -> Expr
 econst c = (Const c)
 
@@ -284,8 +282,7 @@ renDecl (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) = do
   t <- renSigdoc sigdoc kdict
   t `seq` return [(n, Just (ps :=> t), []) | n <- ns']
 
-renDecl decl = trace (show ("non-exhaustive", decl)) $
-               return [("", Nothing, [])]
+renDecl decl = return [("", Nothing, [])]
 
 kiExpr :: A.Type -> [(Id, Kind)] -> [(Id, Kind)]
 kiExpr (A.FunTy t1 t2) dict =
@@ -298,7 +295,7 @@ kiExpr (A.Tyvar n) dict = dict ++ [(orig_name n, Star)]
 kiExpr (A.ParTy e) dict = kiExpr e dict
 kiExpr (A.Tycon _) dict = dict
 kiExpr (A.ListTy e) dict = kiExpr e dict
-kiExpr t dict = trace (show (t, "kiExpr")) $ error "kiExpr"
+kiExpr t dict = error $ "kiExpr: " ++ show (t, dict)
 
 insertKdict :: Id -> Kind -> RN ()
 insertKdict n k = do
@@ -345,7 +342,7 @@ renSigdoc (A.ListTy e) kdict = do
   t <- renSigdoc e kdict
   return $ list t
 
-renSigdoc t kdict = trace (show t) $ error "renSigdoc"
+renSigdoc t kdict = error $ "renSigdoc" ++ show t
 
 kindLookup n kdict = case lookup n kdict of
   Just k -> k
@@ -375,7 +372,7 @@ renFExp (A.InfixExp le op re) = do
   rpat <- renPat re
   return (qname_op, [lpat, rpat])
 
-renFExp e = trace (show e) $ error "renFExp"
+renFExp e = error $ "renFExp" ++ show e
 
 renPat (A.VarExp n) | isConName n = do qn <- qname (orig_name n)
                                        Just a <- findCMs qn
@@ -412,7 +409,7 @@ renPat (A.FunAppExp e e') = renPCon (A.FunAppExp e e') []
 
 renPat A.WildcardPat = return PWildcard
 
-renPat e = trace (show e) $ error "renPat"
+renPat e = error $ "renPat: " ++ show e
 
 renRhs :: A.Rhs -> RN Expr
 renRhs (A.UnguardedRhs (A.VarExp n) []) = do
@@ -429,7 +426,7 @@ renRhs (A.UnguardedRhs e ds) =
 
 renRhs rhs = do
   st <- get
-  trace (show (st, rhs)) $ error "renRhs not yet implemented."
+  error $ "renRhs not yet implemented. " ++ show (st, rhs)
 
 renExp (A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
   (prec1, fix1) <- lookupInfixOp op1
@@ -560,7 +557,7 @@ renExp (A.LitExp (A.LitChar c _)) =
 
 renExp (A.ParExp e) = renExp e
 
-renExp e = trace (show e) $ error "Non-exhaustive patterns in renExp."
+renExp e = error $ "Non-exhaustive patterns in renExp: " ++ show e
 
 lookupInfixOp :: Name -> RN (Int, A.Fixity)
 lookupInfixOp op = do

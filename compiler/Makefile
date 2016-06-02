@@ -1,9 +1,11 @@
-samples = sample/parser_sample sample/drive_semant sample/parse2core
+samples = sample/parser_sample sample/drive_semant sample/parse2core \
+	sample/compiler0
 
 temps = src/Lexer.x src/Lexer.hs src/Parser.hs
 objs = src/Lexer.o src/Parser.o src/Absyn.o src/Types.o src/Symbol.o \
        src/Typing.o src/Semant.o src/PreDefined.o \
-       src/Core.o src/Desugar.o src/TrCore.o
+       src/Core.o src/Desugar.o src/TrCore.o src/STG.o src/TrSTG.o \
+       src/CodeGen.o
 all: $(samples)
 
 OPTIONS = -Wall -XFlexibleContexts
@@ -39,6 +41,9 @@ sample/drive_semant:	sample/drive_semant.hs $(objs)
 	ghc $(OPTIONS) -isrc $<
 
 sample/parse2core:	sample/parse2core.hs $(objs)
+	ghc $(OPTIONS) -isrc $<
+
+sample/compiler0:	sample/compiler0.hs $(objs)
 	ghc $(OPTIONS) -isrc $<
 
 clean:	

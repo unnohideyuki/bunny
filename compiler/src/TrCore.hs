@@ -141,11 +141,8 @@ transVdef (n, Pat.Lambda ns expr) = do
       vs = map (\(n', t') -> TermVar n' (trType t' (ks2TVars ks))) $ zip ns ts
       as' = [n' Ty.:>: (Ty.Forall ks ([] Ty.:=> t')) | (n', t') <- zip ns ts]
   appendAs as'
-  trace (show (ns, expr)) $ return ()
   expr' <- transExpr expr
-  trace "-" $ return ()
   appendBind (n, lam' vs expr')
-  trace "--" $ return ()
   putAs as
   where lam' (v:vs) e = Lam v $ lam' vs e
         lam' [] e = e
