@@ -1,0 +1,7 @@
+#!/bin/bash
+
+target=$1
+d=`dirname $1`
+c=`basename $1 .java`
+
+java -ea -cp "../../brt/src;$d" $c
