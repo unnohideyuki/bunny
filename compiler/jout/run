@@ -4,4 +4,9 @@ target=$1
 d=`dirname $1`
 c=`basename $1 .java`
 
-java -ea -cp "../../brt/src;$d" $c
+s=":"
+if [ -d /c ]; then
+    s=";"
+fi
+
+java -ea -cp "../../brt/src$s$d" $c

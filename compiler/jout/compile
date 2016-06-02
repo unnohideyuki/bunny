@@ -3,4 +3,9 @@
 target=$1
 d=`dirname $1`
 
-javac -cp "../../brt/src;$d" $target
+s=":"
+if [ -d /c ]; then
+    s=";"
+fi
+
+javac -cp "../../brt/src$s$d" $target
