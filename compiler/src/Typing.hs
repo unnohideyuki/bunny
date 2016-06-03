@@ -516,12 +516,13 @@ candidates ce (v, qs) = [t' | let is = [i | IsIn i _ <- qs]
                               any (`elem` numClasses) is,
                               all (`elem` stdClasses) is,
                               t' <- defaults ce,
-                              all (entail ce []) [IsIn i t' | i<- is]]
+                              all (entail ce []) [IsIn i t' | i<- is]
+                            ]
 
 withDefaults :: Monad m => ([Ambiguity] -> [Type] -> a)
                   -> ClassEnv -> [Tyvar] -> [Pred] -> m a
 withDefaults f ce vs ps
-  | any null tss = fail "cannot resolve ambiguity"
+  | any null tss = fail $ "cannot resolve ambiguity: " ++ show (vps, tss)
   | otherwise    = return (f vps (map head tss))
   where vps = ambiguities ce vs ps
         tss = map (candidates ce) vps

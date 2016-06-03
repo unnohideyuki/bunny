@@ -1,7 +1,7 @@
 f x = x
 
-a = f 1
-b = f "a"
+n = 1
+a = f n
 
 main = putStrLn "."
   
