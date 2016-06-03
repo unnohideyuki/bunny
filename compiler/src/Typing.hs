@@ -206,10 +206,12 @@ exampleInsts  = addPreludeClasses
                                           (TVar (Tyvar "b" Star))))
             <:> addInst [] (IsIn "Prim.Show" tChar)
             <:> addInst [] (IsIn "Prim.Show" tInt)
+            <:> addInst [] (IsIn "Prim.Show" tInteger)
             <:> addInst [ IsIn "Prim.Show" (TVar (Tyvar "a" Star))]
                         (IsIn "Prim.Show" (list (TVar (Tyvar "a" Star))))
             <:> addInst [] (IsIn "Num" tChar)
             <:> addInst [] (IsIn "Num" tInt)
+            <:> addInst [] (IsIn "Num" tInteger)
 
 
 -------------------------------------------------------------------------------
@@ -506,7 +508,7 @@ numClasses  = ["Num", "Integral", "Floating", "Fractional",
                "Real", "RealFloat", "RealFrac"]
 
 stdClasses :: [Id]
-stdClasses  = ["Eq", "Ord", "Show", "Read", "Bounded", "Enum", "Ix",
+stdClasses  = ["Eq", "Ord", "Prim.Show", "Read", "Bounded", "Enum", "Ix",
                "Functor", "Monad", "MonadPlus"] ++ numClasses
 
 candidates           :: ClassEnv -> Ambiguity ->[Type]
