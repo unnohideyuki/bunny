@@ -200,6 +200,7 @@ exampleInsts  = addPreludeClasses
             <:> addInst [] (IsIn "Ord" tUnit)
             <:> addInst [] (IsIn "Ord" tChar)
             <:> addInst [] (IsIn "Ord" tInt)
+            <:> addInst [] (IsIn "Ord" tInteger)
             <:> addInst [ IsIn "Ord" (TVar (Tyvar "a" Star))
                         , IsIn "Ord" (TVar (Tyvar "b" Star))]
                         (IsIn "Ord" (pair (TVar (Tyvar "a" Star))
