@@ -1,5 +1,6 @@
 samples = sample/parser_sample sample/drive_semant sample/parse2core \
-	sample/compiler0
+	sample/compiler0 \
+	sample/drive_semant2
 
 temps = src/Lexer.x src/Lexer.hs src/Parser.hs
 objs = src/Lexer.o src/Parser.o src/Absyn.o src/Types.o src/Symbol.o \
@@ -38,6 +39,9 @@ sample/parser_sample:	sample/parser_sample.hs $(objs)
 	ghc $(OPTIONS) -isrc $<
 
 sample/drive_semant:	sample/drive_semant.hs $(objs)
+	ghc $(OPTIONS) -isrc $<
+
+sample/drive_semant2:	sample/drive_semant2.hs $(objs)
 	ghc $(OPTIONS) -isrc $<
 
 sample/parse2core:	sample/parse2core.hs $(objs)

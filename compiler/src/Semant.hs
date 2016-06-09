@@ -1,9 +1,13 @@
 module Semant where
 
-import Data.List (foldl')
+import Data.List (foldl', (\\))
 import Control.Monad (when)
 import Control.Monad.State.Strict (State, state, get, put)
 import Data.Maybe
+import qualified Data.Map as Map
+import qualified Data.Graph as G
+import qualified Data.Tree as T
+
 import Symbol
 import qualified Absyn as A
 import Types
@@ -203,6 +207,20 @@ renProg m = do
       as = rn_cms st
       as' = tiProgram ce as bgs
   return (bgs, as')
+
+renProgt  :: A.Module -> RN ([BindGroup], [Assump])
+renProgt m = do
+  let body = snd (A.body m)
+  (ds, cds, ids) <- collectNames ([], [], []) body
+  ctbs <- renCDecls cds []
+  renIDecls ids
+  tbs <- renDecls ds
+  let bg = toBg2 $ ctbs ++ tbs
+  st <- get
+  let ce = rn_ce st
+      as = rn_cms st
+      as' = tiProgram ce as [bg]
+  return ([bg], as')
 
 renCDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]
 renCDecls [] tbs = return tbs
@@ -644,3 +662,81 @@ toBg tbs = toBg2 tbs' scdict
                     Just scm -> tobg2 [((n, scm, as):es, [is])] tbs
                     Nothing  -> tobg2 [(es, [(n, as):is])] tbs
            
+toBg2 :: [TempBind] -> BindGroup
+toBg2 tbs =
+  let
+    (h, rh) = vars tbs
+    deps = map tbDepend tbs
+
+    -- Calculating SCC
+    edges = concat $ map (d2es h) deps
+    g' = G.buildG (0, length tbs - 1) edges
+    sccs = map T.flatten $ G.scc g'
+
+    -- building a BindGroup
+    bg = scc2bg sccs tbs rh
+  in
+   error $ "toBg2 :" ++ show (deps, sccs)
+
+vars :: [TempBind] -> (Map.Map Id Int, Map.Map Int Id)
+vars tbs = vars' tbs (Map.empty, Map.empty) 0
+  where
+    vars' [] (h, rh) _ = (h, rh)
+    vars' ((n,_,_):tbs) (h, rh) i =
+      vars' tbs (Map.insert n i h, Map.insert i n rh) (i+1)
+
+
+boundvars :: [Pat] -> [Id]
+boundvars ps = concat $ map boundvar ps
+
+boundvar :: Pat -> [Id]
+boundvar (PVar n) = [n]
+boundvar PWildcard = []
+boundvar (PAs n p) = n : boundvar p
+boundvar (PLit _) = []
+boundvar (PCon _ ps) = concat $ map boundvar ps
+
+evar :: Expr -> [Id]
+evar (Var n) = [n]
+evar (Lit _) = []
+evar (Const _) = []
+evar (Ap e1 e2) = evar e1 ++ evar e2
+evar (Let _ _) = error "evar let."
+
+fv :: Alt -> [Id]
+fv (ps, e) =
+  let
+    bvs = boundvars ps
+    vs = evar e
+  in
+   vs \\ bvs
+
+tbDepend :: TempBind -> (Id, [Id])
+tbDepend (n, _, alts) = (n, concat $ map fv alts)
+
+d2es :: Map.Map Id Int -> (Id, [Id]) -> [G.Edge]
+d2es h (n, vs) =
+  let
+    src = case Map.lookup n h of { Just i -> i }
+
+    f v = case Map.lookup v h of
+      Just i -> [i]
+      Nothing -> []
+
+    dests = concat $ map f vs
+  in
+   zip (repeat src) dests
+                           
+  
+scc2bg :: [[Int]] -> [TempBind] -> Map.Map Int Id -> BindGroup
+scc2bg sccs tbs rh = loop (reverse sccs) [] []
+  where
+    loop [] es iss = (es, iss)
+    loop (c:cs) es iss =
+      let
+        (es', is') = cnvScc c [] []
+      in
+       loop cs (es++es') (is':iss)
+
+    cnvScc [] es is = (es, is)
+    cnvScc c es is = undefined
