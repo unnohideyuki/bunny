@@ -227,7 +227,7 @@ trExpr2 (Ty.Let bg e) = do
   return $ Let b' e'
   where
     (es, iss) = bg
-    [is] = iss
+    is = concat iss
     vdefs = dsgIs [] is
 
 trExpr2 (Ty.Const (n Ty.:>: sc)) = do

@@ -8,6 +8,8 @@ import qualified Data.Map as Map
 import qualified Data.Graph as G
 import qualified Data.Tree as T
 
+import Debug.Trace
+
 import Symbol
 import qualified Absyn as A
 import Types
@@ -201,7 +203,8 @@ renProg m = do
   ctbs <- renCDecls cds []
   renIDecls ids
   tbs <- renDecls ds
-  let bgs = toBg $ ctbs ++ tbs
+  -- let bgs = trace (show (ctbs, tbs)) (toBg $ ctbs ++ tbs)
+  let bgs = trace (show tbs) (toBg tbs)
   st <- get
   let ce = rn_ce st
       as = rn_cms st
@@ -631,6 +634,7 @@ exitLevel = do
   let lvs' = tail $ rn_lvs st
   put st{rn_lvs=lvs'}
 
+{-
 toBg :: [TempBind] -> [BindGroup]
 toBg tbs = toBg2 tbs' scdict
   where (tbs', scdict) = toBg1 tbs [] empty
@@ -661,30 +665,37 @@ toBg tbs = toBg2 tbs' scdict
                   (n, _, as) -> case tabLookup n dct of
                     Just scm -> tobg2 [((n, scm, as):es, [is])] tbs
                     Nothing  -> tobg2 [(es, [(n, as):is])] tbs
-           
+-}
+
+toBg :: [TempBind] -> [BindGroup]
+toBg tbs = [toBg2 tbs]
+
 toBg2 :: [TempBind] -> BindGroup
 toBg2 tbs =
   let
-    (h, rh) = vars tbs
+    (h, rh, idx) = vars tbs
     deps = map tbDepend tbs
 
     -- Calculating SCC
     edges = concat $ map (d2es h) deps
-    g' = G.buildG (0, length tbs - 1) edges
+    g' = G.buildG (0, idx - 1) edges
     sccs = map T.flatten $ G.scc g'
 
-    -- building a BindGroup
-    bg = scc2bg sccs tbs rh
+    -- Preparation for TempBind->BindGroup translation
+    scdict = collectTypes tbs
+    bm = bindMap tbs h
   in
-   error $ "toBg2 :" ++ show (deps, sccs)
+   scc2bg sccs bm scdict
 
-vars :: [TempBind] -> (Map.Map Id Int, Map.Map Int Id)
+vars :: [TempBind] -> (Map.Map Id Int, Map.Map Int Id, Int)
 vars tbs = vars' tbs (Map.empty, Map.empty) 0
   where
-    vars' [] (h, rh) _ = (h, rh)
+    vars' [] (h, rh) i = (h, rh, i)
+    vars' ((_,_,[]):tbs) (h, rh) i = vars' tbs (h, rh) i
     vars' ((n,_,_):tbs) (h, rh) i =
-      vars' tbs (Map.insert n i h, Map.insert i n rh) (i+1)
-
+      case Map.lookup n h of
+        Just _ -> vars' tbs (h, rh) i
+        Nothing -> vars' tbs (Map.insert n i h, Map.insert i n rh) (i+1)
 
 boundvars :: [Pat] -> [Id]
 boundvars ps = concat $ map boundvar ps
@@ -701,7 +712,26 @@ evar (Var n) = [n]
 evar (Lit _) = []
 evar (Const _) = []
 evar (Ap e1 e2) = evar e1 ++ evar e2
-evar (Let _ _) = error "evar let."
+evar (Let bg@(es, iss) e) =
+  let
+    vs1 = evar e
+    vs2 = fvFromBg bg
+    bvs1 = map (\(n, _, _) -> n) es
+    bvs2 = map fst (concat iss)
+
+    vs = vs1 ++ vs2
+    bounded = bvs1 ++ bvs2
+  in
+   vs \\ bounded
+
+fvFromBg :: BindGroup -> [Id]
+fvFromBg (es, iss) =
+  let
+    altsfv alts = concat $ map fv alts
+    vs1 = concat $ map (\(_, _, alts) -> altsfv alts) es
+    vs2 = concat $ map (\(_, alts) -> altsfv alts) (concat iss)
+  in
+   vs1 ++ vs2
 
 fv :: Alt -> [Id]
 fv (ps, e) =
@@ -727,9 +757,43 @@ d2es h (n, vs) =
   in
    zip (repeat src) dests
                            
-  
-scc2bg :: [[Int]] -> [TempBind] -> Map.Map Int Id -> BindGroup
-scc2bg sccs tbs rh = loop (reverse sccs) [] []
+collectTypes :: [TempBind] -> Map.Map Id Scheme
+collectTypes tbs = collty tbs (Map.empty)
+  where
+    collty [] dict = dict
+    collty ((name, Just qt, _):tbs) dict =
+      let
+        ts = tv qt
+        scm = quantify ts qt
+        dict' = Map.insert name scm dict
+      in
+       case Map.lookup name dict of
+         Just x -> trace ("Duplicate type declaration: " ++ show (name, scm, x)) $
+                   collty tbs dict
+         Nothing -> collty tbs dict'
+    collty ((_, Nothing, _):tbs) dict = collty tbs dict
+
+bindMap :: [TempBind] -> Map.Map Id Int -> Map.Map Int TempBind
+bindMap tbs rh = bmap tbs rh (Map.empty)
+  where
+    bmap [] _ d = d
+    bmap ((_, _, []):tbs) h d = bmap tbs h d
+    bmap (tb@(name, _, alts):tbs) h d =
+      let
+        i = case Map.lookup name h of
+          Just i' -> i'
+          Nothing -> error $ "Must not happen. Vertex Id not found: " ++ name
+
+        tb' = case Map.lookup i d of
+          Just (_, _, alts') -> (name, Nothing, alts++alts')
+          Nothing -> tb
+
+        d' = Map.insert i tb' d
+      in
+       bmap tbs rh d'
+
+scc2bg :: [[Int]] -> Map.Map Int TempBind -> Map.Map Id Scheme -> BindGroup
+scc2bg sccs bm scdict = loop (reverse sccs) [] []
   where
     loop [] es iss = (es, iss)
     loop (c:cs) es iss =
@@ -738,5 +802,21 @@ scc2bg sccs tbs rh = loop (reverse sccs) [] []
       in
        loop cs (es++es') (is':iss)
 
-    cnvScc [] es is = (es, is)
-    cnvScc c es is = undefined
+    cnvScc [] es is = (es, reverse is)
+    cnvScc (x:xs) es is =
+      let
+        (name, alts) = case Map.lookup x bm of
+          Just (name', _, alts') -> (name', alts')
+          Nothing -> error $ "must not happen (cnvScc): " ++ show (x, bm)
+
+        scm' = Map.lookup name scdict
+
+        (es', is') = case scm' of
+          Just scm -> ((name, scm, alts):es, is)
+          Nothing -> (es, (name, alts):is)
+      in
+       cnvScc xs es' is' 
+
+        
+
+

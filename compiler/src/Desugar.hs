@@ -11,7 +11,7 @@ dsgModule :: Id -> Ty.Program -> [Ty.Assump] -> Module
 dsgModule modident bgs as =
   let
     [(es, iss)] = bgs
-    [is] = iss
+    is = concat iss
     vdefs = dsgIs [] is
     b = translateVdefs as vdefs
   in
