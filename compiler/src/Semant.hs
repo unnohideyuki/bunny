@@ -211,19 +211,15 @@ renProg m = do
       as' = tiProgram ce as bgs
   return (bgs, as')
 
-renProgt  :: A.Module -> RN ([BindGroup], [Assump])
-renProgt m = do
+renProg2  :: A.Module -> RN ([BindGroup])
+renProg2 m = do
   let body = snd (A.body m)
   (ds, cds, ids) <- collectNames ([], [], []) body
   ctbs <- renCDecls cds []
   renIDecls ids
   tbs <- renDecls ds
-  let bg = toBg2 $ ctbs ++ tbs
-  st <- get
-  let ce = rn_ce st
-      as = rn_cms st
-      as' = tiProgram ce as [bg]
-  return ([bg], as')
+  let bgs = toBg $ (ctbs ++) tbs
+  return bgs
 
 renCDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]
 renCDecls [] tbs = return tbs
