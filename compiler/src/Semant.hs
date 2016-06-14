@@ -793,8 +793,12 @@ scc2bg sccs bm scdict = loop (reverse sccs) [] []
     loop (c:cs) es iss =
       let
         (es', is') = cnvScc c [] []
+
+        iss' = case is' of
+          [] -> iss
+          _ -> (is':iss)
       in
-       loop cs (es++es') (is':iss)
+       loop cs (es++es') iss'
 
     cnvScc [] es is = (es, reverse is)
     cnvScc (x:xs) es is =
