@@ -86,7 +86,7 @@ pushTbs = do
       tbstack = rn_tbstack st
   put st{rn_tbs=[], rn_tbstack=(tbs:tbstack)}
 
-popTbs :: RN [TempBind]
+popTbs :: RN ()
 popTbs = do
   st <- get
   let tbs = rn_tbs st
@@ -94,7 +94,6 @@ popTbs = do
         (x:xs) -> (x, xs)
         [] -> error "popTbs from empty stack."
   put st{rn_tbs=tbs', rn_tbstack=tbstack'}
-  return tbs
 
 renameVar :: Name -> RN Id
 renameVar name = state $ \st@RnState{rn_lvs=(lv:lvs)} ->
@@ -203,8 +202,7 @@ renProg m = do
   ctbs <- renCDecls cds []
   renIDecls ids
   tbs <- renDecls ds
-  -- let bgs = trace (show (ctbs, tbs)) (toBg $ ctbs ++ tbs)
-  let bgs = trace (show tbs) (toBg tbs)
+  let bgs = trace (show (ctbs, tbs)) (toBg $ ctbs ++ tbs)
   st <- get
   let ce = rn_ce st
       as = rn_cms st
@@ -273,6 +271,7 @@ lookupKdict n = do
 renDecls :: [A.Decl] -> RN [TempBind]
 renDecls [] = do
   st <- get
+  put st{rn_tbs=[]}
   return $ rn_tbs st
 renDecls (d:ds) = do
   ntbs <- renDecl d
@@ -475,8 +474,8 @@ renExp (A.LetExp ds e) = do
   enterNewLevel
   (ds', _, _) <- collectNames ([], [], []) ds
   pushTbs
-  renDecls ds'
-  tbs <- popTbs
+  tbs <- renDecls ds'
+  popTbs
   e' <- renExp e
   exitLevel
   let bgs = toBg tbs
@@ -764,8 +763,7 @@ collectTypes tbs = collty tbs (Map.empty)
         dict' = Map.insert name scm dict
       in
        case Map.lookup name dict of
-         Just x -> trace ("Duplicate type declaration: " ++ show (name, scm, x)) $
-                   collty tbs dict
+         Just x -> error $ "Duplicate type declaration: " ++ show (name, scm, x)
          Nothing -> collty tbs dict'
     collty ((_, Nothing, _):tbs) dict = collty tbs dict
 
