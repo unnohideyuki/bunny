@@ -38,21 +38,21 @@ public class RTLib {
     public static Expr cons = mkFun(new ConsFunc());
 
     public static String toJString(Expr s){
-	String t = "";
+	StringBuilder t = new StringBuilder();
 
 	while(true){
 	    if (s.isConObj()){
 		ConObj con = (ConObj)((Var)((AtomExpr)s).a).obj;
 		if (con.cotr.ident == "Prim.:"){
 		    Expr c = RT.eval(con.args[0]);
-		    t = t + ((LitChar)((AtomExpr)c).a).value;
+		    t.append(((LitChar)((AtomExpr)c).a).value);
 		    s = RT.eval(con.args[1]);
 		} else {
 		    break;
 		}
 	    }
 	}
-	return t;
+	return t.toString();
     }
 
     public static Expr unit =
