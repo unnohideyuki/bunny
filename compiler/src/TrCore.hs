@@ -78,7 +78,6 @@ typeLookup n = do
         Just sc' -> sc'
         Nothing  -> error $ "type not found:" ++ n
       t = case sc of
-        -- todo: how to handle Qual?
         Ty.Forall ks (_ Ty.:=> t) -> trType t (ks2TVars ks)
   return t
 
@@ -136,8 +135,7 @@ transVdef (n, Pat.Lambda ns expr) = do
   let sc = case Ty.find n as of Just sc' -> sc'
                                 Nothing  -> error $ "type not found 1:" ++ show (n, as)
       (ts, ks) = case sc of
-        Ty.Forall ks' ([] Ty.:=> t') -> (ptypes t', ks')
-        _ -> error $ "qual types not supported yet (transVdef):" ++ show sc
+        Ty.Forall ks' (_ Ty.:=> t') -> (ptypes t', ks')
       vs = map (\(n', t') -> TermVar n' (trType t' (ks2TVars ks))) $ zip ns ts
       as' = [n' Ty.:>: (Ty.Forall ks ([] Ty.:=> t')) | (n', t') <- zip ns ts]
   appendAs as'
@@ -176,8 +174,7 @@ transExpr (Pat.Case n cs) = do
     trClauses ((Pat.Clause a@(n Ty.:>: sc) ns expr):cs) alts = do
       let
         (ts, ks) = case sc of
-          Ty.Forall ks' ([] Ty.:=> t') -> (ptypes t', ks')
-          _ -> error $ "qual types not supported yet (transVdef):" ++ show sc
+          Ty.Forall ks' (_ Ty.:=> t') -> (ptypes t', ks')
         vs = map (\(n', t') -> TermVar n' (trType t' (ks2TVars ks))) $ zip ns ts
         as' = [n' Ty.:>: (Ty.Forall ks ([] Ty.:=> t')) | (n', t') <- zip ns ts]
       as <- getAs
@@ -185,8 +182,7 @@ transExpr (Pat.Case n cs) = do
       expr' <- transExpr expr
       putAs as
       let t = case sc of
-            Ty.Forall ks ([] Ty.:=> t') -> trType t' (ks2TVars ks)
-            _ -> error $ "qual types not supported yet(2): " ++ show sc
+            Ty.Forall ks (_ Ty.:=> t') -> trType t' (ks2TVars ks)
           alt = (DataAlt (DataCon n [] t), [], expr')
       trClauses cs (alt:alts)
 
@@ -234,9 +230,7 @@ trExpr2 (Ty.Const (n Ty.:>: sc)) = do
   return $ Var $ TermVar n t
   where
     t = case sc of
-      Ty.Forall ks ([] Ty.:=> t') -> trType t' (ks2TVars ks)
-      _ -> error $ "qual types not supported yet(3): " ++ show sc
-
+      Ty.Forall ks (_ Ty.:=> t') -> trType t' (ks2TVars ks)
 
 trExpr2 expr = error $ "Non-exaustive patterns in trExpr2: " ++ show expr
 
