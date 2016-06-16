@@ -7,6 +7,8 @@ trVar (Core.TermVar n _) = TermVar n
 
 trLit (Core.LitStr s _) = LitStr s
 
+trLit (Core.LitChar c _) = LitChar c
+
 trExpr (Core.Var v) = AtomExpr $ VarAtom $ trVar v
 
 trExpr (Core.Lit l) = AtomExpr $ LitAtom $ trLit l

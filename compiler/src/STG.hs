@@ -10,6 +10,7 @@ data Var = TermVar Id
          deriving Show
 
 data Literal = LitStr String
+             | LitChar Char
              deriving Show
 
 data Atom = VarAtom Var

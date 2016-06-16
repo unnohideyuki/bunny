@@ -202,7 +202,7 @@ renProg m = do
   ctbs <- renCDecls cds []
   renIDecls ids
   tbs <- renDecls ds
-  let bgs = trace (show (ctbs, tbs)) (toBg $ ctbs ++ tbs)
+  let bgs = toBg $ ctbs ++ tbs
   st <- get
   let ce = rn_ce st
       as = rn_cms st
