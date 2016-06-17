@@ -19,6 +19,7 @@ data Atom = VarAtom Var
 
 data Expr = AtomExpr Atom
           | FunAppExpr Expr [Expr]
+          | LetExpr [Bind] Expr
           deriving Show
 
 data Bind = Bind Var Expr

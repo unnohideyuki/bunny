@@ -18,12 +18,19 @@ trExpr (Core.App f x) = FunAppExpr f' [x']
     f' = trExpr f
     x' = trExpr x
 
+trExpr (Core.Let b e) = 
+  let
+    bs = trBind b
+    expr = trExpr e
+  in
+   LetExpr bs expr
+
 trExpr e = error $ "Non-exhaustive pattern in trExpr: " ++ show e
 
 trbind :: (Core.Var, Core.Expr) -> Bind
 trbind (v, e) = Bind (trVar v) (trExpr e)
 
-trBind :: Core.Bind -> Program
+trBind :: Core.Bind -> [Bind]
 trBind (Core.NoRec v e) = [trbind (v, e)]
 trBind (Core.Rec bs) = trbinds bs
   where
