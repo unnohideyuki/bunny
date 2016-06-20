@@ -185,8 +185,8 @@ genLambda arty nenv expr = do
       let s = str st
           s' = "    public static class "
                ++ name ++ " implements LambdaForm {\n"
-          s'' = "    public int arity(){ return " ++ show arty ++ "; }\n"
-          s''' = "    public Expr call(AtomExpr[] args){\n"
+          s'' = "     public int arity(){ return " ++ show arty ++ "; }\n"
+          s''' = "     public Expr call(AtomExpr[] args){\n"
           ss = sstack st
           n = idx st
           is = istack st
@@ -214,7 +214,7 @@ genLambda arty nenv expr = do
                   , sstack = ss
                   , istack = is
                   , estack = es
-                  , result = r ++ curs ++ "    }}\n\n"
+                  , result = r ++ curs ++ "     }\n    }\n\n"
                   }
       put st'
                           
