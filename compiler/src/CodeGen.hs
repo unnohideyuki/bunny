@@ -1,8 +1,11 @@
 module CodeGen where
 
 import STG
+import Symbol
 
 import Control.Monad.State.Strict
+import qualified Data.Map as Map
+import Data.List (intersperse)
 
 emitPreamble =
   let
@@ -48,8 +51,11 @@ genBind (Bind (TermVar n) e) = do
 
 data GenSt = GenSt { str :: String
                    , idx :: Int
+                   , env :: Map.Map Id Id
+                   , gid :: Int
                    , sstack :: [String]
                    , istack :: [Int]
+                   , estack :: [Map.Map Id Id]
                    , result :: String
                    }
 
@@ -89,8 +95,11 @@ exitBind = do
 initGenSt :: GenSt
 initGenSt = GenSt { str = ""
                   , idx = 0
+                  , env = Map.empty
+                  , gid = 0
                   , sstack = []
                   , istack = []
+                  , estack = []
                   , result = ""
                   }
 
@@ -101,6 +110,13 @@ nexti = do
   st <- get
   let i = idx st
   put st{idx = i + 1}
+  return i
+
+nextgid :: GEN Int
+nextgid = do
+  st <- get
+  let i = gid st
+  put st{gid = i + 1}
   return i
 
 appendCode :: String -> GEN ()
@@ -130,13 +146,90 @@ genExpr (FunAppExpr f [e]) = do
     " = " ++ "RTLib.app(t" ++ show n1 ++ ", t" ++ show n2 ++ ");"
   return n
 
+genExpr (LetExpr bs e) = do
+  n <- genBs bs []
+  let vs = map (\(Bind (TermVar n) _) -> n) bs
+      ns = map (\i -> "args[" ++ show i ++ "]") [0..]
+      nenv = fromList $ zip vs ns
+  lamname <- genLambda (length bs) nenv e
+  n' <- nexti
+  let s = "new LetExpr(t" ++ show n ++ ", new " ++ lamname ++ "())"
+  appendCode $ "Expr t" ++ show n' ++ " = " ++ s ++ ";"
+  return n'
+  where
+    genBs [] ns = genArgs $ reverse ns
+    genBs ((Bind _ e):bs) ns = do
+      n <- genExpr e
+      genBs bs (n:ns)
+
+    genArgs ns = do
+      n <- nexti
+      let s0 = "Expr[] t" ++ show n ++ " = {"
+          s1 = concat $ intersperse "," $ map (\i -> "t" ++ show i) ns
+          s2 = "};"
+      appendCode $ s0 ++ s1 ++ s2
+      return n
+
 genExpr e = error $ "Non-exaustive pattern in genExpr: " ++ show e
+
+genLambda arty nenv expr = do
+  i <- nextgid
+  let lamname = "LAM" ++ show i
+  enterLambda arty lamname nenv
+  n <- genExpr expr
+  exitLambda n
+  return lamname
+  where
+    enterLambda arty name nenv = do
+      st <- get
+      let s = str st
+          s' = "    public static class "
+               ++ name ++ " implements LambdaForm {\n"
+          s'' = "    public int arity(){ return " ++ show arty ++ "; }\n"
+          s''' = "    public Expr call(AtomExpr[] args){\n"
+          ss = sstack st
+          n = idx st
+          is = istack st
+          oenv = env st
+          es = estack st
+          st' = st{ str = s' ++ s'' ++ s'''
+                  , idx = 0
+                  , env = nenv
+                  , sstack = s:ss
+                  , istack = n:is
+                  , estack = oenv:es
+                  }
+      put st'
+
+    exitLambda n = do
+      appendCode $ "return t" ++ show n ++ ";"
+      st <- get
+      let curs = str st
+          (s:ss) = sstack st
+          (i:is) = istack st
+          (_:es) = estack st
+          r = result st
+          st' = st{ str = s
+                  , idx = i
+                  , sstack = ss
+                  , istack = is
+                  , estack = es
+                  , result = r ++ curs ++ "    }}\n\n"
+                  }
+      put st'
+                          
 
 genAtomExpr (AtomExpr (VarAtom (TermVar n)))
   | n == "Prim.putStrLn" = emit "RTLib.putStrLn"
   | n == "Prim.:"        = emit "RTLib.cons"
   | n == "Prim.[]"       = emit "RTLib.nil"
-  | otherwise            = error $ "Function not found at genAtomExpr: " ++ n
+  | otherwise            = do
+    st <- get
+    let h = env st
+        v = case Map.lookup n h of
+          Just s -> s
+          Nothing -> error $ "Function not found at genAtomExpr: " ++ n
+    emit v
   where
     emit s = do
       n <- nexti
