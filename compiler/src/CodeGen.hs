@@ -153,8 +153,9 @@ genExpr (LetExpr bs e) = do
       nenv = fromList $ zip vs ns
   lamname <- genLambda (length bs) nenv e
   n' <- nexti
-  let s = "new LetExpr(t" ++ show n ++ ", new " ++ lamname ++ "())"
+  let s = "new LetExpr(null, new " ++ lamname ++ "())"
   appendCode $ "Expr t" ++ show n' ++ " = " ++ s ++ ";"
+  appendCode $ "((LetExpr)t" ++ show n' ++ ").setEs(t" ++ show n ++ ");"
   return n'
   where
     genBs [] ns = genArgs $ reverse ns
