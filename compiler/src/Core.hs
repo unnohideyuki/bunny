@@ -33,7 +33,7 @@ data Literal = LitInt  Integer  Type
 data Expr = Var Var
           | Lit Literal
           | App Expr Expr
-          | Lam Var Expr
+          | Lam [Var] Expr
           | Let Bind Expr
           | Case Expr Var [Alt]
           | Cast Expr Type
