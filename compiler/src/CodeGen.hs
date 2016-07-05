@@ -7,6 +7,8 @@ import Control.Monad.State.Strict
 import qualified Data.Map as Map
 import Data.List (intersperse)
 
+import Debug.Trace
+
 emitPreamble =
   let
      preamble = [ "import jp.ne.sakura.uhideyuki.brt.brtsyn.*;"
@@ -58,6 +60,19 @@ data GenSt = GenSt { str :: String
                    , estack :: [Map.Map Id Id]
                    , result :: String
                    }
+
+saveEnv :: GEN ()
+saveEnv = do
+  st <- get
+  let cenv = env st
+      es = estack st
+  put st{estack=cenv:es}
+
+restoreEnv :: GEN ()
+restoreEnv = do
+  st <- get
+  let (e:es) = estack st
+  put st{env=e, estack=es}
 
 enterBind :: String -> GEN ()
 enterBind name = do
@@ -146,40 +161,64 @@ genExpr (FunAppExpr f [e]) = do
     " = " ++ "RTLib.app(t" ++ show n1 ++ ", t" ++ show n2 ++ ");"
   return n
 
-genExpr (LetExpr bs e) = do
-  n <- genBs bs []
-  let vs = map (\(Bind (TermVar n) _) -> n) bs
-      ns = map (\i -> "args[" ++ show i ++ "]") [0..]
-      nenv = fromList $ zip vs ns
-  lamname <- genLambda (length bs) nenv e
-  n' <- nexti
-  let s = "new LetExpr(null, new " ++ lamname ++ "())"
-  appendCode $ "Expr t" ++ show n' ++ " = " ++ s ++ ";"
-  appendCode $ "((LetExpr)t" ++ show n' ++ ").setEs(t" ++ show n ++ ");"
-  return n'
-  where
-    genBs [] ns = genArgs $ reverse ns
-    genBs ((Bind _ e):bs) ns = do
-      n <- genExpr e
-      genBs bs (n:ns)
-
-    genArgs ns = do
-      n <- nexti
-      let s0 = "Expr[] t" ++ show n ++ " = {"
-          s1 = concat $ intersperse "," $ map (\i -> "t" ++ show i) ns
-          s2 = "};"
-      appendCode $ s0 ++ s1 ++ s2
-      return n
+genExpr e@(LetExpr _ _) = genExpr' e False
 
 genExpr e = error $ "Non-exaustive pattern in genExpr: " ++ show e
 
-genLambda arty nenv expr = do
+genExpr' (LetExpr bs e) delayed = do
+  saveEnv
+  rs <- genBs bs []
+  addLocalVars rs
+  sequence_ $ map (\(_, i, vs) -> setBoundVars i vs) rs
+  (lamname, vs) <- genLambda e
+  n <- nexti
+  let s = "new LetExpr(null, new " ++ lamname ++ "())"
+  appendCode $ "Expr t" ++ show n ++ " = " ++ s ++ ";"
+  when (not delayed) $ setBoundVars n vs 
+  restoreEnv
+  return n
+  where
+    genBs [] rs = return rs
+    genBs ((Bind (TermVar name) e):bs) rs
+      | fv e == [] = do i <- genExpr e
+                        genBs bs ((name, i, []):rs)
+      | otherwise = do i <- genExpr' (LetExpr [] e) True
+                       genBs bs ((name, i, fv e):rs)
+
+    addLocalVars [] = return ()
+    addLocalVars ((name, i, vs):rs) = do
+      st <- get
+      let cenv = env st
+          cenv' = Map.insert name ("t" ++ show i) cenv
+      put st{env=cenv'}
+      addLocalVars rs
+
+    setBoundVars _ [] = return ()
+    setBoundVars n vs = do
+      i <- nexti
+      st <- get
+      let s0 = "Expr[] t" ++ show i ++ " = {"
+          cenv = env st
+          n2v name = case Map.lookup name cenv of
+            Just v -> v
+            Nothing -> error $ "Variable not found: " ++ name
+          s1 = concat $ intersperse "," $ map n2v vs
+          s2 = "};"
+      appendCode $ s0 ++ s1 ++ s2
+      appendCode $ "((LetExpr)t" ++ show n ++ ").setEs(t" ++ show i ++ ");"
+
+
+genLambda expr = do
   i <- nextgid
   let lamname = "LAM" ++ show i
-  enterLambda arty lamname nenv
+      vs = fv expr
+      ns = map (\i -> "args[" ++ show i ++ "]") [0..]
+      nenv = fromList $ zip vs ns
+      aty = length vs
+  enterLambda aty lamname nenv
   n <- genExpr expr
   exitLambda n
-  return lamname
+  return (lamname, vs)
   where
     enterLambda arty name nenv = do
       st <- get
@@ -208,10 +247,11 @@ genLambda arty nenv expr = do
       let curs = str st
           (s:ss) = sstack st
           (i:is) = istack st
-          (_:es) = estack st
+          (oenv:es) = estack st
           r = result st
           st' = st{ str = s
                   , idx = i
+                  , env = oenv
                   , sstack = ss
                   , istack = is
                   , estack = es
