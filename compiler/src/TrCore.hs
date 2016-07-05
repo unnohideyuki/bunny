@@ -140,8 +140,11 @@ transVdef (n, Pat.Lambda ns expr) = do
       as' = [n' Ty.:>: (Ty.Forall ks ([] Ty.:=> t')) | (n', t') <- zip ns ts]
   appendAs as'
   expr' <- transExpr expr
-  appendBind (n, Lam vs expr')
+  appendBind (n, lam' vs expr')
   putAs as
+  where
+    lam' [] e = e
+    lam' vs e = Lam vs e
 
 transVdef (n, e) = do
   expr' <- transExpr e
