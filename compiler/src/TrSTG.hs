@@ -25,6 +25,11 @@ trExpr (Core.Let b e) =
   in
    LetExpr bs expr
 
+trExpr e@(Core.Lam vs expr) = LamExpr vs' expr'
+  where
+    vs' = map trVar vs
+    expr' = trExpr expr
+
 trExpr e = error $ "Non-exhaustive pattern in trExpr: " ++ show e
 
 trbind :: (Core.Var, Core.Expr) -> Bind

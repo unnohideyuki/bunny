@@ -23,6 +23,7 @@ data Atom = VarAtom Var
 data Expr = AtomExpr Atom
           | FunAppExpr Expr [Expr]
           | LetExpr [Bind] Expr
+          | LamExpr [Var] Expr
           deriving Show
 
 data Bind = Bind Var Expr
@@ -57,3 +58,4 @@ fv (LetExpr bs e) = (fv e ++ concatMap fv' bs) \\ concatMap bv bs
     fv' (Bind _ e) = fv e
     bv (Bind (TermVar n) _) = [n]
 
+fv (LamExpr vs e) = fv e \\ map (\(TermVar n) -> n) vs
