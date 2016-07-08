@@ -163,7 +163,9 @@ genExpr (FunAppExpr f [e]) = do
 
 genExpr e@(LetExpr _ _) = genExpr' e False
 
-genExpr e@(LamExpr _ _) = genLamExpr e
+genExpr e@(LamExpr vs expr)
+  | fv e == [] = genLamExpr e
+  | otherwise = error $ "LamExpr with free variables " ++ show e
 
 genExpr e = error $ "Non-exaustive pattern in genExpr: " ++ show e
 
