@@ -163,10 +163,10 @@ genExpr (FunAppExpr f [e]) = do
 
 genExpr e@(LetExpr _ _) = genExpr' e False
 
-genExpr e@(LamExpr vs expr)
+genExpr e@(LamExpr _ _)
   | fv e == [] = genLamExpr e
-  | otherwise = error $ "LamExpr with free variables " ++ show e
-
+  | otherwise = lamConv e >>= genExpr
+    
 genExpr e = error $ "Non-exaustive pattern in genExpr: " ++ show e
 
 genExpr' (LetExpr bs e) delayed = do
@@ -281,6 +281,15 @@ genFBody vs expr = do
   n <- genExpr expr
   exitLambda n
   return lamname
+
+lamConv e@(LamExpr vs expr) = do
+  i <- nextgid
+  let fvars = map (\n -> (TermVar n)) $ fv e
+      newv = TermVar $ "_X" ++ show i
+      bs = [Bind newv (LamExpr (fvars ++ vs) expr)]
+      v2e var = AtomExpr $ VarAtom var
+      bd = FunAppExpr (v2e newv) $ map v2e fvars
+  return $ LetExpr bs bd
 
 genAtomExpr (AtomExpr (VarAtom (TermVar n)))
   | n == "Prim.putStrLn" = emit "RTLib.putStrLn"
