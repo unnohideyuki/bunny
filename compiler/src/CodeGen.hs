@@ -163,6 +163,8 @@ genExpr (FunAppExpr f [e]) = do
 
 genExpr e@(LetExpr _ _) = genExpr' e False
 
+genExpr e@(LamExpr _ _) = genLamExpr e
+
 genExpr e = error $ "Non-exaustive pattern in genExpr: " ++ show e
 
 genExpr' (LetExpr bs e) delayed = do
@@ -207,7 +209,6 @@ genExpr' (LetExpr bs e) delayed = do
       appendCode $ s0 ++ s1 ++ s2
       appendCode $ "((LetExpr)t" ++ show n ++ ").setEs(t" ++ show i ++ ");"
 
-
 genLambda expr = do
   i <- nextgid
   let lamname = "LAM" ++ show i
@@ -219,46 +220,65 @@ genLambda expr = do
   n <- genExpr expr
   exitLambda n
   return (lamname, vs)
-  where
-    enterLambda arty name nenv = do
-      st <- get
-      let s = str st
-          s' = "    public static class "
-               ++ name ++ " implements LambdaForm {\n"
-          s'' = "     public int arity(){ return " ++ show arty ++ "; }\n"
-          s''' = "     public Expr call(AtomExpr[] args){\n"
-          ss = sstack st
-          n = idx st
-          is = istack st
-          oenv = env st
-          es = estack st
-          st' = st{ str = s' ++ s'' ++ s'''
-                  , idx = 0
-                  , env = nenv
-                  , sstack = s:ss
-                  , istack = n:is
-                  , estack = oenv:es
-                  }
-      put st'
 
-    exitLambda n = do
-      appendCode $ "return t" ++ show n ++ ";"
-      st <- get
-      let curs = str st
-          (s:ss) = sstack st
-          (i:is) = istack st
-          (oenv:es) = estack st
-          r = result st
-          st' = st{ str = s
-                  , idx = i
-                  , env = oenv
-                  , sstack = ss
-                  , istack = is
-                  , estack = es
-                  , result = r ++ curs ++ "     }\n    }\n\n"
-                  }
-      put st'
-                          
+enterLambda arty name nenv = do
+  st <- get
+  let s = str st
+      s' = "    public static class "
+           ++ name ++ " implements LambdaForm {\n"
+      s'' = "     public int arity(){ return " ++ show arty ++ "; }\n"
+      s''' = "     public Expr call(AtomExpr[] args){\n"
+      ss = sstack st
+      n = idx st
+      is = istack st
+      oenv = env st
+      es = estack st
+      st' = st{ str = s' ++ s'' ++ s'''
+              , idx = 0
+              , env = nenv
+              , sstack = s:ss
+              , istack = n:is
+              , estack = oenv:es
+              }
+  put st'
+
+exitLambda n = do
+  appendCode $ "return t" ++ show n ++ ";"
+  st <- get
+  let curs = str st
+      (s:ss) = sstack st
+      (i:is) = istack st
+      (oenv:es) = estack st
+      r = result st
+      st' = st{ str = s
+              , idx = i
+              , env = oenv
+              , sstack = ss
+              , istack = is
+              , estack = es
+              , result = r ++ curs ++ "     }\n    }\n\n"
+              }
+  put st'
+
+{- fv expr must be [] here -}
+genLamExpr (LamExpr vs e) = do
+  n <- nexti
+  lamname <- genFBody vs e
+  appendCode $
+    "Expr t" ++ show n ++ " = RTLib.mkFun(new " ++ lamname ++ "());"
+  return n
+
+genFBody vs expr = do
+  i <- nextgid
+  let lamname = "LAM" ++ show i
+      vs' = map (\(TermVar n) -> n) vs
+      ns = map (\j -> "args[" ++ show j ++ "]") [0..]
+      nenv = fromList $ zip vs' ns
+      aty = length vs
+  enterLambda aty lamname nenv
+  n <- genExpr expr
+  exitLambda n
+  return lamname
 
 genAtomExpr (AtomExpr (VarAtom (TermVar n)))
   | n == "Prim.putStrLn" = emit "RTLib.putStrLn"

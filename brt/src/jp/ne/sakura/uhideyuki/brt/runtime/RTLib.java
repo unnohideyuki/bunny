@@ -31,7 +31,7 @@ public class RTLib {
 	return new AtomExpr(new LitChar(c));
     }
 
-    private static Expr mkFun(LambdaForm lam){
+    public static Expr mkFun(LambdaForm lam){
 	return mkExpr(new FunObj(lam.arity(), lam));
     }
 
