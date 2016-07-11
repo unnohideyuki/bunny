@@ -5,9 +5,13 @@ import STG
 
 trVar (Core.TermVar n _) = TermVar n
 
-trLit (Core.LitStr s _) = LitStr s
+trLit (Core.LitInt i _) = LitInt i
 
 trLit (Core.LitChar c _) = LitChar c
+
+trLit (Core.LitStr s _) = LitStr s
+
+trLit (Core.LitFrac r _) = LitFrac r
 
 trExpr (Core.Var v) = AtomExpr $ VarAtom $ trVar v
 

@@ -343,6 +343,11 @@ genAtomExpr (AtomExpr (LitAtom (LitChar c))) = do
   appendCode $ "Expr t" ++ show n ++ " = RTLib.fromChar(" ++ show c ++ ");"
   return n
 
+genAtomExpr (AtomExpr (LitAtom (LitInt i))) = do
+  n <- nexti
+  appendCode $ "Expr t" ++ show n ++ " = RTLib.fromInteger(" ++ show i ++ ");"
+  return n
+
 genAtomExpr e = error $ "Non-exhaustive pattern in genAtomExpr: " ++ show e
   
 refTopLevel n =

@@ -26,7 +26,7 @@ data Type = TyVarTy Var
 
 data Literal = LitInt  Integer  Type
              | LitChar Char     Type
-             | LitRat  Rational Type
+             | LitFrac  Double Type
              | LitStr  String   Type
              deriving Show
 

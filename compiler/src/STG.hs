@@ -14,6 +14,8 @@ data Var = TermVar Id
 
 data Literal = LitStr String
              | LitChar Char
+             | LitInt Integer
+             | LitFrac Double
              deriving Show
 
 data Atom = VarAtom Var

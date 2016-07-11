@@ -97,4 +97,9 @@ public class RTLib {
     public static Expr putStrLn = mkFun(new PutStrLnFunc());
 
     public static Expr fromChar(char c){ return mkExpr(c); }
+
+    public static Expr fromInteger(Integer i){
+	return new AtomExpr(new LitInt(i));
+    }
+
 }
