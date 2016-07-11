@@ -5,4 +5,16 @@ f=$1
 
 mkdir -p jout/$f
 
-sample/compiler0 < testcases/$f.hs > jout/$f/Sample.java
+cat <<EOF > jout/$f/Sample.java
+import jp.ne.sakura.uhideyuki.brt.brtsyn.*;
+import jp.ne.sakura.uhideyuki.brt.runtime.*;
+
+public class Sample {
+    public static void main(String[] args){
+      RT.eval(Main.mkmain());
+    }
+}
+EOF
+
+sample/compiler0 < testcases/$f.hs > jout/$f/Main.java
+

@@ -24,10 +24,15 @@ data Expr = AtomExpr Atom
           | FunAppExpr Expr [Expr]
           | LetExpr [Bind] Expr
           | LamExpr [Var] Expr
+          | CaseExpr Expr [Alt] {- CaseExpr Expr Var [Alt] -}
           deriving Show
 
 data Bind = Bind Var Expr
           deriving Show
+
+data Alt = CotrAlt Id Expr
+         | DefaultAlt Expr
+         deriving Show
 
 type Program = [Bind]
 
@@ -59,3 +64,9 @@ fv (LetExpr bs e) = (fv e ++ concatMap fv' bs) \\ concatMap bv bs
     bv (Bind (TermVar n) _) = [n]
 
 fv (LamExpr vs e) = fv e \\ map (\(TermVar n) -> n) vs
+
+fv (CaseExpr scrut alts) = fv scrut `union` fvalts alts []
+  where
+    fvalts [] xs = xs
+    fvalts (CotrAlt _ e:alts) xs = fvalts alts (fv e `union` xs)
+    fvalts (DefaultAlt e:alts) xs = fvalts alts (fv e `union` xs)

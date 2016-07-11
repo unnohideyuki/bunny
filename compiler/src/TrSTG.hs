@@ -30,6 +30,18 @@ trExpr e@(Core.Lam vs expr) = LamExpr vs' expr'
     vs' = map trVar vs
     expr' = trExpr expr
 
+trExpr e@(Core.Case scrut _ alts) = CaseExpr scrut' alts'
+  where
+    scrut' = trExpr scrut
+    alts' = map tralt alts
+    tralt ((Core.DataAlt (Core.DataCon name _ _)), vs, expr) =
+      CotrAlt name $ trExpr expr'
+      where 
+        expr' = case vs of
+          [] -> expr
+          vs' -> (Core.Lam vs' expr)
+    tralt (Core.DEFAULT, vs, expr) = DefaultAlt $ trExpr (Core.Lam vs expr)
+
 trExpr e = error $ "Non-exhaustive pattern in trExpr: " ++ show e
 
 trbind :: (Core.Var, Core.Expr) -> Bind

@@ -14,12 +14,6 @@ emitPreamble =
      preamble = [ "import jp.ne.sakura.uhideyuki.brt.brtsyn.*;"
                 , "import jp.ne.sakura.uhideyuki.brt.runtime.*;"
                 , ""
-                , "public class Sample {"
-                , "    public static void main(String[] args){"
-                , "      RT.eval(Main.mkmain());"
-                , "    }"
-                , "}"
-                , ""
                 ]
      ploop [] = return ()
      ploop (s:ss) = do {putStrLn s; ploop ss}
@@ -29,17 +23,16 @@ emitPreamble =
 emitProgram :: Program -> IO ()
 emitProgram prog = do
   emitPreamble
+  emitHeader "Main" -- Todo: module name.
   emitBinds prog
+  emitFooter
 
 emitBinds [] = return ()
 emitBinds (b:bs) = do
-  emitHeader b
   emitBind b
   emitBinds bs
-  emitFooter
 
-emitHeader (Bind (TermVar s) _) = putStrLn $ "class " ++ m ++ " {"
-  where m = takeWhile (/= '.') s -- todo: deeper module name
+emitHeader m = putStrLn $ "public class " ++ m ++ " {"
 
 emitFooter = putStrLn "}"
 
@@ -166,7 +159,31 @@ genExpr e@(LetExpr _ _) = genExpr' e False
 genExpr e@(LamExpr _ _)
   | fv e == [] = genLamExpr e
   | otherwise = lamConv e >>= genExpr
-    
+
+genExpr (CaseExpr scrut alts) = do
+  ns <- genExpr scrut
+  na <- genalts alts []
+  n <- nexti
+  let s = "new CaseExpr(t" ++ show ns ++ ", t" ++ show na ++ ")"
+  appendCode $ "Expr t" ++ show n ++ " = " ++ s ++ ";"
+  return n
+  where
+    genalts [] ts = do
+      i <- nexti
+      let s0 = "Alt[] t" ++ show i ++ " = {"
+          s1 = concat $ intersperse "," (reverse ts)
+          s2 = "};"
+      appendCode $ s0 ++ s1 ++ s2
+      return i
+    genalts (CotrAlt name expr: alts) ts = do
+      n <- genExpr expr
+      i <- nexti
+      let s0 = "Alt t" ++ show i ++ " = "
+          s1 = "new CotrAlt(" ++ show name ++ ", t" ++ show n ++ ");"
+          ts' = ("t" ++ show i) : ts
+      appendCode $ s0 ++ s1
+      genalts alts ts'
+
 genExpr e = error $ "Non-exaustive pattern in genExpr: " ++ show e
 
 genExpr' (LetExpr bs e) delayed = do
@@ -292,7 +309,6 @@ lamConv e@(LamExpr vs expr) = do
   return $ LetExpr bs bd
 
 genAtomExpr (AtomExpr (VarAtom (TermVar n)))
-  | n == "Prim.putStrLn" = emit "RTLib.putStrLn"
   | n == "Prim.:"        = emit "RTLib.cons"
   | n == "Prim.[]"       = emit "RTLib.nil"
   | otherwise            = do
@@ -300,7 +316,7 @@ genAtomExpr (AtomExpr (VarAtom (TermVar n)))
     let h = env st
         v = case Map.lookup n h of
           Just s -> s
-          Nothing -> error $ "Function not found at genAtomExpr: " ++ n
+          Nothing -> refTopLevel n
     emit v
   where
     emit s = do
@@ -320,3 +336,11 @@ genAtomExpr (AtomExpr (LitAtom (LitChar c))) = do
 
 genAtomExpr e = error $ "Non-exhaustive pattern in genAtomExpr: " ++ show e
   
+refTopLevel n =
+  let
+    m = takeWhile (/= '.') n
+    n' = drop (length m + 1) n
+  in
+   if (not $ elem '.' n')
+   then m ++ ".mk" ++ n' ++ "()"
+   else error $ "Unbound variable " ++ n

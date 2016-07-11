@@ -46,6 +46,7 @@ class EvalApply {
 	    evalPrimOp();
 	} else if (code instanceof FunAppExpr){
 	    Expr f = ((FunAppExpr)code).f;
+	    assert f != null;
 	    if (f.isFunObj()){
 		evalFun(); // EXACT, CALLK or PAP2
 	    } else if (f.isThunk()){
@@ -114,7 +115,11 @@ class EvalApply {
 
 	    if (calt != null){
 		AtomExpr[] args = cobj.args;
-		code = calt.lambda.call(args);
+		if (args.length > 0){
+		    code = new FunAppExpr(calt.e, args, -1);
+		} else {
+		    code = calt.e;
+		}
 		return true;
 	    }
 	}
@@ -142,7 +147,7 @@ class EvalApply {
 	    assert dalt != null;
 	    AtomExpr[] a = new AtomExpr[1];
 	    a[0] = (AtomExpr) scrut; // is is safe when scrut.isLitOrValue()
-	    code = dalt.lambda.call(a);
+	    code = new FunAppExpr(dalt.e, a, -1);
 	    return true;
 	}
 	return false;
