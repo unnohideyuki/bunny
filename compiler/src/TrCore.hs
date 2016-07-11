@@ -187,6 +187,27 @@ transExpr (Pat.Case n cs) = do
           alt = (DataAlt (DataCon n vs t), [], expr')
       trClauses cs (alt:alts)
 
+    {- for temporary fix (#t001) -}
+    trClauses ((Pat.DefaultClause n expr):cs) alts = do
+      expr' <- transExpr expr
+      let v = TermVar n undefined -- with dummy type
+          alt = (DEFAULT, [v], expr')
+      trClauses cs (alt:alts)
+
+{- Todo: fix this.
+   This is a temprary fix (#t001) to support default alts.
+   See the note page 212.
+-}
+transExpr (Pat.Fatbar e (Pat.Case n cs)) = transExpr $ Pat.Case n cs'
+  where cs' = addDefAlt cs []
+        defcls = Pat.DefaultClause n e
+        addDefAlt [] ncs = reverse $ (defcls:ncs)
+        addDefAlt (cls@(Pat.Clause _ _ expr):cs) ncs = case expr of
+          Pat.Error -> addDefAlt cs ncs
+          _ -> addDefAlt cs (cls:ncs)
+
+transExpr Pat.Error = return $ Var (TermVar "Prim.neErr" undefined)
+
 transExpr e = error $ "Non-exaustive Patterns in transExpr: " ++ show e
 
 
@@ -245,7 +266,13 @@ dsgAlts alts@((pats,_):_) =
   let
     k = length pats
     us = [Pat.mkVar i | i <- [1..k]]
-    e = Pat.match k us alts Pat.Error
+
+    alts' = rmWild alts [] -- for temporary fix (#t002), see the note p.212
+    rmWild [] as = reverse as
+    rmWild (([Ty.PWildcard], e):alts) as = rmWild alts (([Ty.PVar "_"], e):as)
+    rmWild (alt:alts) as = rmWild alts (alt:as)
+    
+    e = Pat.match k us alts' Pat.Error
   in
    Pat.Lambda us e
 

@@ -175,7 +175,7 @@ genExpr (CaseExpr scrut alts) = do
           s2 = "};"
       appendCode $ s0 ++ s1 ++ s2
       return i
-    genalts (CotrAlt name expr: alts) ts = do
+    genalts ((CotrAlt name expr):alts) ts = do
       n <- genExpr expr
       i <- nexti
       let s0 = "Alt t" ++ show i ++ " = "
@@ -183,6 +183,15 @@ genExpr (CaseExpr scrut alts) = do
           ts' = ("t" ++ show i) : ts
       appendCode $ s0 ++ s1
       genalts alts ts'
+    genalts ((DefaultAlt expr):alts) ts = do
+      n <- genExpr expr
+      i <- nexti
+      let s0 = "Alt t" ++ show i ++ " = "
+          s1 = "new DefaultAlt(t" ++ show n ++ ");"
+          ts' = ("t" ++ show i) : ts
+      appendCode $ s0 ++ s1
+      genalts alts ts'
+      
 
 genExpr e = error $ "Non-exaustive pattern in genExpr: " ++ show e
 

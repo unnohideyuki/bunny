@@ -18,4 +18,8 @@ public class Prim {
     public static Expr mkFalse(){
 	return mkExpr(new ConObj(new Cotr("Prim.False"), new AtomExpr[0]));
     }
+
+    public static Expr mkneErr(){
+	return new ErrExpr("Error: Non-exhaustive patterns.");
+    }
 }

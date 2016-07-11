@@ -37,6 +37,7 @@ data Expression = Case Variable [Clause]
 type Variable = Id
 
 data Clause = Clause Typing.Assump [Variable] Expression
+            | DefaultClause Variable Expression {- for temporary fix (#t001) -} 
             deriving Show
 
 subst :: Expression -> Variable -> Variable -> Expression
@@ -90,6 +91,7 @@ match k (u:us) qs def =
     matchVarCon k us qs def
       | isVar (head qs) = matchVar k us qs def
       | isCon (head qs) = matchCon k us qs def
+      | otherwise       = error $ "matchVarCon error: " ++ show (head qs)
 
     matchVar k (u:us) qs def =
       match k us [(ps, subst e u v) | (Typing.PVar v:ps, e) <- qs] def

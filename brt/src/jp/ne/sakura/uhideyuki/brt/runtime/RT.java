@@ -30,7 +30,11 @@ class EvalApply {
     }
 
     public Boolean runStep(){
-	if (code instanceof LetExpr){
+	if (code instanceof ErrExpr){
+	    ErrExpr e = (ErrExpr) code;
+	    System.out.println(e.message);
+	    System.exit(-1);
+	} if (code instanceof LetExpr){
 	    evalLet();
 	} else if (code instanceof CaseExpr){
 	    evalCase(); // CASECON, CASEANY or CASE
