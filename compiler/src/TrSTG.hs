@@ -34,7 +34,7 @@ trExpr e@(Core.Case scrut _ alts) = CaseExpr scrut' alts'
   where
     scrut' = trExpr scrut
     alts' = map tralt alts
-    tralt ((Core.DataAlt (Core.DataCon name _ _)), vs, expr) =
+    tralt ((Core.DataAlt (Core.DataCon name vs _)), _, expr) =
       CotrAlt name $ trExpr expr'
       where 
         expr' = case vs of

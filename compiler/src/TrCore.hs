@@ -184,7 +184,7 @@ transExpr (Pat.Case n cs) = do
       putAs as
       let t = case sc of
             Ty.Forall ks (_ Ty.:=> t') -> trType t' (ks2TVars ks)
-          alt = (DataAlt (DataCon n [] t), [], expr')
+          alt = (DataAlt (DataCon n vs t), [], expr')
       trClauses cs (alt:alts)
 
 transExpr e = error $ "Non-exaustive Patterns in transExpr: " ++ show e
