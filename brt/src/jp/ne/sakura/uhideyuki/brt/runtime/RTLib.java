@@ -18,7 +18,6 @@ class PutStrLnFunc implements LambdaForm {
 	assert args.length == arity();
 	String t = RTLib.toJString(RT.eval(args[0]));
 	System.out.println(t);
-	// return RTLib.unit;
 	return RTLib.retIO(RTLib.unit);
     }
 }
