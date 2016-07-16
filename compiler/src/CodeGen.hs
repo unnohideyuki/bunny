@@ -353,7 +353,7 @@ genAtomExpr e = error $ "Non-exhaustive pattern in genAtomExpr: " ++ show e
 refTopLevel n =
   let
     m = takeWhile (/= '.') n
-    n' = drop (length m + 1) n
+    n' = escapeId $ drop (length m + 1) n
   in
    if (not $ elem '.' n')
    then m ++ ".mk" ++ n' ++ "()"

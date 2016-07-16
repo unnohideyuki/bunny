@@ -1,6 +1,7 @@
 module Symbol where
 
 import qualified Data.Map as Map
+import Data.Char
 
 type Id = String
 
@@ -31,3 +32,9 @@ tabLookup s tab = Map.lookup s tab
 
 fromList :: [(Id, a)] -> Table a
 fromList = Map.fromList
+
+escapeId :: Id -> Id
+escapeId "" = ""
+escapeId (c:cs) = case isAlphaNum c of
+  True  -> c : escapeId cs
+  False -> "_" ++ (show.ord) c ++ "_" ++ escapeId cs
