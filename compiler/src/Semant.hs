@@ -223,7 +223,8 @@ renCDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]
 renCDecls [] tbs = return tbs
 renCDecls ((A.ClassDecl cls ds):cds) tbs = do
   clsadd cls
-  tbs <- renDecls $ addvar cls ds
+  let ds' = suppDs ds
+  tbs <- renDecls $ addvar cls ds'
   renCDecls cds tbs
   where clsadd (ctx, (A.AppTy (A.Tycon n) _)) = do
           cname <- qname $ orig_name n
@@ -237,6 +238,43 @@ renCDecls ((A.ClassDecl cls ds):cds) tbs = do
                               A.TypeSigDecl ns (Just sigvar, sigdoc)
                             f d = d
                         in map f ds
+
+{- suppDs -- Supplement Declarations that adds declarations for
+             TypeSigDecls without ValDecl.
+-}
+suppDs :: [A.Decl] -> [A.Decl]
+suppDs ds =
+  let
+    extrId (Name{orig_name=s}) = s
+    n `nameEq` m = (extrId n) == (extrId m)
+    
+    ubNames [] cns vns = cns \\ vns
+
+    ubNames ((A.TypeSigDecl ns _):ds) cns vns =
+      let
+        ns' = map extrId ns
+      in
+       ubNames ds (cns ++ ns') vns
+
+    ubNames ((A.ValDecl e _):ds) cns vns =
+      let
+        n = extrFuncName e
+
+        extrFuncName (A.InfixExp _ n _) = extrId n
+        extrFuncName (A.FunAppExp f _) = extrFuncName f
+        extrFuncName (A.VarExp n) = extrId n
+      in
+       ubNames ds cns (n:vns)
+    
+    ns = ubNames ds [] []
+
+    mkv n = A.VarExp $
+            Name{orig_name=n, qual_name="", name_pos=(-1, -1), isConName=False}
+    mkoldcl n = A.ValDecl (mkv n) (A.UnguardedRhs (mkv "#overloaded#") [])
+
+    ds' = map mkoldcl ns
+  in
+   ds ++ ds'
 
 renIDecls :: [A.Decl] -> RN ()
 renIDecls [] = return ()

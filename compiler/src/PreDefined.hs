@@ -76,6 +76,9 @@ primFailCfun
   = "Prim.primFailIO" :>: (Forall [Star]
                       ([] :=> (tString `fn` (TAp tIO (TGen 0)))))
 
+overloadedCfun :: Assump
+overloadedCfun = "#overloaded#" :>: (Forall [Star] ([] :=> TGen 0))
+
 primConsMems :: [Assump]
 primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
                 , falseCfun, trueCfun
@@ -85,6 +88,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
                 , "Prim.putStrLn" :>:
                   (Forall []
                    ([] :=> (TAp tList tChar `fn` TAp tIO tUnit)))
+                , overloadedCfun
                 ]
 
 primConsNames :: [(Id, Id)]
@@ -101,6 +105,7 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("primFailIO", "Prim.primFailIO")
                  , ("PrimGt", "Prim.>")
                  , ("PrimLe", "Prim.<=")
+                 , ("#overloaded#", "#overloaded#")
                  ]
 
 -- Primitive Names
