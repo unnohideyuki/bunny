@@ -21,7 +21,8 @@ data Type = TyVarTy Var
           | AppTy Type Type
           | TyConApp TyCon [Type]
           | FunTy Type Type
-          | ForAllTy Var Type
+          | ForAllTy Var Type -- todo: not used?
+          | DictTy Id Id -- 2 Ids: Dict-name, tyvar-name
           deriving (Show, Eq)
 
 data Literal = LitInt  Integer  Type
