@@ -62,18 +62,18 @@ tIO = TCon (Tycon "Main.IO" (Kfun Star Star)) -- todo: Prim.IO
 
 primRetCfun :: Assump
 primRetCfun
-  = "Prim.primRetIO" :>: (Forall [Star]
+  = "Prim.retIO" :>: (Forall [Star]
                           ([] :=> (TGen 0 `fn` TAp tIO (TGen 0))))
 primBindCfun :: Assump
 primBindCfun
-  = "Prim.primBindIO" :>:
+  = "Prim.bindIO" :>:
     (Forall [Star, Star]
      ([] :=>
       (TAp tIO (TGen 0) `fn` (TGen 0 `fn` TAp tIO (TGen 1)) `fn` TAp tIO (TGen 1))))
 
 primFailCfun :: Assump
 primFailCfun
-  = "Prim.primFailIO" :>: (Forall [Star]
+  = "Prim.failIO" :>: (Forall [Star]
                       ([] :=> (tString `fn` (TAp tIO (TGen 0)))))
 
 overloadedCfun :: Assump
@@ -100,9 +100,9 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Show", "Prim.Show")
                  , ("show", "Prim.show")
                  , ("error", "Prim.error")
-                 , ("primRetIO", "Prim.primRetIO")
-                 , ("primBindIO", "Prim.primBindIO")
-                 , ("primFailIO", "Prim.primFailIO")
+                 , ("Prim.retIO", "Prim.retIO")
+                 , ("Prim.bindIO", "Prim.bindIO")
+                 , ("Prim.failIO", "Prim.failIO")
                  , ("PrimGt", "Prim.>")
                  , ("PrimLe", "Prim.<=")
                  , ("#overloaded#", "#overloaded#")

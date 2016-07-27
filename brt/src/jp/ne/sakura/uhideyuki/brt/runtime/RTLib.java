@@ -18,15 +18,7 @@ class PutStrLnFunc implements LambdaForm {
 	assert args.length == arity();
 	String t = RTLib.toJString(RT.eval(args[0]));
 	System.out.println(t);
-	return RTLib.retIO(RTLib.unit);
-    }
-}
-
-class RetIOFunc implements LambdaForm {
-    public int arity(){ return 1; }
-    public Expr call(AtomExpr[] args){
-	assert args.length == arity();
-	return new AtomExpr(new Var(new ConObj(new Cotr("Main.IO"), args)));
+	return RTLib.app(Prim.mkretIO(), RTLib.unit);
     }
 }
 
@@ -110,7 +102,8 @@ public class RTLib {
 	return new AtomExpr(new LitInt(i));
     }
 
-    public static Expr retIO(Expr e){
-	return app(mkFun(new RetIOFunc()), e);
+    public static Object extrDict(AtomExpr e){
+	Dict d = (Dict) e.a;
+	return d.obj;
     }
 }

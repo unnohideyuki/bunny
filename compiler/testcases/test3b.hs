@@ -13,9 +13,9 @@ class Monad m where
   fail s = error s
 
 instance Monad IO where
-  return = primRetIO
-  (>>=)  = primBindIO
-  fail s = primFailIO s
+  return = Prim.retIO
+  (>>=)  = Prim.bindIO
+  fail s = Prim.failIO s
 
 main = do
   putStrLn "Hello!"

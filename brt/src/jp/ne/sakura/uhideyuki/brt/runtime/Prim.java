@@ -31,6 +31,37 @@ public class Prim {
 	LitInt l = (LitInt) x.a;
 	return RTLib.fromJString(l.value.toString());
     }
+
+    // for Monad IO
+    // (>>=) = Prim.bindIO
+    public static class BindIOFunc implements LambdaForm {
+	public int arity(){ return 2; }
+	public Expr call(AtomExpr[] args){
+	    Expr t0 = RT.eval(args[0]);
+	    return RTLib.app(args[1], t0);
+	}
+    }
+    public static Expr mkbindIO(){
+	return RTLib.mkFun(new BindIOFunc());
+    }
+
+    // return = Prim.retIO
+    public static class RetIOFunc implements LambdaForm {
+	public int arity(){ return 1; }
+	public Expr call(AtomExpr[] args){
+	    assert args.length == arity();
+	    return new AtomExpr(new Var(new ConObj(new Cotr("Main.IO"), args)));
+	}
+    }
+    public static Expr mkretIO(){
+	return RTLib.mkFun(new RetIOFunc());
+    }
+
+    // fail s = Prim.failIO s
+    public static Expr mkfailIO(){
+	assert(false); // todo: to be implemented.
+	return null;
+    }
 }
 
 class ShowFunc implements LambdaForm {
