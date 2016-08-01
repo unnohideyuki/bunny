@@ -22,7 +22,7 @@ do_compile m = do
   let b = case cmod of
         Module _ [b'] -> b'
   let b' = TR.trBind b
-  CodeGen.emitProgram b'
+  CodeGen.emitProgram b' "" "" -- dummy
     
 
 main :: IO ()

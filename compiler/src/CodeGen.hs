@@ -7,36 +7,40 @@ import Control.Monad.State.Strict
 import qualified Data.Map as Map
 import Data.List (intersperse)
 
+import System.IO
+
 import Debug.Trace
 
-emitPreamble =
+emitPreamble h =
   let
      preamble = [ "import jp.ne.sakura.uhideyuki.brt.brtsyn.*;"
                 , "import jp.ne.sakura.uhideyuki.brt.runtime.*;"
                 , ""
                 ]
      ploop [] = return ()
-     ploop (s:ss) = do {putStrLn s; ploop ss}
+     ploop (s:ss) = do {hPutStrLn h s; ploop ss}
   in
    ploop preamble
    
-emitProgram :: Program -> IO ()
-emitProgram prog = do
-  emitPreamble
-  emitHeader "Main" -- Todo: module name.
-  emitBinds prog
-  emitFooter
+emitProgram :: Program -> String -> String -> IO ()
+emitProgram prog dest mname = do
+  h <- openFile (dest ++ "/" ++ mname ++ ".java") WriteMode
+  emitPreamble h
+  emitHeader mname h -- Todo: module name.
+  emitBinds prog h
+  emitFooter h
+  hClose h
 
-emitBinds [] = return ()
-emitBinds (b:bs) = do
-  emitBind b
-  emitBinds bs
+emitBinds [] h = return ()
+emitBinds (b:bs) h = do
+  emitBind b h
+  emitBinds bs h
 
-emitHeader m = putStrLn $ "public class " ++ m ++ " {"
+emitHeader m h = hPutStrLn h $ "public class " ++ m ++ " {"
 
-emitFooter = putStrLn "}"
+emitFooter h = hPutStrLn h "}"
 
-emitBind b = putStrLn $ result st
+emitBind b h = hPutStrLn h $ result st
   where (_, st) = runState (genBind b) initGenSt
 
 genBind (Bind (TermVar n) e) = do

@@ -16,5 +16,5 @@ public class Sample {
 }
 EOF
 
-sample/compiler0 < testcases/$f.hs > jout/$f/Main.java
-
+# sample/compiler0 < testcases/$f.hs > jout/$f/Main.java
+sample/compiler1 -d jout/$f testcases/$f.hs 
