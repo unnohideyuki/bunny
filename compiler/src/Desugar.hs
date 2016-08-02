@@ -10,7 +10,8 @@ dsgModule modident bgs as =
   let
     [(es, iss)] = bgs
     is = concat iss
-    vdefs = dsgIs [] is
+    is' = map (\(n, _, alts) -> (n, alts)) es
+    vdefs = dsgIs [] (is ++ is')
     b = translateVdefs as vdefs
   in
    Core.Module modident [b]

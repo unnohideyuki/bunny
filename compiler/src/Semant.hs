@@ -209,21 +209,11 @@ renProg m = do
       as' = tiProgram ce as bgs
   return (bgs, as')
 
-renProg2  :: A.Module -> RN ([BindGroup])
-renProg2 m = do
-  let body = snd (A.body m)
-  (ds, cds, ids) <- collectNames ([], [], []) body
-  ctbs <- renCDecls cds []
-  renIDecls ids
-  tbs <- renDecls ds
-  let bgs = toBg $ (ctbs ++) tbs
-  return bgs
-
 renCDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]
 renCDecls [] tbs = return tbs
 renCDecls ((A.ClassDecl cls ds):cds) tbs = do
   clsadd cls
-  let ds' = suppDs ds
+  let ds' = suppDs ds "Monad" -- todo: have to extract from cls
   tbs <- renDecls $ addvar cls ds'
   renCDecls cds tbs
   where clsadd (ctx, (A.AppTy (A.Tycon n) _)) = do
@@ -239,42 +229,38 @@ renCDecls ((A.ClassDecl cls ds):cds) tbs = do
                             f d = d
                         in map f ds
 
-{- suppDs -- Supplement Declarations that adds declarations for
-             TypeSigDecls without ValDecl.
+{- suppDs -- Exstract TypeSigDecls and supplement ValDecls that defines
+             overloaded functions.
 -}
-suppDs :: [A.Decl] -> [A.Decl]
-suppDs ds =
+suppDs :: [A.Decl] -> String -> [A.Decl]
+suppDs ds clsname =
   let
     extrId (Name{orig_name=s}) = s
-    n `nameEq` m = (extrId n) == (extrId m)
     
-    ubNames [] cns vns = cns \\ vns
+    ubNames [] cns cds = (cns, cds)
 
-    ubNames ((A.TypeSigDecl ns _):ds) cns vns =
+    ubNames (cd@(A.TypeSigDecl ns _):ds) cns cds =
       let
         ns' = map extrId ns
       in
-       ubNames ds (cns ++ ns') vns
+       ubNames ds (cns ++ ns') (cd : cds)
 
-    ubNames ((A.ValDecl e _):ds) cns vns =
-      let
-        n = extrFuncName e
-
-        extrFuncName (A.InfixExp _ n _) = extrId n
-        extrFuncName (A.FunAppExp f _) = extrFuncName f
-        extrFuncName (A.VarExp n) = extrId n
-      in
-       ubNames ds cns (n:vns)
+    ubNames ((A.ValDecl e _):ds) cns cds = ubNames ds cns cds
     
-    ns = ubNames ds [] []
+    (ns, cds) = ubNames ds [] []
 
     mkv n = A.VarExp $
             Name{orig_name=n, qual_name="", name_pos=(-1, -1), isConName=False}
-    mkoldcl n = A.ValDecl (mkv n) (A.UnguardedRhs (mkv "#overloaded#") [])
+    mkoldcl n = A.ValDecl (mkv n) (A.UnguardedRhs
+                                   (A.FunAppExp
+                                    (A.FunAppExp (mkv "#overloaded#") (mkv n))
+                                    (A.LitExp (A.LitString clsname undefined))
+                                    )
+                                   [])
 
     ds' = map mkoldcl ns
   in
-   ds ++ ds'
+   cds ++ ds'
 
 renIDecls :: [A.Decl] -> RN ()
 renIDecls [] = return ()

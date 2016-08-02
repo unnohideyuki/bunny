@@ -86,7 +86,7 @@ enterBind name = do
   put st'
   where
     m = takeWhile (/= '.') name -- todo: deeper module name
-    name' = drop (length m + 1) name
+    name' = escapeId $ drop (length m + 1) name
 
 exitBind :: GEN ()
 exitBind = do
@@ -148,6 +148,31 @@ genBody e = do
 genExpr :: Expr -> GEN Int
 
 genExpr e@(AtomExpr _) = genAtomExpr e
+
+-- Special case: overloaded function.
+genExpr (FunAppExpr (FunAppExpr (AtomExpr (VarAtom (TermVar "#overloaded#"))) [e1]) [e2]) = do
+  n <- nexti
+  let m = case e1 of
+        (AtomExpr (VarAtom (TermVar name))) -> name
+      bn = basename m
+      lamname = "OL" ++ bn
+      clsname = case e2 of
+        (AtomExpr (LitAtom (LitStr name))) -> name
+  trace (show e2) $ return ()
+  genOLlam lamname bn clsname
+  appendCode $ "Expr t" ++ show n ++ " = RTLib.mkFun(new " ++ lamname ++ "());"
+  return n
+  where
+    modname s = takeWhile (/= '.') s -- todo: deeper module name
+    basename s = escapeId $ drop (length (modname s) + 1) s
+
+    genOLlam lamname mname clsname = do
+      enterLambda 1 lamname empty
+      n <- nexti
+      let dname = escapeId $ "Dict$" ++ clsname
+      appendCode $ dname ++ " d = (" ++ dname ++ ") RTLib.extrDict(args[0]);"
+      appendCode $ "Expr t" ++ show n ++ " = d.mk" ++ mname ++ "();"
+      exitLambda n
 
 genExpr (FunAppExpr f [e]) = do
   n1 <- genExpr f
