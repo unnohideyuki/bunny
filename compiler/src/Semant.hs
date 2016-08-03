@@ -198,6 +198,7 @@ chkQualType n = do
 renProg  :: A.Module -> RN ([BindGroup], [Assump])
 renProg m = do
   let body = snd (A.body m)
+      modid = A.modid m -- unused yet.
   (ds, cds, ids) <- collectNames ([], [], []) body
   ctbs <- renCDecls cds []
   renIDecls ids
@@ -213,7 +214,7 @@ renCDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]
 renCDecls [] tbs = return tbs
 renCDecls ((A.ClassDecl cls ds):cds) tbs = do
   clsadd cls
-  let ds' = suppDs ds "Monad" -- todo: have to extract from cls
+  let ds' = suppDs ds "Main.Monad" -- todo: have to extract from cls
   tbs <- renDecls $ addvar cls ds'
   renCDecls cds tbs
   where clsadd (ctx, (A.AppTy (A.Tycon n) _)) = do

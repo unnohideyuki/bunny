@@ -2,6 +2,7 @@ module CodeGen where
 
 import STG
 import Symbol
+import NameMangle
 
 import Control.Monad.State.Strict
 import qualified Data.Map as Map
@@ -85,8 +86,7 @@ enterBind name = do
               }
   put st'
   where
-    m = takeWhile (/= '.') name -- todo: deeper module name
-    name' = escapeId $ drop (length m + 1) name
+    name' = basenameM name
 
 exitBind :: GEN ()
 exitBind = do
@@ -154,7 +154,7 @@ genExpr (FunAppExpr (FunAppExpr (AtomExpr (VarAtom (TermVar "#overloaded#"))) [e
   n <- nexti
   let m = case e1 of
         (AtomExpr (VarAtom (TermVar name))) -> name
-      bn = basename m
+      bn = basenameM m
       lamname = "OL" ++ bn
       clsname = case e2 of
         (AtomExpr (LitAtom (LitStr name))) -> name
@@ -163,13 +163,10 @@ genExpr (FunAppExpr (FunAppExpr (AtomExpr (VarAtom (TermVar "#overloaded#"))) [e
   appendCode $ "Expr t" ++ show n ++ " = RTLib.mkFun(new " ++ lamname ++ "());"
   return n
   where
-    modname s = takeWhile (/= '.') s -- todo: deeper module name
-    basename s = escapeId $ drop (length (modname s) + 1) s
-
     genOLlam lamname mname clsname = do
       enterLambda 1 lamname empty
       n <- nexti
-      let dname = escapeId $ "Dict$" ++ clsname
+      let dname = cls2dictNameM clsname
       appendCode $ dname ++ " d = (" ++ dname ++ ") RTLib.extrDict(args[0]);"
       appendCode $ "Expr t" ++ show n ++ " = d.mk" ++ mname ++ "();"
       exitLambda n
@@ -381,9 +378,9 @@ genAtomExpr e = error $ "Non-exhaustive pattern in genAtomExpr: " ++ show e
   
 refTopLevel n =
   let
-    m = takeWhile (/= '.') n
-    n' = escapeId $ drop (length m + 1) n
+    m = modnameM  n
+    n' = basenameM n
   in
-   if (not $ elem '.' n')
+   if (not $ elem '.' n') -- ?? : todo clarify! 
    then m ++ ".mk" ++ n' ++ "()"
    else error $ "Unbound variable " ++ n
