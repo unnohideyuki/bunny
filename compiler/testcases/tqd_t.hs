@@ -25,9 +25,9 @@ class Monad m where
   (>>=) = error ">>= is not defined."
 
 instance Monad IO where
-  return = primRetIO
-  (>>=)  = primBindIO
-  fail s = primFailIO s
+  return = Prim.retIO
+  (>>=)  = Prim.bindIO
+  fail s = Prim.failIO s
 
 infixr 0 $
 ($) :: (a -> b) -> a -> b

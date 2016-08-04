@@ -77,7 +77,8 @@ primFailCfun
                       ([] :=> (tString `fn` (TAp tIO (TGen 0)))))
 
 overloadedCfun :: Assump
-overloadedCfun = "#overloaded#" :>: (Forall [Star] ([] :=> TGen 0))
+overloadedCfun = "#overloaded#" :>: (Forall [Star, Star]
+                                     ([] :=> (TGen 0 `fn` tString `fn` TGen 1)))
 
 primConsMems :: [Assump]
 primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
@@ -114,4 +115,4 @@ primNames :: Table Id
 primNames  = fromList (primConsNames ++
                        [ ("putStrLn", "Prim.putStrLn")
                        ])
-
+             

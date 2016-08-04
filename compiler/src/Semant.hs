@@ -195,20 +195,48 @@ chkQualType n = do
                       bd = tail $ dropWhile (/= '.') s
                   in pfx ++ bd
 
-renProg  :: A.Module -> RN ([BindGroup], [Assump])
+data DictDef = DictDef{ qclsname :: Id
+                      , methods :: [Id]
+                      }
+               deriving Show
+
+cdecl2dict :: Id -> A.Decl -> DictDef
+cdecl2dict modid (A.ClassDecl (_, (A.AppTy (A.Tycon n) _)) ds) =
+  let
+    extrId Name{orig_name=s} = s
+    
+    name = modid ++ "." ++ extrId n
+
+    extrMName (A.TypeSigDecl ns _) = map extrId ns
+    extrMName _ = []
+
+    ms = concatMap extrMName ds
+  in
+   DictDef{qclsname = name, methods = ms}
+
+
+renProg  :: A.Module -> RN ([BindGroup], [Assump], [DictDef])
 renProg m = do
   let body = snd (A.body m)
-      modid = A.modid m -- unused yet.
+      modid = case A.modid m of
+        Just (Name{orig_name=s}) -> s
+        Nothing -> "Main"
   (ds, cds, ids) <- collectNames ([], [], []) body
   ctbs <- renCDecls cds []
   renIDecls ids
   tbs <- renDecls ds
-  let bgs = toBg $ ctbs ++ tbs
+  -- NOTE#1: followings are not clear! see the note page 233.
+  let bgs = toBg tbs
+      bgs' = toBg ctbs
+      bgs'' = toBg $ ctbs ++ tbs
+      as2 = map (\(n, scm, _) -> n :>: scm) $ fst $ head bgs'
   st <- get
   let ce = rn_ce st
       as = rn_cms st
-      as' = tiProgram ce as bgs
-  return (bgs, as')
+      as' = tiProgram ce (as ++ as2) bgs
+  let dicts = map (cdecl2dict modid) cds
+  return (bgs'', as', dicts)
+
 
 renCDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]
 renCDecls [] tbs = return tbs
@@ -273,12 +301,14 @@ renIDecls ((A.InstDecl t ds):ids) = do
   k <- lookupKdict qcn
   let p = (IsIn qcn (TCon (Tycon qin k)))
   instAdd [] p
+  {-
   enterNewLevelWith $ "%" ++ (orig_name i)
   setCurrentInstance p
   (ds', _, _) <- collectNames ([], [], []) ds
   renDecls ds'
   resetCurrentInstance
   exitLevel
+  -}
   renIDecls ids
   where instAdd ps p = do
           st <- get

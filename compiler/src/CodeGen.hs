@@ -3,6 +3,7 @@ module CodeGen where
 import STG
 import Symbol
 import NameMangle
+import Semant (DictDef, qclsname, methods)
 
 import Control.Monad.State.Strict
 import qualified Data.Map as Map
@@ -384,3 +385,22 @@ refTopLevel n =
    if (not $ elem '.' n') -- ?? : todo clarify! 
    then m ++ ".mk" ++ n' ++ "()"
    else error $ "Unbound variable " ++ n
+
+emitDicts :: String -> [DictDef] -> IO ()
+emitDicts _ [] = return ()  
+emitDicts dest (dict:ds) = do
+  let dname = cls2dictNameM $ qclsname dict
+      msM = map mangle $ methods dict
+  h <- openFile (dest ++ "/" ++ dname ++ ".java") WriteMode
+  emitPreamble h
+  hPutStrLn h $ "public abstract class " ++ dname ++ " {"
+  sequence_ $ map
+    (\s -> hPutStrLn h $ "    abstract public Expr mk" ++ s ++ "();")
+    msM
+  hPutStrLn h "}"
+  hClose h
+  emitDicts dest ds
+
+  
+
+  
