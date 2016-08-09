@@ -59,7 +59,7 @@ do_compile :: Absyn.Module -> String -> IO ()
 do_compile m dest = do
   -- TODO: regular way to add primitive names.
   let lv = (initialLevel $ Absyn.modid m){lv_dict=primNames}
-  let st = RnState (lv_prefix lv) [lv] Symbol.empty Symbol.empty preludeClasses primConsMems [] [] Symbol.empty Nothing
+  let st = RnState (lv_prefix lv) [lv] Symbol.empty Symbol.empty preludeClasses primConsMems [] [] Symbol.empty []
       ((bgs, as, dicts), st') = runState (renProg m) st
   trace (show dicts) $ return ()
   let cmod = dsgModule (rn_modid st') bgs (as ++ primConsMems)

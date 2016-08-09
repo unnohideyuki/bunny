@@ -73,7 +73,7 @@ data RnState = RnState { rn_modid   :: !Id
                        , rn_tbs     :: !([TempBind])
                        , rn_tbstack :: !([[TempBind]])
                        , rn_kdict   :: !(Table Kind)
-                       , rn_curInst :: !(Maybe Pred)
+                       , rn_cdicts  :: !([DictDef])
                        }
                deriving Show
 
@@ -163,40 +163,9 @@ collectNames (ds, cds, ids) (decl:decls) = do
 
 type TempBind = (Id, Maybe (Qual Type), [Alt])
 
--- will reset by exitLevel
-setCurrentInstance :: Pred -> RN ()
-setCurrentInstance p = do
-  st <- get
-  put st{rn_curInst = Just p}
-
-resetCurrentInstance :: RN ()
-resetCurrentInstance = do
-  st <- get
-  put st{rn_curInst = Nothing}
-
-chkQualType :: Id -> RN (Maybe (Qual Type))
-chkQualType n = do
-  st <- get
-  case rn_curInst st of
-    Nothing -> return Nothing
-    Just p  -> getQt n p
-  where getQt n p = do
-          st <- get
-          let n' = name' n
-              xs = [(ps', qt')| (x, maybe_qt, _) <- rn_tbs st
-                              , n' == x
-                              , isJust maybe_qt
-                              , let Just (ps' :=> qt') = maybe_qt]
-              (ps, qt) = head xs
-              Just subst = matchPred (head ps) p -- todo: head ps only?
-              qt' = apply subst qt
-          return $ Just $ ([] :=> qt')
-        name' n = let (pfx, s) = span (/= '%') n
-                      bd = tail $ dropWhile (/= '.') s
-                  in pfx ++ bd
-
 data DictDef = DictDef{ qclsname :: Id
                       , methods :: [Id]
+                      , decls :: [A.Decl]
                       }
                deriving Show
 
@@ -211,8 +180,13 @@ cdecl2dict modid (A.ClassDecl (_, (A.AppTy (A.Tycon n) _)) ds) =
     extrMName _ = []
 
     ms = concatMap extrMName ds
+
+    extrValDecl d@(A.ValDecl _ _) = [d]
+    extrValDecl _ = []
+
+    vdcls = concatMap extrValDecl ds
   in
-   DictDef{qclsname = name, methods = ms}
+   DictDef{qclsname = name, methods = ms, decls = vdcls}
 
 
 renProg  :: A.Module -> RN ([BindGroup], [Assump], [DictDef])
@@ -223,18 +197,18 @@ renProg m = do
         Nothing -> "Main"
   (ds, cds, ids) <- collectNames ([], [], []) body
   ctbs <- renCDecls cds []
-  renIDecls ids
+  let bgs' = toBg ctbs
+      as2 = map (\(n, scm, _) -> n :>: scm) $ fst $ head bgs'
+  let dicts = map (cdecl2dict modid) cds
+  itbs <- renIDecls ids
   tbs <- renDecls ds
   -- NOTE#1: followings are not clear! see the note page 233.
-  let bgs = toBg tbs
-      bgs' = toBg ctbs
-      bgs'' = toBg $ ctbs ++ tbs
-      as2 = map (\(n, scm, _) -> n :>: scm) $ fst $ head bgs'
+  let bgs = toBg $ tbs ++ itbs
+      bgs'' = toBg $ ctbs ++ tbs ++ itbs
   st <- get
   let ce = rn_ce st
       as = rn_cms st
       as' = tiProgram ce (as ++ as2) bgs
-  let dicts = map (cdecl2dict modid) cds
   return (bgs'', as', dicts)
 
 
@@ -291,8 +265,8 @@ suppDs ds clsname =
   in
    cds ++ ds'
 
-renIDecls :: [A.Decl] -> RN ()
-renIDecls [] = return ()
+renIDecls :: [A.Decl] -> RN [TempBind]
+renIDecls [] = return []
 renIDecls ((A.InstDecl t ds):ids) = do
   let (c, i) = case t of
         (A.AppTy (A.Tycon n1) (A.Tycon n2)) -> (n1, n2)
@@ -301,15 +275,17 @@ renIDecls ((A.InstDecl t ds):ids) = do
   k <- lookupKdict qcn
   let p = (IsIn qcn (TCon (Tycon qin k)))
   instAdd [] p
-  {-
+
   enterNewLevelWith $ "%" ++ (orig_name i)
-  setCurrentInstance p
   (ds', _, _) <- collectNames ([], [], []) ds
-  renDecls ds'
-  resetCurrentInstance
+  trace ("ds'" ++ show ds') $ return ()
+  tbs <- renDecls ds'
+  trace ("tbs'" ++ show tbs) $ return ()
   exitLevel
-  -}
-  renIDecls ids
+
+
+  tbs' <- renIDecls ids
+  return $ tbs ++ tbs'
   where instAdd ps p = do
           st <- get
           let ce = rn_ce st
@@ -342,8 +318,7 @@ renDecl (A.ValDecl expr rhs) = do
   (n, pats) <- renFExp expr
   rexp      <- renRhs  rhs
   exitLevel
-  qt <- chkQualType n
-  return [(n, qt, [(pats, rexp)])]
+  return [(n, Nothing, [(pats, rexp)])]
 
 renDecl (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) = do
   ns' <- mapM renameVar ns
