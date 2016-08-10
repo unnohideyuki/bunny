@@ -29,26 +29,30 @@ emitProgram prog dest mname = do
   h <- openFile (dest ++ "/" ++ mname ++ ".java") WriteMode
   emitPreamble h
   emitHeader mname h -- Todo: module name.
-  emitBinds prog h
+  emitBinds prog h 0
   emitFooter h
   hClose h
 
-emitBinds [] h = return ()
-emitBinds (b:bs) h = do
-  emitBind b h
-  emitBinds bs h
+emitBinds [] h _ = return ()
+emitBinds (b:bs) h n = do
+  n' <- emitBind b h n
+  emitBinds bs h n'
 
 emitHeader m h = hPutStrLn h $ "public class " ++ m ++ " {"
 
 emitFooter h = hPutStrLn h "}"
 
-emitBind b h = hPutStrLn h $ result st
-  where (_, st) = runState (genBind b) initGenSt
+emitBind b h n = do
+  hPutStrLn h $ result st
+  return n'
+  where (n', st) = runState (genBind b) (initGenSt n)
 
 genBind (Bind (TermVar n) e) = do
   enterBind n
   genBody e
   exitBind
+  st <- get
+  return $ gid st + 1
 
 data GenSt = GenSt { str :: String
                    , idx :: Int
@@ -105,16 +109,16 @@ exitBind = do
   put st'
 
 
-initGenSt :: GenSt
-initGenSt = GenSt { str = ""
-                  , idx = 0
-                  , env = Map.empty
-                  , gid = 0
-                  , sstack = []
-                  , istack = []
-                  , estack = []
-                  , result = ""
-                  }
+initGenSt :: Int -> GenSt
+initGenSt n = GenSt { str = ""
+                    , idx = 0
+                    , env = Map.empty
+                    , gid = n
+                    , sstack = []
+                    , istack = []
+                    , estack = []
+                    , result = ""
+                    }
 
 type GEN a = State GenSt a
 
