@@ -159,7 +159,6 @@ genExpr (FunAppExpr (FunAppExpr (AtomExpr (VarAtom (TermVar "#overloaded#"))) [e
       lamname = "OL" ++ bn
       clsname = case e2 of
         (AtomExpr (LitAtom (LitStr name))) -> name
-  trace (show e2) $ return ()
   genOLlam lamname bn clsname
   appendCode $ "Expr t" ++ show n ++ " = RTLib.mkFun(new " ++ lamname ++ "());"
   return n

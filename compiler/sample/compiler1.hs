@@ -61,14 +61,12 @@ do_compile m dest = do
   let lv = (initialLevel $ Absyn.modid m){lv_dict=primNames}
   let st = RnState (lv_prefix lv) [lv] Symbol.empty Symbol.empty preludeClasses primConsMems [] [] Symbol.empty []
       ((bgs, as, dicts), st') = runState (renProg m) st
-  trace (show dicts) $ return ()
   let cmod = dsgModule (rn_modid st') bgs (as ++ primConsMems)
   let b = case cmod of
         Module _ [b'] -> b'
       b' = TR.trBind b
       mname = case cmod of
         Module n _ -> n                      
-  trace (show b') $ return ()
   CodeGen.emitProgram b' dest mname
   CodeGen.emitDicts dest dicts
 

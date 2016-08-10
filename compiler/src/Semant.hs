@@ -79,6 +79,25 @@ data RnState = RnState { rn_modid   :: !Id
 
 type RN a = State RnState a
 
+putCDicts :: [DictDef] -> RN()
+putCDicts dicts= do
+  st <- get
+  put st{rn_cdicts = dicts}
+
+getCDicts :: RN [DictDef]
+getCDicts = do
+  st <- get
+  return $ rn_cdicts st
+
+
+lookupCDicts :: Id -> RN DictDef
+lookupCDicts qcname = do
+  dicts <- getCDicts
+  let dicts' = dropWhile (\d -> qclsname d /= qcname) dicts
+  case dicts' of
+    [] -> error $ "lookupCDicts: class not found: " ++ show (qcname, dicts')
+    _ -> return $ head dicts'
+
 pushTbs :: RN ()
 pushTbs = do
   st <- get
@@ -123,6 +142,12 @@ regFixity fixity i (n:ns) = do reg (f i) n; regFixity fixity i ns
            else
              ((), st{rn_ifxenv=ifxenv'})
 
+extrName :: A.Exp -> Name
+extrName (A.VarExp name)       = name
+extrName (A.FunAppExp f _)     = extrName f
+extrName (A.InfixExp _ name _) = name
+extrName e                     = error $ "unexpected exp:" ++ show e
+
 collectNames :: ([A.Decl], [A.Decl], [A.Decl]) -> [A.Decl]
                 -> RN ([A.Decl], [A.Decl], [A.Decl])
 collectNames x [] = return x
@@ -130,11 +155,6 @@ collectNames (ds, cds, ids) (decl:decls) = do
   (ds', cds', ids') <- collname decl
   collectNames (ds', cds', ids') decls
   where
-    extrName (A.VarExp name)       = name
-    extrName (A.FunAppExp f _)     = extrName f
-    extrName (A.InfixExp _ name _) = name
-    extrName e                     = error $ "unexpected exp:" ++ show e
-
     collname d@(A.ValDecl e _) = do _ <- renameVar (extrName e)
                                     return (ds ++ [d], cds, ids)
     collname (A.FixSigDecl fixity i ns) = do regFixity fixity i ns
@@ -200,6 +220,7 @@ renProg m = do
   let bgs' = toBg ctbs
       as2 = map (\(n, scm, _) -> n :>: scm) $ fst $ head bgs'
   let dicts = map (cdecl2dict modid) cds
+  putCDicts dicts
   itbs <- renIDecls ids
   tbs <- renDecls ds
   -- NOTE#1: followings are not clear! see the note page 233.
@@ -276,13 +297,14 @@ renIDecls ((A.InstDecl t ds):ids) = do
   let p = (IsIn qcn (TCon (Tycon qin k)))
   instAdd [] p
 
-  enterNewLevelWith $ "%" ++ (orig_name i)
-  (ds', _, _) <- collectNames ([], [], []) ds
-  trace ("ds'" ++ show ds') $ return ()
-  tbs <- renDecls ds'
-  trace ("tbs'" ++ show tbs) $ return ()
+  dict <- lookupCDicts qcn
+  let defds = decls dict
+      ds' = mergeDs ds defds
+  trace (show ds') $ return ()
+  enterNewLevelWith $ "I%" ++ (orig_name i) -- see STG/isLocal
+  (ds'', _, _) <- collectNames ([], [], []) ds'
+  tbs <- renDecls ds''
   exitLevel
-
 
   tbs' <- renIDecls ids
   return $ tbs ++ tbs'
@@ -291,6 +313,17 @@ renIDecls ((A.InstDecl t ds):ids) = do
           let ce = rn_ce st
               Just ce' = addInst ps p ce
           put $ st{rn_ce=ce'}
+
+
+        extrId' (A.ValDecl e _) = orig_name $ extrName e
+
+        mergeDs dcls defdecls =
+          let
+            names = map extrId' dcls
+            ds2 = filter (\d -> not $ elem (extrId' d) names) defdecls
+          in
+           dcls ++ ds2
+
 
 lookupKdict :: Id -> RN Kind
 lookupKdict n = do
