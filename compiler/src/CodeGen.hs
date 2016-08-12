@@ -181,7 +181,7 @@ genExpr (FunAppExpr f [e]) = do
   n <- nexti
   appendCode $
     "Expr t" ++ show n ++
-    " = " ++ "RTLib.app(t" ++ show n1 ++ ", t" ++ show n2 ++ ");"
+    " = " ++ "RTLib.mkApp(t" ++ show n1 ++ ", t" ++ show n2 ++ ");"
   return n
 
 genExpr e@(LetExpr _ _) = genExpr' e False

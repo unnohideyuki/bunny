@@ -71,6 +71,23 @@ public class RTLib {
     public static Expr app(Expr f, Expr a){
 	assert a instanceof AtomExpr;
 	AtomExpr[] args = {(AtomExpr) a};
+	assert (f.isFunObj() || f.isThunk() || f.isPapObj());
+	return mkExpr(new Thunk(new FunAppExpr(f, args, -1)));
+    }
+
+    // mkApp -- a variation of app(f, a) that ensures f and a are AtomExprs.
+    // TODO: This version is really necessary?
+    //       Can the code generator ensure it?
+    public static Expr mkApp(Expr f, Expr a){
+	if (!(a instanceof AtomExpr)){
+	    a = new AtomExpr(new Var(new Thunk(a)));
+	}
+
+	if (!(f.isFunObj() || f.isThunk() || f.isPapObj())){
+	    f = new AtomExpr(new Var(new Thunk(f)));
+	}
+
+	AtomExpr[] args = {(AtomExpr) a};
 	return mkExpr(new Thunk(new FunAppExpr(f, args, -1)));
     }
 	       
