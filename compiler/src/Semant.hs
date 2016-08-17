@@ -209,7 +209,7 @@ cdecl2dict modid (A.ClassDecl (_, (A.AppTy (A.Tycon n) _)) ds) =
    DictDef{qclsname = name, methods = ms, decls = vdcls}
 
 
-renProg  :: A.Module -> RN ([BindGroup], [Assump], [DictDef])
+renProg  :: A.Module -> RN ([BindGroup], [Assump], [DictDef], [(Id, Id)])
 renProg m = do
   let body = snd (A.body m)
       modid = case A.modid m of
@@ -221,7 +221,7 @@ renProg m = do
       as2 = map (\(n, scm, _) -> n :>: scm) $ fst $ head bgs'
   let dicts = map (cdecl2dict modid) cds
   putCDicts dicts
-  itbs <- renIDecls ids
+  (itbs, ctab) <- renIDecls ids
   tbs <- renDecls ds
   -- NOTE#1: followings are not clear! see the note page 233.
   let bgs = toBg $ tbs ++ itbs
@@ -230,7 +230,7 @@ renProg m = do
   let ce = rn_ce st
       as = rn_cms st
       as' = tiProgram ce (as ++ as2) bgs
-  return (bgs'', as', dicts)
+  return (bgs'', as', dicts, ctab)
 
 
 renCDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]
@@ -286,8 +286,8 @@ suppDs ds clsname =
   in
    cds ++ ds'
 
-renIDecls :: [A.Decl] -> RN [TempBind]
-renIDecls [] = return []
+renIDecls :: [A.Decl] -> RN ([TempBind], [(Id, Id)])
+renIDecls [] = return ([], [])
 renIDecls ((A.InstDecl t ds):ids) = do
   let (c, i) = case t of
         (A.AppTy (A.Tycon n1) (A.Tycon n2)) -> (n1, n2)
@@ -300,14 +300,13 @@ renIDecls ((A.InstDecl t ds):ids) = do
   dict <- lookupCDicts qcn
   let defds = decls dict
       ds' = mergeDs ds defds
-  trace (show ds') $ return ()
   enterNewLevelWith $ "I%" ++ (orig_name i) -- see STG/isLocal
   (ds'', _, _) <- collectNames ([], [], []) ds'
   tbs <- renDecls ds''
   exitLevel
 
-  tbs' <- renIDecls ids
-  return $ tbs ++ tbs'
+  (tbs', ctab') <- renIDecls ids
+  return $ (tbs ++ tbs', (qin, qcn):ctab')
   where instAdd ps p = do
           st <- get
           let ce = rn_ce st

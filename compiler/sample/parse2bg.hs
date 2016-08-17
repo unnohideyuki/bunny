@@ -13,7 +13,7 @@ do_semant m = do
   -- TODO: regular way to add primitive names.
   let lv = (initialLevel $ Absyn.modid m){lv_dict=primNames}
   let st = RnState (lv_prefix lv) [lv] empty empty preludeClasses primConsMems [] [] empty []
-      ((bgs, _, _), st') = runState (renProg m) st
+      ((bgs, _, _, _), st') = runState (renProg m) st
   print bgs
 
 main :: IO ()

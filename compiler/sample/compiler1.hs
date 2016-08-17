@@ -60,7 +60,7 @@ do_compile m dest = do
   -- TODO: regular way to add primitive names.
   let lv = (initialLevel $ Absyn.modid m){lv_dict=primNames}
   let st = RnState (lv_prefix lv) [lv] Symbol.empty Symbol.empty preludeClasses primConsMems [] [] Symbol.empty []
-      ((bgs, as, dicts), st') = runState (renProg m) st
+      ((bgs, as, dicts, ctab), st') = runState (renProg m) st
   let cmod = dsgModule (rn_modid st') bgs (as ++ primConsMems)
   let b = case cmod of
         Module _ [b'] -> b'
@@ -69,6 +69,9 @@ do_compile m dest = do
         Module n _ -> n                      
   CodeGen.emitProgram b' dest mname
   CodeGen.emitDicts dest dicts
+  trace (show dicts) $ return ()
+  trace (show ctab) $ return ()
+  CodeGen.emitInsts dest dicts ctab
 
 main :: IO ()
 main = do

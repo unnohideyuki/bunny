@@ -404,6 +404,29 @@ emitDicts dest (dict:ds) = do
   hClose h
   emitDicts dest ds
 
+emitInsts :: String -> [DictDef] -> [(Id, Id)] -> IO ()
+emitInsts _ _ [] = return ()
+emitInsts dest dicts ((qin, qcn):ctab) = do
+  let dicts' = dropWhile ((/= qcn).qclsname) dicts
+      ms = case dicts' of
+        [] -> error $ "Class name not found: " ++ qcn
+        _ -> methods $ head dicts'
+      msM = map mangle ms
+      pdname = cls2dictNameM qcn
+      dname = cls2dictNameM qin
+      mname = modname qin
+  h <- openFile (dest ++ "/" ++ dname ++ ".java") WriteMode
+  emitPreamble h
+  hPutStrLn h $ "public class " ++ dname ++ " extends " ++ pdname ++ "{"
+  sequence_ $ map
+    (\s -> do hPutStrLn h $ "    public Expr mk" ++ s ++ "(){"
+              hPutStr h $ "      return " ++ mangle mname ++ "."
+              hPutStr h $ "mk" ++ mangle ("I%" ++ basename qin ++ ".")
+              hPutStrLn h $ s ++ "();"
+              hPutStrLn h $ "    }")
+    msM
+  hPutStrLn h "}"
+  hClose h
+  emitInsts dest dicts ctab
   
-
   
