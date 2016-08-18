@@ -230,7 +230,7 @@ renProg m = do
   let ce = rn_ce st
       as = rn_cms st
       as' = tiProgram ce (as ++ as2) bgs
-  return (bgs'', as', dicts, ctab)
+  return (bgs'', as' ++ as2, dicts, ctab)
 
 
 renCDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]

@@ -76,12 +76,9 @@ primFailCfun
   = "Prim.failIO" :>: (Forall [Star]
                       ([] :=> (tString `fn` (TAp tIO (TGen 0)))))
 
-{- Overloaded functions cannot be Type-checked.
-   Assump for them is needless.
 overloadedCfun :: Assump
 overloadedCfun = "#overloaded#" :>: (Forall [Star, Star]
                                      ([] :=> (TGen 0 `fn` tString `fn` TGen 1)))
--}
 
 primConsMems :: [Assump]
 primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
@@ -92,7 +89,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
                 , "Prim.putStrLn" :>:
                   (Forall []
                    ([] :=> (TAp tList tChar `fn` TAp tIO tUnit)))
-                -- , overloadedCfun
+                , overloadedCfun
                 ]
 
 primConsNames :: [(Id, Id)]
