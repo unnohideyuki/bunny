@@ -55,4 +55,3 @@ tyapp ta tb =
   in
    tf
 
-type Subst [(Id, Type)]
