@@ -2,31 +2,15 @@ module Core where
 
 import Symbol
 import Types
-import Typing (Qual(..), Pred(..))
+import Typing (Qual(..))
 
 import qualified Text.PrettyPrint.ANSI.Leijen as PP
 
 data Module = Module Id [Bind] {- [Axiom] -}
 
 data Var = TermVar Id (Qual Type)
-         | TypeVar Id Kind
+         {- | TypeVar Id Kind -} -- unused
          deriving (Show, Eq)
-
-{- 2016-08-30: Changed to use Types 
-data Kind = Star | Kfun Kind Kind
-          deriving (Show, Eq)
-
-data TyCon = TyCon Id Kind
-           deriving (Show, Eq)
-
-data Type = TyVarTy Var
-          | AppTy Type Type
-          | TyConApp TyCon [Type]
-          | FunTy Type Type
-          | ForAllTy Var Type -- todo: not used?
-          | DictTy Id Id -- 2 Ids: Dict-name, tyvar-name
-          deriving (Show, Eq)
--}
 
 data Literal = LitInt  Integer  Type
              | LitChar Char     Type
@@ -34,14 +18,18 @@ data Literal = LitInt  Integer  Type
              | LitStr  String   Type
              deriving Show
 
+data Dict = Dict Id
+          deriving Show
+
 data Expr = Var Var
           | Lit Literal
           | App Expr Expr
           | Lam [Var] Expr
           | Let Bind Expr
           | Case Expr Var [Alt]
-          | Cast Expr Type
-          | Type Type
+          | Dps Var Dict -- Dictionary Passing Style
+          {- | Cast Expr Type -} -- unused
+          {- | Type Type -} -- unused
           deriving Show
 
 data Bind = NoRec Var Expr
