@@ -12,7 +12,6 @@ getTy :: Expr -> Qual Type
 
 getTy (Var v) = case v of
   TermVar _ t -> t
-  TypeVar _ _ -> error "must not occur."
 
 getTy (Lit (LitInt _ t)) = ([] :=> t)
 getTy (Lit (LitChar _ t)) = ([] :=> t)
