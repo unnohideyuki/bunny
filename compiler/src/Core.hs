@@ -1,16 +1,18 @@
 module Core where
 
-import Prelude hiding ((<$>))
-
 import Symbol
-import Text.PrettyPrint.ANSI.Leijen
+import Types
+import Typing (Qual(..), Pred(..))
+
+import qualified Text.PrettyPrint.ANSI.Leijen as PP
 
 data Module = Module Id [Bind] {- [Axiom] -}
 
-data Var = TermVar Id Type
+data Var = TermVar Id (Qual Type)
          | TypeVar Id Kind
          deriving (Show, Eq)
 
+{- 2016-08-30: Changed to use Types 
 data Kind = Star | Kfun Kind Kind
           deriving (Show, Eq)
 
@@ -24,6 +26,7 @@ data Type = TyVarTy Var
           | ForAllTy Var Type -- todo: not used?
           | DictTy Id Id -- 2 Ids: Dict-name, tyvar-name
           deriving (Show, Eq)
+-}
 
 data Literal = LitInt  Integer  Type
              | LitChar Char     Type
@@ -52,15 +55,15 @@ data AltCon = DataAlt DataCon
             | DEFAULT
             deriving Show
 
-data DataCon = DataCon Id [Var] Type
+data DataCon = DataCon Id [Var] (Qual Type)
              deriving Show
 
-ppModule :: Module -> Doc
+ppModule :: Module -> PP.Doc
 ppModule (Module modident bs) =
-  text "Module" <+> text modident <> line <$> ppBinds bs
+  PP.text "Module" PP.<+> PP.text modident PP.<> PP.line PP.<$> ppBinds bs
 
-ppBinds :: [Bind] -> Doc
-ppBinds bs = list $ map ppBind bs
+ppBinds :: [Bind] -> PP.Doc
+ppBinds bs = PP.list $ map ppBind bs
 
-ppBind :: Bind -> Doc
-ppBind b = text (show b)
+ppBind :: Bind -> PP.Doc
+ppBind b = PP.text (show b)

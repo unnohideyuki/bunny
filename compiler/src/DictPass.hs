@@ -1,57 +1,55 @@
 module DictPass where
 
 import Core
+import Types
+import Typing (Qual(..), mgu, apply)
 import Symbol
 
 import Data.List
 import Debug.Trace
 
-getTy :: Expr -> Type
+getTy :: Expr -> Qual Type
 
 getTy (Var v) = case v of
   TermVar _ t -> t
   TypeVar _ _ -> error "must not occur."
 
-getTy (Lit (LitInt _ t)) = t
-getTy (Lit (LitChar _ t)) = t
-getTy (Lit (LitFrac _ t)) = t
-getTy (Lit (LitStr _ t)) = t
+getTy (Lit (LitInt _ t)) = ([] :=> t)
+getTy (Lit (LitChar _ t)) = ([] :=> t)
+getTy (Lit (LitFrac _ t)) = ([] :=> t)
+getTy (Lit (LitStr _ t)) = ([] :=> t)
 
 getTy (App e f) =
-  let te = getTy e
-      tf = getTy f
-  in tyapp te tf
-
-
-{-
-extrDictTy t -- extract DictTys from a type
-  return value :: ([Type], Type) -- list of DictTys and the remain.
--}
-extrDictTy :: Type -> ([Type], Type)
-extrDictTy t = extrdt t []
-  where
-    extrdt (FunTy dt@(DictTy _ _) rt) dts = extrdt rt (dt:dts)
-    extrdt t dts = (dts, t)
-
-tyVars :: Type -> [Id]
-tyVars (TyVarTy (TypeVar n _)) = [n]
-tyVars (TyVarTy (TermVar _ _)) = []
-tyVars (AppTy t1 t2) = tyVars t1 `union` tyVars t2
-tyVars (TyConApp _ ts) = concatMap tyVars ts
-tyVars (FunTy e f) = tyVars e `union` tyVars f
-tyVars (DictTy _ n) = [n]
+  let (qe, te) = case getTy e of {q :=> t -> (q, t)}
+      (qf, tf) = case getTy f of {q :=> t -> (q, t)}
+  in [] :=> tyapp te tf -- empty qualifier is OK here, see Note #p.244.
 
 tyapp :: Type -> Type -> Type
 tyapp ta tb =
   let
-    (te, tf) = case extrDictTy ta of
-      (_, FunTy t1 t2) -> (t1, t2)
-      _ -> error $ "not a FunTy: " ++ show ta
-
-    {-
-    s = getUnifier te tb
-    tf' = applySubst s tf
-    -}
+    tf = tb `fn` (TGen 100)
+    s = case unifier ta tf of
+      Just s' -> s'
+      Nothing -> error "do not unified in tyapp"
   in
-   tf
+   subst s (TGen 100)
+
+
+type Unifier = [(Int, Type)]
+
+unifier :: Type -> Type -> Maybe Unifier
+unifier (TAp l r) (TAp l' r') = do s1 <- unifier l l'
+                                   s2 <- unifier (subst s1 r) (subst s1 r')
+                                   return (s1 ++ s2)
+unifier (TGen _) (TGen _) = return []
+unifier (TGen i) t = return [(i, t)]
+unifier t (TGen i) = return [(i, t)]
+unifier (TCon tc1) (TCon tc2) | tc1 == tc2 = return []
+
+subst :: Unifier -> Type -> Type
+subst s (TGen i) = case lookup i s of
+  Just t -> t
+  Nothing -> TGen i
+subst s (TAp l r) = TAp (subst s l) (subst s r)
+subst _ t = t
 
