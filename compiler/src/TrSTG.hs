@@ -46,13 +46,15 @@ trExpr e@(Core.Case scrut _ alts) = CaseExpr scrut' alts'
           vs' -> (Core.Lam vs' expr)
     tralt (Core.DEFAULT, vs, expr) = DefaultAlt $ trExpr (Core.Lam vs expr)
 
+trExpr (Core.Dps v (Core.Dict n)) = Dps (trVar v) n
+
 trExpr e = error $ "Non-exhaustive pattern in trExpr: " ++ show e
 
 trbind :: (Core.Var, Core.Expr) -> Bind
 trbind (v, e) = Bind (trVar v) (trExpr e)
 
 trBind :: Core.Bind -> [Bind]
-trBind (Core.NoRec v e) = [trbind (v, e)]
+{- trBind (Core.NoRec v e) = [trbind (v, e)] -}
 trBind (Core.Rec bs) = trbinds bs
   where
     trbinds [] = []

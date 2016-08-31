@@ -2,7 +2,7 @@ module DictPass where
 
 import Core
 import Types
-import Typing (Qual(..), mgu, apply)
+import Typing (Qual(..), Pred(..), mgu, apply)
 import Symbol
 
 import Data.List
@@ -26,12 +26,12 @@ getTy (App e f) =
 tyapp :: Type -> Type -> Type
 tyapp ta tb =
   let
-    tf = tb `fn` (TGen 100)
+    tf = tb `fn` (TGen (-1))
     s = case unifier ta tf of
       Just s' -> s'
       Nothing -> error "do not unified in tyapp"
   in
-   subst s (TGen 100)
+   subst s (TGen (-1))
 
 
 type Unifier = [(Int, Type)]
@@ -52,3 +52,58 @@ subst s (TGen i) = case lookup i s of
 subst s (TAp l r) = TAp (subst s l) (subst s r)
 subst _ t = t
 
+{- tcExpr -- type-check expression
+-}
+tcExpr :: Expr -> Type -> Expr
+
+tcExpr e@(Var v@(TermVar _ (qv :=> tv))) t = let
+  s = case unifier tv t of
+    Just s' -> s'
+    Nothing -> error "fatal: do not unified in tcExpr."
+
+  -- todo: support the case when length qv > 1
+  i = case qv of
+    [IsIn _ (TGen j)] -> j
+    _ -> -1
+
+  e' = case lookup i s of
+    Nothing -> e
+    Just t -> mkdps e t
+
+  mkdps e t =
+    let
+      dictname = case t of
+        (TCon (Tycon n _)) -> n
+        _ -> error $ "illegal type for dictionary: " ++ show t
+
+      v = case e of { Var v -> v }
+    in
+     (Dps v (Dict dictname)) 
+
+  in
+   e'
+
+tcExpr e@(Lit _) _ = e
+
+tcExpr (App e f) t =
+  let
+    (_ :=> te) = getTy e
+    (_ :=> tf) = getTy f
+
+    t' = tf `fn` t
+
+    s = case unifier te t' of {Just s' -> s'}
+
+    te' = subst s te
+    tf' = subst s tf
+  in
+   App (tcExpr e te') (tcExpr f tf')
+  
+
+tcExpr e _ = trace "warning: temporary dummy tcExpr" e
+
+tcBind :: Bind -> Bind
+tcBind (Rec bs) = Rec $ map trbind bs
+  where
+    trbind (v@(TermVar _ ([] :=> t)), e) = (v, tcExpr e t)
+    trbind b@((TermVar _ (q :=> _)), _) = trace (show b) b -- #overloaded#

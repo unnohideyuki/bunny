@@ -221,7 +221,20 @@ genExpr (CaseExpr scrut alts) = do
           ts' = ("t" ++ show i) : ts
       appendCode $ s0 ++ s1
       genalts alts ts'
-      
+
+genExpr (Dps v dn) = do
+  let e = AtomExpr (VarAtom v)
+  n1 <- genExpr e
+  n2 <- nexti
+  n3 <- nexti
+  let s = cls2dictNameM dn
+  appendCode $
+    "Expr t" ++ show n2 ++
+    " = (Expr) new AtomExpr(new Dict(new " ++ s ++ "()));"
+  appendCode $
+    "Expr t" ++ show n3 ++
+    " = RTLib.app(t" ++ show n1 ++ ", t" ++ show n2 ++ ");"
+  return n3
 
 genExpr e = error $ "Non-exaustive pattern in genExpr: " ++ show e
 

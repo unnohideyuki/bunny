@@ -9,6 +9,7 @@ import Core
 import Desugar
 import qualified TrSTG as TR
 import qualified CodeGen
+import DictPass (tcBind)
 
 import Control.Monad.State.Strict (runState)
 
@@ -64,10 +65,11 @@ do_compile m dest = do
   let cmod = dsgModule (rn_modid st') bgs (as ++ primConsMems)
   let b = case cmod of
         Module _ [b'] -> b'
-      b' = TR.trBind b
+      b' = tcBind b
+      b'' = TR.trBind b'
       mname = case cmod of
         Module n _ -> n                      
-  CodeGen.emitProgram b' dest mname
+  CodeGen.emitProgram b'' dest mname
   CodeGen.emitDicts dest dicts
   trace (show dicts) $ return ()
   trace (show ctab) $ return ()

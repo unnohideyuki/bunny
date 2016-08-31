@@ -43,9 +43,17 @@ e4 = (App ebind (Var
                  (TermVar "return()"
                   ([IsIn "Main.Monad" (TGen 0)] :=> TAp (TGen 0) tUnit))))
 
+-- eret
+qtret = ([IsIn "Main.Monad" (TGen 0)] :=>
+         ((TGen 1) `fn` (TAp (TGen 0) (TGen 1))))
+
+eret = Var (TermVar "Main.return" qtret)
+
+tf = ((TGen 0) `fn` (TAp tIO (TGen 0)))
+
 main :: IO ()
 main = do
-  print $ getTy e4
+  print $ tcExpr emain1 tiounit
   hspec $ do
     describe "testing getTy" $ do
       it "putStrLn \"Hello!\" :: IO ()" $ do
@@ -60,4 +68,11 @@ main = do
         getTy e4 `shouldBe` ([] :=>
                              ((TAp (TGen 0) (TGen 2)) `fn` (TAp (TGen 0) (TGen 2))))
 
-  
+    describe "testing tcExpr" $ do
+      it "return :: a -> IO a" $ do
+        tcExpr eret tf `shouldBe` (Dps
+                                   (TermVar "Main.return" qtret)
+                                   (Dict "Main.IO"))
+      it "putStrLn :: String -> IO ()" $ do
+        tcExpr eputStrLn (tString `fn` tiounit) `shouldBe` eputStrLn
+                                   

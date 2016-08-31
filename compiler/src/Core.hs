@@ -16,10 +16,10 @@ data Literal = LitInt  Integer  Type
              | LitChar Char     Type
              | LitFrac  Double Type
              | LitStr  String   Type
-             deriving Show
+             deriving (Show, Eq)
 
 data Dict = Dict Id
-          deriving Show
+          deriving (Show, Eq)
 
 data Expr = Var Var
           | Lit Literal
@@ -30,21 +30,21 @@ data Expr = Var Var
           | Dps Var Dict -- Dictionary Passing Style
           {- | Cast Expr Type -} -- unused
           {- | Type Type -} -- unused
-          deriving Show
+          deriving (Show, Eq)
 
-data Bind = NoRec Var Expr
-          | Rec [(Var, Expr)]
-          deriving Show
+data Bind = {- NoRec Var Expr
+          | -} Rec [(Var, Expr)]
+          deriving (Show, Eq)
 
 type Alt = (AltCon, [Var], Expr)
 
 data AltCon = DataAlt DataCon
             | LitAlt Literal
             | DEFAULT
-            deriving Show
+            deriving (Show, Eq)
 
 data DataCon = DataCon Id [Var] (Qual Type)
-             deriving Show
+             deriving (Show, Eq)
 
 ppModule :: Module -> PP.Doc
 ppModule (Module modident bs) =
