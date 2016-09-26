@@ -10,8 +10,7 @@ import Debug.Trace
 
 getTy :: Expr -> Qual Type
 
-getTy (Var v) = case v of
-  TermVar _ t -> t
+getTy (Var (TermVar _ t)) = t
 
 getTy (Lit (LitInt _ t)) = ([] :=> t)
 getTy (Lit (LitChar _ t)) = ([] :=> t)
@@ -22,6 +21,11 @@ getTy (App e f) =
   let (qe, te) = case getTy e of {q :=> t -> (q, t)}
       (qf, tf) = case getTy f of {q :=> t -> (q, t)}
   in [] :=> tyapp te tf -- empty qualifier is OK here, see Note #p.244.
+
+getTy (Lam vs e) = [] :=> (foldr fn te ts)
+  where
+    te = case getTy e of {_ :=> t -> t}
+    ts = map (\(TermVar _ qt) -> case qt of {_ :=> t -> t})  vs
 
 tyapp :: Type -> Type -> Type
 tyapp ta tb =
