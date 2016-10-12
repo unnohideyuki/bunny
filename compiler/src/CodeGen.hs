@@ -184,6 +184,19 @@ genExpr (FunAppExpr f [e]) = do
     " = " ++ "RTLib.mkApp(t" ++ show n1 ++ ", t" ++ show n2 ++ ");"
   return n
 
+genExpr (FunAppExpr f as) = do
+  n1 <- genExpr f
+  ns <- mapM genExpr as
+  n2 <- nexti
+  n3 <- nexti
+  appendCode $
+    "Expr[] t" ++ show n2 ++ " = {"
+    ++ (concat $ intersperse ", " (map show ns)) ++ "};"
+  appendCode $
+    "Expr t" ++ show n3 ++
+    " = " ++ "RTLib.mkApp(t" ++ show n1 ++ ", t" ++ show n2 ++ ");"
+  return n3
+
 genExpr e@(LetExpr _ _) = genExpr' e False
 
 genExpr e@(LamExpr _ _)
@@ -275,6 +288,8 @@ genExpr' (LetExpr bs e) delayed = do
           n2v name = case Map.lookup name cenv of
             Just v -> v
             Nothing -> error $ "Variable not found: " ++ name
+                       ++ "\n, " ++ show cenv
+                       ++ "\n, " ++ show (estack st)
           s1 = concat $ intersperse "," $ map n2v vs
           s2 = "};"
       appendCode $ s0 ++ s1 ++ s2

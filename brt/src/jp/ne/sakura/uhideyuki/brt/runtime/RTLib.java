@@ -90,6 +90,24 @@ public class RTLib {
 	AtomExpr[] args = {(AtomExpr) a};
 	return mkExpr(new Thunk(new FunAppExpr(f, args, -1)));
     }
+
+    public static Expr mkApp(Expr f, Expr[] as){
+	if (!(f.isFunObj() || f.isThunk() || f.isPapObj())){
+	    f = new AtomExpr(new Var(new Thunk(f)));
+	}
+
+	AtomExpr[] args = new AtomExpr[as.length];
+
+	for(int i = 0; i < as.length; i++){
+	    if (as[i] instanceof AtomExpr){
+		args[i] = (AtomExpr) as[i];
+	    } else {
+		args[i] = new AtomExpr(new Var(new Thunk(as[i])));
+	    }
+	}
+
+	return mkExpr(new Thunk(new FunAppExpr(f, args, -1)));
+    }
 	       
     private static Expr fromJCharArray(char[] s){
 	if (s.length == 0){
