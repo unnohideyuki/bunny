@@ -9,6 +9,8 @@ import Data.List
 import Symbol
 import qualified Core
 
+import Debug.Trace
+
 data Var = TermVar Id
          deriving Show
 
@@ -61,12 +63,12 @@ fv (AtomExpr (VarAtom (TermVar n))) =
 
 fv (FunAppExpr f args) = fv f ++ concatMap fv args
 
-fv (LetExpr bs e) = (fv e ++ concatMap fv' bs) \\ concatMap bv bs
+fv expr@(LetExpr bs e) = nub (fv e ++ concatMap fv' bs) \\ nub (concatMap bv bs)
   where
     fv' (Bind _ e) = fv e
     bv (Bind (TermVar n) _) = [n]
 
-fv (LamExpr vs e) = fv e \\ map (\(TermVar n) -> n) vs
+fv (LamExpr vs e) = nub (fv e) \\ nub (map (\(TermVar n) -> n) vs)
 
 fv (CaseExpr scrut alts) = fv scrut `union` fvalts alts []
   where

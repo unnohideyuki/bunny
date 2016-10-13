@@ -78,13 +78,10 @@ public class RTLib {
     // mkApp -- a variation of app(f, a) that ensures f and a are AtomExprs.
     // TODO: This version is really necessary?
     //       Can the code generator ensure it?
+    // 2016-10-13: Fun or Thunk or Pap check is moved to FunAppExpr constructor
     public static Expr mkApp(Expr f, Expr a){
 	if (!(a instanceof AtomExpr)){
 	    a = new AtomExpr(new Var(new Thunk(a)));
-	}
-
-	if (!(f.isFunObj() || f.isThunk() || f.isPapObj())){
-	    f = new AtomExpr(new Var(new Thunk(f)));
 	}
 
 	AtomExpr[] args = {(AtomExpr) a};
@@ -92,10 +89,6 @@ public class RTLib {
     }
 
     public static Expr mkApp(Expr f, Expr[] as){
-	if (!(f.isFunObj() || f.isThunk() || f.isPapObj())){
-	    f = new AtomExpr(new Var(new Thunk(f)));
-	}
-
 	AtomExpr[] args = new AtomExpr[as.length];
 
 	for(int i = 0; i < as.length; i++){

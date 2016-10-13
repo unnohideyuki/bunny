@@ -6,7 +6,13 @@ public class FunAppExpr extends Expr {
     public int arity;
     public FunAppExpr(Expr g, AtomExpr[] as, int n){
 	assert n < 0 || as.length == n;
-	f = g;
+
+	if (g.isFunObj() || g.isThunk() || g.isPapObj()){
+	    f = g;
+	} else {
+	    f = new AtomExpr(new Var(new Thunk(g)));
+	}
+
 	args = as;
 	arity = n;
     }
