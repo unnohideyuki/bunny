@@ -47,7 +47,11 @@ type Program = [Bind]
 isLocal :: Id -> Bool
 isLocal s =
   let
-    a = dropWhile (isUpper.head) $ splitOn "." s
+    -- isLocal "Main.." will error and the last '.' should be replaced
+    s' = case last s of
+      '.' -> take (length s - 1) s ++ "dot"
+      _ -> s
+    a = dropWhile (isUpper.head) $ splitOn "." s'
   in
    (length a > 1) || head s == '_'
 

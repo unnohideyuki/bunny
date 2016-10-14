@@ -191,7 +191,7 @@ genExpr (FunAppExpr f as) = do
   n3 <- nexti
   appendCode $
     "Expr[] t" ++ show n2 ++ " = {"
-    ++ (concat $ intersperse ", " (map show ns)) ++ "};"
+    ++ (concat $ intersperse ", " (map (("t"++).show) ns)) ++ "};"
   appendCode $
     "Expr t" ++ show n3 ++
     " = " ++ "RTLib.mkApp(t" ++ show n1 ++ ", t" ++ show n2 ++ ");"
