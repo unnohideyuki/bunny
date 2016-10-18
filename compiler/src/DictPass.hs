@@ -104,10 +104,14 @@ tcExpr (App e f) t =
    App (tcExpr e te') (tcExpr f tf')
   
 
-tcExpr e _ = trace "warning: temporary dummy tcExpr" e
+tcExpr e _ =
+  let
+    s = take 30 (show e)
+  in
+   trace ("warning: temporary dummy tcExpr: " ++ s ++ "...") e
 
 tcBind :: Bind -> Bind
 tcBind (Rec bs) = Rec $ map trbind bs
   where
     trbind (v@(TermVar _ ([] :=> t)), e) = (v, tcExpr e t)
-    trbind b@((TermVar _ (q :=> _)), _) = trace (show b) b -- #overloaded#
+    trbind b@((TermVar _ (q :=> _)), _) = b -- #overloaded#

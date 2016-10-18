@@ -165,8 +165,9 @@ addPreludeClasses :: EnvTransformer
 addPreludeClasses  = addCoreClasses <:> addNumClasses
 
 addCoreClasses :: EnvTransformer
-addCoreClasses  = addClass "Eq" []
+addCoreClasses  =addClass "Eq" []
               <:> addClass "Ord" ["Eq"]
+              
               <:> addClass "Prim.Show" []
               <:> addClass "Read" []
               <:> addClass "Bounded" []
@@ -197,14 +198,16 @@ overlap p q = defined (mguPred p q)
 
 exampleInsts :: EnvTransformer
 exampleInsts  = addPreludeClasses
-            <:> addInst [] (IsIn "Ord" tUnit)
-            <:> addInst [] (IsIn "Ord" tChar)
-            <:> addInst [] (IsIn "Ord" tInt)
-            <:> addInst [] (IsIn "Ord" tInteger)
-            <:> addInst [ IsIn "Ord" (TVar (Tyvar "a" Star))
-                        , IsIn "Ord" (TVar (Tyvar "b" Star))]
-                        (IsIn "Ord" (pair (TVar (Tyvar "a" Star))
+{-
+            <:> addInst [] (IsIn "Main.Ord" tUnit)
+            <:> addInst [] (IsIn "Main.Ord" tChar)
+            <:> addInst [] (IsIn "Main.Ord" tInt)
+            <:> addInst [] (IsIn "Main.Ord" tInteger)
+            <:> addInst [ IsIn "Main.Ord" (TVar (Tyvar "a" Star))
+                        , IsIn "Main.Ord" (TVar (Tyvar "b" Star))]
+                        (IsIn "Main.Ord" (pair (TVar (Tyvar "a" Star))
                                           (TVar (Tyvar "b" Star))))
+-}
             <:> addInst [] (IsIn "Prim.Show" tChar)
             <:> addInst [] (IsIn "Prim.Show" tInt)
             <:> addInst [] (IsIn "Prim.Show" tInteger)
@@ -212,7 +215,7 @@ exampleInsts  = addPreludeClasses
                         (IsIn "Prim.Show" (list (TVar (Tyvar "a" Star))))
             <:> addInst [] (IsIn "Num" tChar)
             <:> addInst [] (IsIn "Num" tInt)
-            <:> addInst [] (IsIn "Num" tInteger)
+--          <:> addInst [] (IsIn "Num" tInteger)
 
 
 -------------------------------------------------------------------------------
@@ -506,18 +509,19 @@ ambiguities _ vs ps = [(v, filter (elem v . tv) ps) | v <- tv ps \\ vs]
 
 numClasses :: [Id]
 numClasses  = ["Num", "Integral", "Floating", "Fractional",
+               "Main.Num", "Main.Integer",
                "Real", "RealFloat", "RealFrac"]
 
 stdClasses :: [Id]
-stdClasses  = ["Eq", "Ord", "Prim.Show", "Read", "Bounded", "Enum", "Ix",
+stdClasses  = ["Eq", "Ord", "Main.Eq", "Main.Ord", "Prim.Show", "Read", "Bounded", "Enum", "Ix",
                "Functor", "Monad", "MonadPlus"] ++ numClasses
 
 candidates           :: ClassEnv -> Ambiguity ->[Type]
 candidates ce (v, qs) = [t' | let is = [i | IsIn i _ <- qs]
                                   ts = [t | IsIn _ t <- qs],
                               all ((TVar v)==) ts,
-                              any (`elem` numClasses) is,
-                              all (`elem` stdClasses) is,
+                              trace (show is) $ any (`elem` numClasses) is,
+                              trace (show is) $ all (`elem` stdClasses) is,
                               t' <- defaults ce,
                               all (entail ce []) [IsIn i t' | i<- is]
                             ]

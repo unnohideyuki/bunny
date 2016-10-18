@@ -238,13 +238,15 @@ renCDecls [] tbs = return tbs
 renCDecls ((A.ClassDecl cls ds):cds) tbs = do
   clsadd cls
   let ds' = suppDs ds "Main.Monad" -- todo: have to extract from cls
-  tbs <- renDecls $ addvar cls ds'
-  renCDecls cds tbs
+  tbs' <- renDecls $ addvar cls ds'
+  renCDecls cds (tbs ++ tbs')
   where clsadd (ctx, (A.AppTy (A.Tycon n) _)) = do
           cname <- qname $ orig_name n
           st <- get
           let ce = rn_ce st
-              Just ce' = addClass cname [] ce -- todo: super class
+              ce' = case addClass cname [] ce of -- todo: super class
+                Just x -> x
+                Nothing -> error $ "addClass failed: " ++ (show (cname, ce))
           put $ st{rn_ce=ce'}
           return ()
         addvar cls ds = let (_, sigvar) = cls
@@ -310,7 +312,9 @@ renIDecls ((A.InstDecl t ds):ids) = do
   where instAdd ps p = do
           st <- get
           let ce = rn_ce st
-              Just ce' = addInst ps p ce
+              ce' = case addInst ps p ce of
+                Just x -> x
+                Nothing -> error $ "addInst failed: " ++ show (p, ce)
           put $ st{rn_ce=ce'}
 
 

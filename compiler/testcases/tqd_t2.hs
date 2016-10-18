@@ -6,11 +6,14 @@ qsort (x:xs) = qsort smaller ++ [x] ++ qsort larger
                  larger  = [b | b <- xs, b > x]
                  
 -- main :: IO ()
+
 main = 
   do let helo = "Hello, World!" 
      putStrLn helo
-     putStrLn.show $ qsort [3, 1, 4, 1, 5, 9, 2, 6, 5]
---     putStrLn $ show $ qsort helo
+     -- putStrLn.show $ qsort [3, 1, 4, 1, 5, 9, 2, 6, 5]
+     putStrLn $ show $ qsort helo
+
+
 infixl 1 >>, >>=
 
 class Monad m where
@@ -25,9 +28,9 @@ class Monad m where
   (>>=) = error ">>= is not defined."
 
 instance Monad IO where
-  return = primRetIO
-  (>>=)  = primBindIO
-  fail s = primFailIO s
+  return = Prim.retIO
+  (>>=)  = Prim.bindIO
+  fail s = Prim.failIO s
 
 infixr 0 $
 ($) :: (a -> b) -> a -> b
@@ -50,9 +53,43 @@ foldr k z = go
             where go []     = z
                   go (y:ys) = y `k` go ys
 
-infix 4 >, <=
-a > b = PrimGt a b
-a <= b = PrimLe a b
+infix 4 ==, /=, <, <=, >=, >
+
+not :: Bool -> Bool
+not True = False
+not False = True
+
+class Eq a where
+  (==),(/=) :: a -> a -> Bool
+  -- Minimal Complete Definition:
+  -- (==) or (/=)
+  x /= y = not (x == y)
+  x == y = not (x /= y)
+
+class (Eq a) => Ord a where
+  (<) :: a -> a -> Bool
+  (<=) :: a -> a -> Bool
+  (>=) :: a -> a -> Bool
+  (>) :: a -> a -> Bool
+
+instance Ord Char where
+  (<)  = Prim.charLt
+  (<=) = Prim.charLe
+  (>=) = Prim.charGe
+  (>)  = Prim.charGt
+
+instance Eq Char where
+  (==) = Prim.charEq
 
 
+class (Eq a) => Num a where
+  (+) :: a -> a -> a
 
+instance Ord Integer where
+  (<)  = Prim.integerLt
+  (<=) = Prim.integerLe
+  (>=) = Prim.integerGe
+  (>)  = Prim.integerGt
+
+instance Num Integer where
+  (+)  = Prim.integerEq

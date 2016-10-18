@@ -17,11 +17,11 @@ data Tycon = Tycon Id Kind
 tUnit    :: Type
 tUnit     = TCon (Tycon "()" Star)
 tChar    :: Type
-tChar     = TCon (Tycon "Char" Star)
+tChar     = TCon (Tycon "Main.Char" Star)
 tInt     :: Type
 tInt      = TCon (Tycon "Int" Star)
 tInteger :: Type
-tInteger  = TCon (Tycon "Integer" Star)
+tInteger  = TCon (Tycon "Main.Integer" Star)
 tFloat   :: Type
 tFloat    = TCon (Tycon "Float" Star)
 tDouble  :: Type

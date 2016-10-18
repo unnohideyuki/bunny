@@ -38,7 +38,7 @@ showMfun  = "Prim.show" :>: (Forall [Star]
                               (TGen 0 `fn` tString)))
 
 cOrd :: String
-cOrd  = "Ord"
+cOrd  = "Main.Ord"
 
 leMfun :: Assump
 leMfun
@@ -76,6 +76,42 @@ primFailCfun
   = "Prim.failIO" :>: (Forall [Star]
                       ([] :=> (tString `fn` (TAp tIO (TGen 0)))))
 
+
+sc_charcharbool = (Forall [] ([] :=> (tChar `fn` tChar `fn` tBool)))
+
+primCharLtCfun :: Assump
+primCharLtCfun = "Prim.charLt" :>: sc_charcharbool
+
+primCharLeCfun :: Assump
+primCharLeCfun = "Prim.charLe" :>: sc_charcharbool
+
+primCharGeCfun :: Assump
+primCharGeCfun = "Prim.charGe" :>: sc_charcharbool
+
+primCharGtCfun :: Assump
+primCharGtCfun = "Prim.charGt" :>: sc_charcharbool
+
+primCharEqCfun :: Assump
+primCharEqCfun = "Prim.charEq" :>: sc_charcharbool
+
+sc_integerintegerbool
+  = (Forall [] ([] :=> (tInteger `fn` tInteger `fn` tBool)))
+
+primIntegerLtCfun :: Assump
+primIntegerLtCfun = "Prim.integerLt" :>: sc_integerintegerbool
+
+primIntegerLeCfun :: Assump
+primIntegerLeCfun = "Prim.integerLe" :>: sc_integerintegerbool
+
+primIntegerGeCfun :: Assump
+primIntegerGeCfun = "Prim.integerGe" :>: sc_integerintegerbool
+
+primIntegerGtCfun :: Assump
+primIntegerGtCfun = "Prim.integerGt" :>: sc_integerintegerbool
+
+primIntegerEqCfun :: Assump
+primIntegerEqCfun = "Prim.integerEq" :>: sc_integerintegerbool
+
 overloadedCfun :: Assump
 overloadedCfun = "#overloaded#" :>: (Forall [Star, Star]
                                      ([] :=> (TGen 0 `fn` tString `fn` TGen 1)))
@@ -85,6 +121,11 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
                 , falseCfun, trueCfun
                 , leMfun, gtMfun
                 , primRetCfun, primBindCfun, primFailCfun
+                , primCharLtCfun, primCharLeCfun, primCharGeCfun, primCharGtCfun
+                , primCharEqCfun
+                , primIntegerLtCfun, primIntegerLeCfun
+                , primIntegerGeCfun, primIntegerGtCfun
+                , primIntegerEqCfun
                 , errorCfun
                 , "Prim.putStrLn" :>:
                   (Forall []
@@ -104,8 +145,16 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.retIO", "Prim.retIO")
                  , ("Prim.bindIO", "Prim.bindIO")
                  , ("Prim.failIO", "Prim.failIO")
-                 , ("PrimGt", "Prim.>")
-                 , ("PrimLe", "Prim.<=")
+                 , ("Prim.charLt", "Prim.charLt")
+                 , ("Prim.charLe", "Prim.charLe")
+                 , ("Prim.charGe", "Prim.charGe")
+                 , ("Prim.charGt", "Prim.charGt")
+                 , ("Prim.charEq", "Prim.charEq")
+                 , ("Prim.integerLt", "Prim.integerLt")
+                 , ("Prim.integerLe", "Prim.integerLe")
+                 , ("Prim.integerGe", "Prim.integerGe")
+                 , ("Prim.integerGt", "Prim.integerGt")
+                 , ("Prim.integerEq", "Prim.integerEq")
                  , ("#overloaded#", "#overloaded#")
                  ]
 

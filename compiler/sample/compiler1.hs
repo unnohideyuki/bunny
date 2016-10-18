@@ -71,8 +71,6 @@ do_compile m dest = do
         Module n _ -> n                      
   CodeGen.emitProgram b'' dest mname
   CodeGen.emitDicts dest dicts
-  trace (show dicts) $ return ()
-  trace (show ctab) $ return ()
   CodeGen.emitInsts dest dicts ctab
 
 main :: IO ()

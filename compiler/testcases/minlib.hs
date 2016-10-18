@@ -9,6 +9,7 @@ class Monad m where
   -- Minimal complete definition: (>>=), return
   p >> q = p >>= \_ -> q
   fail s = error s
+  (>>=) = error ">>= is not defined."
 
 instance Monad IO where
   return = Prim.retIO
@@ -36,9 +37,45 @@ foldr k z = go
             where go []     = z
                   go (y:ys) = y `k` go ys
 
-infix 4 >, <=
-a > b = PrimGt a b
-a <= b = PrimLe a b
+infix 4 ==, /=, <, <=, >=, >
 
+not :: Bool -> Bool
+not True = False
+not False = True
+
+class Eq a where
+  (==),(/=) :: a -> a -> Bool
+  -- Minimal Complete Definition:
+  -- (==) or (/=)
+  x /= y = not (x == y)
+  x == y = not (x /= y)
+
+class (Eq a) => Ord a where
+  (<) :: a -> a -> Bool
+  (<=) :: a -> a -> Bool
+  (>=) :: a -> a -> Bool
+  (>) :: a -> a -> Bool
+
+instance Ord Char where
+  (<)  = Prim.charLt
+  (<=) = Prim.charLe
+  (>=) = Prim.charGe
+  (>)  = Prim.charGt
+
+instance Eq Char where
+  (==) = Prim.charEq
+
+
+class (Eq a) => Num a where
+  (+) :: a -> a -> a
+
+instance Ord Integer where
+  (<)  = Prim.integerLt
+  (<=) = Prim.integerLe
+  (>=) = Prim.integerGe
+  (>)  = Prim.integerGt
+
+instance Num Integer where
+  (+)  = Prim.integerEq
 
 
