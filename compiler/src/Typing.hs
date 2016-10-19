@@ -370,7 +370,7 @@ data Literal = LitInt  Integer
 tiLit :: Literal -> TI ([Pred], Type)
 tiLit (LitChar _) = return ([], tChar)
 tiLit (LitInt _)  = do v <- newTVar Star
-                       return ([IsIn "Num" v], v)
+                       return ([IsIn "Main.Num" v], v)
 tiLit (LitStr _) = return ([], tString)
 tiLit (LitRat _) = do v <- newTVar Star
                       return ([IsIn "Fractional" v], v)
