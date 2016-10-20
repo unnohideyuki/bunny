@@ -168,7 +168,7 @@ addCoreClasses :: EnvTransformer
 addCoreClasses  =addClass "Eq" []
               <:> addClass "Ord" ["Eq"]
               
-              <:> addClass "Prim.Show" []
+              <:> addClass "Show" []
               <:> addClass "Read" []
               <:> addClass "Bounded" []
               <:> addClass "Enum" []
@@ -176,7 +176,7 @@ addCoreClasses  =addClass "Eq" []
               <:> addClass "Monad" []
 
 addNumClasses :: EnvTransformer
-addNumClasses  = addClass "Num" ["Eq", "Prim.Show"]
+addNumClasses  = addClass "Num" ["Eq", "Show"]
              <:> addClass "Real" ["Num", "Ord"]
              <:> addClass "Fractional" ["Num"]
              <:> addClass "Integral" ["Real", "Enum"]
@@ -207,14 +207,14 @@ exampleInsts  = addPreludeClasses
                         , IsIn "Main.Ord" (TVar (Tyvar "b" Star))]
                         (IsIn "Main.Ord" (pair (TVar (Tyvar "a" Star))
                                           (TVar (Tyvar "b" Star))))
--}
-            <:> addInst [] (IsIn "Prim.Show" tChar)
-            <:> addInst [] (IsIn "Prim.Show" tInt)
-            <:> addInst [] (IsIn "Prim.Show" tInteger)
+            <:> addInst [] (IsIn cShow tChar)
+            <:> addInst [] (IsIn cShow tInt)
+            <:> addInst [] (IsIn cShow tInteger)
             <:> addInst [ IsIn "Prim.Show" (TVar (Tyvar "a" Star))]
                         (IsIn "Prim.Show" (list (TVar (Tyvar "a" Star))))
-            <:> addInst [] (IsIn "Num" tChar)
-            <:> addInst [] (IsIn "Num" tInt)
+-}
+--          <:> addInst [] (IsIn "Num" tChar)
+--          <:> addInst [] (IsIn "Num" tInt)
 --          <:> addInst [] (IsIn "Num" tInteger)
 
 

@@ -62,6 +62,46 @@ public class Prim {
 	assert(false); // todo: to be implemented.
 	return null;
     }
+
+    public static Expr mkcharLt(){
+	return RTLib.mkFun(new CharLt());
+    }
+
+    public static Expr mkcharLe(){
+	return RTLib.mkFun(new CharLe());
+    }
+
+    public static Expr mkcharGe(){
+	return RTLib.mkFun(new CharGe());
+    }
+
+    public static Expr mkcharGt(){
+	return RTLib.mkFun(new CharGt());
+    }
+
+    public static Expr mkcharEq(){
+	return RTLib.mkFun(new CharEq());
+    }
+
+    public static Expr mkintegerLt(){
+	return RTLib.mkFun(new IntegerLt());
+    }
+
+    public static Expr mkintegerLe(){
+	return RTLib.mkFun(new IntegerLe());
+    }
+
+    public static Expr mkintegerGe(){
+	return RTLib.mkFun(new IntegerGe());
+    }
+
+    public static Expr mkintegerGt(){
+	return RTLib.mkFun(new IntegerGt());
+    }
+
+    public static Expr mkintegerEq(){
+	return RTLib.mkFun(new IntegerEq());
+    }
 }
 
 class ShowFunc implements LambdaForm {
@@ -78,5 +118,193 @@ class ShowFunc implements LambdaForm {
     }
 }
 
+class CharLt implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
 
+	assert args[0].a instanceof LitChar;
+	assert args[1].a instanceof LitChar;
+
+	LitChar cl = (LitChar) args[0].a;
+	LitChar cr = (LitChar) args[1].a;
+	
+	if (cl.value < cr.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class CharLe implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	assert args[0].a instanceof LitChar;
+	assert args[1].a instanceof LitChar;
+
+	LitChar cl = (LitChar) args[0].a;
+	LitChar cr = (LitChar) args[1].a;
+	
+	if (cl.value <= cr.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class CharGe implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	assert args[0].a instanceof LitChar;
+	assert args[1].a instanceof LitChar;
+
+	LitChar cl = (LitChar) args[0].a;
+	LitChar cr = (LitChar) args[1].a;
+	
+	if (cl.value >= cr.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class CharGt implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	assert args[0].a instanceof LitChar;
+	assert args[1].a instanceof LitChar;
+
+	LitChar cl = (LitChar) args[0].a;
+	LitChar cr = (LitChar) args[1].a;
+	
+	if (cl.value > cr.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class CharEq implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	assert args[0].a instanceof LitChar;
+	assert args[1].a instanceof LitChar;
+
+	LitChar cl = (LitChar) args[0].a;
+	LitChar cr = (LitChar) args[1].a;
+	
+	if (cl.value == cr.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class IntegerLt implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	assert args[0].a instanceof LitInt;
+	assert args[1].a instanceof LitInt;
+
+	LitInt il = (LitInt) args[0].a;
+	LitInt ir = (LitInt) args[1].a;
+	
+	if (il.value < ir.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class IntegerLe implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	assert args[0].a instanceof LitInt;
+	assert args[1].a instanceof LitInt;
+
+	LitInt il = (LitInt) args[0].a;
+	LitInt ir = (LitInt) args[1].a;
+	
+	if (il.value <= ir.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class IntegerGe implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	assert args[0].a instanceof LitInt;
+	assert args[1].a instanceof LitInt;
+
+	LitInt il = (LitInt) args[0].a;
+	LitInt ir = (LitInt) args[1].a;
+	
+	if (il.value >= ir.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class IntegerGt implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	assert args[0].a instanceof LitInt;
+	assert args[1].a instanceof LitInt;
+
+	LitInt il = (LitInt) args[0].a;
+	LitInt ir = (LitInt) args[1].a;
+	
+	if (il.value > ir.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class IntegerEq implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	assert args[0].a instanceof LitInt;
+	assert args[1].a instanceof LitInt;
+
+	LitInt il = (LitInt) args[0].a;
+	LitInt ir = (LitInt) args[1].a;
+	
+	if (il.value == ir.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
 

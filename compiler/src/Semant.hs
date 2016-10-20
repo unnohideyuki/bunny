@@ -176,7 +176,7 @@ collectNames (ds, cds, ids) (decl:decls) = do
             colname' _ = return ()
 
 
-    collname d@(A.InstDecl _ _)         = return (ds, cds, ids ++ [d])
+    collname d@(A.InstDecl _ _ _)       = return (ds, cds, ids ++ [d])
 
     collname (A.DataDecl _ _ _)         = error "not yet: DataDecl"
     collname (A.NewtypeDecl _ _ _)      = error "not yet: NewtypeDecl"
@@ -187,13 +187,13 @@ data DictDef = DictDef{ qclsname :: Id
                       , methods :: [Id]
                       , decls :: [A.Decl]
                       }
-               deriving Show
+              deriving Show
 
 cdecl2dict :: Id -> A.Decl -> DictDef
 cdecl2dict modid (A.ClassDecl (_, (A.AppTy (A.Tycon n) _)) ds) =
   let
     extrId Name{orig_name=s} = s
-    
+
     name = modid ++ "." ++ extrId n
 
     extrMName (A.TypeSigDecl ns _) = map extrId ns
@@ -262,7 +262,7 @@ suppDs :: [A.Decl] -> String -> [A.Decl]
 suppDs ds clsname =
   let
     extrId (Name{orig_name=s}) = s
-    
+
     ubNames [] cns cds = (cns, cds)
 
     ubNames (cd@(A.TypeSigDecl ns _):ds) cns cds =
@@ -272,7 +272,7 @@ suppDs ds clsname =
        ubNames ds (cns ++ ns') (cd : cds)
 
     ubNames ((A.ValDecl e _):ds) cns cds = ubNames ds cns cds
-    
+
     (ns, cds) = ubNames ds [] []
 
     mkv n = A.VarExp $
@@ -281,7 +281,7 @@ suppDs ds clsname =
                                    (A.FunAppExp
                                     (A.FunAppExp (mkv "#overloaded#") (mkv n))
                                     (A.LitExp (A.LitString clsname undefined))
-                                    )
+                                   )
                                    [])
 
     ds' = map mkoldcl ns
@@ -290,14 +290,25 @@ suppDs ds clsname =
 
 renIDecls :: [A.Decl] -> RN ([TempBind], [(Id, Id)])
 renIDecls [] = return ([], [])
-renIDecls ((A.InstDecl t ds):ids) = do
-  let (c, i) = case t of
-        (A.AppTy (A.Tycon n1) (A.Tycon n2)) -> (n1, n2)
-  qcn <- qname $ orig_name c
-  qin <- renameVar i
+renIDecls ((A.InstDecl ctx t ds):ids) = do
+  (qcn, qin, i, a) <- case t of
+    (A.AppTy (A.Tycon n1) (A.Tycon n2)) -> do qcn <- qname $ orig_name n1
+                                              qin <- renameVar n2
+                                              return (qcn, qin, n2, "")
+    (A.AppTy (A.Tycon n1) (A.ListTy (A.Tyvar n2))) -> do
+      qcn <- qname $ orig_name n1
+      qin <- renameVar (Name {orig_name="[]"})
+      return (qcn, qin, (Name {orig_name="[]"}), orig_name n2)
+      
+    _ -> error $ "Non-exhaustive pattern in case: " ++ show t
+  
   k <- lookupKdict qcn
-  let p = (IsIn qcn (TCon (Tycon qin k)))
-  instAdd [] p
+  let p = case orig_name i of
+        "[]" -> (IsIn qcn (TAp (TCon (Tycon qin k)) (TVar (Tyvar a Star))))
+        _ -> (IsIn qcn (TCon (Tycon qin k)))
+
+  ps <- tops ctx
+  instAdd ps p
 
   dict <- lookupCDicts qcn
   let defds = decls dict
@@ -327,7 +338,16 @@ renIDecls ((A.InstDecl t ds):ids) = do
           in
            dcls ++ ds2
 
+        tops Nothing = return []
+        tops (Just t) = tops' t
 
+        tops' (A.ParTy t) = tops' t
+        tops' (A.AppTy (A.Tycon n1) (A.Tyvar n2)) = do
+          qcn <- qname $ orig_name n1
+          let t = TVar $ Tyvar (orig_name n2) Star -- todo: always works?
+          return [IsIn qcn t]
+           
+           
 lookupKdict :: Id -> RN Kind
 lookupKdict n = do
   st <- get

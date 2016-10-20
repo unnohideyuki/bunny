@@ -28,7 +28,7 @@ data Decl = ValDecl     Exp Rhs
           | SynonymDecl Type Type
           | DataDecl    (Maybe Type, Type) [Constr] (Maybe [Type])
           | NewtypeDecl (Maybe Type, Type) [Constr] (Maybe [Type])
-          | InstDecl    Type [Decl]
+          | InstDecl    (Maybe Type) Type [Decl]
           deriving Show
 
 data FDecl = FImDecl Name (Maybe Safety) FSpec

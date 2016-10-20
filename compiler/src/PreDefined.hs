@@ -30,12 +30,7 @@ trueCfun :: Assump
 trueCfun  = "Prim.True" :>: (Forall [] ([] :=> tBool))
 
 cShow :: String
-cShow  = "Prim.Show"
-
-showMfun :: Assump
-showMfun  = "Prim.show" :>: (Forall [Star]
-                             ([IsIn cShow (TGen 0)] :=>
-                              (TGen 0 `fn` tString)))
+cShow  = "Main.Show"
 
 cOrd :: String
 cOrd  = "Main.Ord"
@@ -112,12 +107,20 @@ primIntegerGtCfun = "Prim.integerGt" :>: sc_integerintegerbool
 primIntegerEqCfun :: Assump
 primIntegerEqCfun = "Prim.integerEq" :>: sc_integerintegerbool
 
+primCharShow :: Assump
+primCharShow = "Prim.charShow" :>: (Forall [] ([] :=> (tChar `fn` tString)))
+
+primIntegerShow :: Assump
+primIntegerShow =
+  "Prim.integerShow" :>: (Forall [] ([] :=> (tChar `fn` tString)))
+
+
 overloadedCfun :: Assump
 overloadedCfun = "#overloaded#" :>: (Forall [Star, Star]
                                      ([] :=> (TGen 0 `fn` tString `fn` TGen 1)))
 
 primConsMems :: [Assump]
-primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
+primConsMems  = [ unitCfun, nilCfun, consCfun
                 , falseCfun, trueCfun
                 , leMfun, gtMfun
                 , primRetCfun, primBindCfun, primFailCfun
@@ -126,6 +129,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, showMfun
                 , primIntegerLtCfun, primIntegerLeCfun
                 , primIntegerGeCfun, primIntegerGtCfun
                 , primIntegerEqCfun
+                , primCharShow, primIntegerShow
                 , errorCfun
                 , "Prim.putStrLn" :>:
                   (Forall []
@@ -139,8 +143,6 @@ primConsNames  = [ ("()", "Prim.()")
                  , (":", "Prim.:")
                  , ("False", "Prim.False")
                  , ("True", "Prim.True")
-                 , ("Show", "Prim.Show")
-                 , ("show", "Prim.show")
                  , ("error", "Prim.error")
                  , ("Prim.retIO", "Prim.retIO")
                  , ("Prim.bindIO", "Prim.bindIO")
@@ -155,6 +157,8 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.integerGe", "Prim.integerGe")
                  , ("Prim.integerGt", "Prim.integerGt")
                  , ("Prim.integerEq", "Prim.integerEq")
+                 , ("Prim.charShow", "Prim.charShow")
+                 , ("Prim.integerShow", "Prim.integerShow")
                  , ("#overloaded#", "#overloaded#")
                  ]
 

@@ -14,6 +14,7 @@ main =
      putStrLn $ show $ qsort helo
 
 
+
 infixl 1 >>, >>=
 
 class Monad m where
@@ -93,3 +94,15 @@ instance Ord Integer where
 
 instance Num Integer where
   (+)  = Prim.integerEq
+
+class Show a where
+  show :: a -> String
+
+instance Show Integer where
+  show = Prim.integerShow
+
+instance Show Char where
+  show = Prim.charShow
+
+instance (Show a) => Show [a] where
+  show = Prim.showList
