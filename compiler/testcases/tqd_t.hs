@@ -105,4 +105,7 @@ instance Show Char where
   show = Prim.charShow
 
 instance (Show a) => Show [a] where
-  show = Prim.showList
+  show = "temporary"
+
+
+

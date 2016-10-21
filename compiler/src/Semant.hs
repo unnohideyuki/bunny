@@ -479,7 +479,10 @@ renFExp (A.InfixExp le op re) = do
 renFExp e = error $ "renFExp" ++ show e
 
 renPat (A.VarExp n) | isConName n = do qn <- qname (orig_name n)
-                                       Just a <- findCMs qn
+                                       x <- findCMs qn
+                                       let a = case x of
+                                             Just a' -> a'
+                                             Nothing -> error $  "renPat error: " ++ qn
                                        return $ PCon a []
                     | otherwise   = do qn <- renameVar n
                                        return $ PVar qn
@@ -522,6 +525,9 @@ renRhs (A.UnguardedRhs (A.VarExp n) []) = do
   case c_pat of
     Just pat -> return (Const pat)
     Nothing | not (isConName n) -> return (Var qname_c)
+            | otherwise -> trace "warning: unexpected pattern in renRhs." $
+                           return (Var qname_c)
+
 
 renRhs (A.UnguardedRhs e []) = renExp e
 
