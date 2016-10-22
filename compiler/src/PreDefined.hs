@@ -30,7 +30,7 @@ trueCfun :: Assump
 trueCfun  = "Prim.True" :>: (Forall [] ([] :=> tBool))
 
 cShow :: String
-cShow  = "Main.Show"
+cShow  = "Prim.Show"
 
 cOrd :: String
 cOrd  = "Main.Ord"
@@ -114,6 +114,8 @@ primIntegerShow :: Assump
 primIntegerShow =
   "Prim.integerShow" :>: (Forall [] ([] :=> (tChar `fn` tString)))
 
+showCfun :: Assump 
+showCfun  = "Prim.show" :>: (Forall [Star] ([] :=> (TGen 0 `fn` tString)))
 
 overloadedCfun :: Assump
 overloadedCfun = "#overloaded#" :>: (Forall [Star, Star]
@@ -129,7 +131,8 @@ primConsMems  = [ unitCfun, nilCfun, consCfun
                 , primIntegerLtCfun, primIntegerLeCfun
                 , primIntegerGeCfun, primIntegerGtCfun
                 , primIntegerEqCfun
-                , primCharShow, primIntegerShow
+--                , primCharShow, primIntegerShow
+                , showCfun
                 , errorCfun
                 , "Prim.putStrLn" :>:
                   (Forall []
@@ -157,8 +160,9 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.integerGe", "Prim.integerGe")
                  , ("Prim.integerGt", "Prim.integerGt")
                  , ("Prim.integerEq", "Prim.integerEq")
-                 , ("Prim.charShow", "Prim.charShow")
-                 , ("Prim.integerShow", "Prim.integerShow")
+--                 , ("Prim.charShow", "Prim.charShow")
+--                 , ("Prim.integerShow", "Prim.integerShow")
+                 , ("show", "Prim.show")
                  , ("#overloaded#", "#overloaded#")
                  ]
 

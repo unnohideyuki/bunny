@@ -95,6 +95,7 @@ instance Ord Integer where
 instance Num Integer where
   (+)  = Prim.integerEq
 
+{-
 class Show a where
   show :: a -> String
 
@@ -106,6 +107,7 @@ instance Show Char where
 
 instance (Show a) => Show [a] where
   show = "temporary"
+-}
 
 
 

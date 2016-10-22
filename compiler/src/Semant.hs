@@ -680,11 +680,13 @@ lookupInfixOp op = do
     Nothing             -> return (9, A.Infixl)
 
 qname   :: Id -> RN Id
-qname name = state $ \st@RnState{rn_lvs=lvs} -> (findQName lvs name, st)
+qname name = state $ \st@RnState{rn_lvs=lvs} -> 
+  let {qn = findQName lvs name} in {-trace ("qn:" ++ show(name, qn))-} (qn, st)
   where findQName [] n = error $ "qname not found: " ++ n
         findQName (lv:lvs) n = case tabLookup n (lv_dict lv) of
           Just qn -> qn
           Nothing -> findQName lvs n
+
 
 findCMs   :: Id -> RN (Maybe Assump)
 findCMs qn = state $ \st@RnState{rn_cms=as} -> (find' as qn, st)
