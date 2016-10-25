@@ -27,6 +27,8 @@ getTy (Lam vs e) = [] :=> (foldr fn te ts)
     te = case getTy e of {_ :=> t -> t}
     ts = map (\(TermVar _ qt) -> case qt of {_ :=> t -> t})  vs
 
+getTy e = error $ "Non-Exaustive Patterns in getTy: " ++ show e
+
 tyapp :: Type -> Type -> Type
 tyapp ta tb =
   let
@@ -102,7 +104,22 @@ tcExpr (App e f) t =
     tf' = subst s tf
   in
    App (tcExpr e te') (tcExpr f tf')
-  
+
+tcExpr e@(Lam _ _) t =
+  let
+    t' = case getTy e of { _ :=> x -> x }
+  in
+   case unifier t t' of
+     Just _ -> e
+     Nothing -> error $ "type-check error in tcExpr: " ++ show (e, t)
+
+tcExpr (Let bs e) t =
+  let
+    bs' = tcBind bs
+    e' = tcExpr e t
+  in
+   Let bs' e'
+
 
 tcExpr e _ =
   let
