@@ -108,12 +108,17 @@ class ShowFunc implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
-	AtomExpr x = args[0];
+	Expr x = RT.eval(args[0]);
 
-	if (x.a instanceof LitInt){
-	    return Prim.show$Int(x);
+	if (x instanceof AtomExpr && ((AtomExpr)x).a instanceof LitInt){
+	    return Prim.show$Int((AtomExpr)x);
 	} else {
-	    return new ErrExpr("unsupported show");
+	    System.out.println(x);
+	    if (x instanceof AtomExpr){
+		System.out.println(((AtomExpr)x).a);
+	    }
+	    /*return new ErrExpr("unsupported show");*/
+	    return RTLib.fromJString("warn: unsupported show");
 	}
     }
 }

@@ -62,7 +62,13 @@ class EvalApply {
 	} else if (peek() instanceof CallCont){
 	    evalRetFun();
 	} else {
+	    if (!((code.isValue() || code.isLiteral()) && s.empty())){
+		System.out.print("Warining:  ");
+		System.out.println(code);
+	    }
+	    /*
 	    assert (code.isValue() || code.isLiteral()) && s.empty();
+	    */
 	    return false;
 	}
 
@@ -242,6 +248,9 @@ class EvalApply {
 
     private void evalRetFun(){
 	Expr f = code;
+	if (!(f.isFunObj() || f.isPapObj())){
+	    System.out.println(f);
+	}
 	assert f.isFunObj() || f.isPapObj();
 	CallCont c = (CallCont) s.pop();
 	code = new FunAppExpr(f, c.args, -1);

@@ -27,6 +27,23 @@ getTy (Lam vs e) = [] :=> (foldr fn te ts)
     te = case getTy e of {_ :=> t -> t}
     ts = map (\(TermVar _ qt) -> case qt of {_ :=> t -> t})  vs
 
+getTy (Case _ _ as) =
+  let
+    ts = map ((\(_ :=> t) -> t).getTy.(\(_,_,e) -> e)) as
+
+    unifTy [t] = t
+    unifTy (t:ts) =
+      let
+        s = case unifier t (unifTy ts) of
+          Just s -> s
+          Nothing -> error $ "type-error in getTy(for Case):unifty: " ++ show (t, ts)
+      in
+       subst s t
+  in
+   [] :=> unifTy ts
+
+getTy (Let _ e) = getTy e
+
 getTy e = error $ "Non-Exaustive Patterns in getTy: " ++ show e
 
 tyapp :: Type -> Type -> Type
@@ -50,6 +67,7 @@ unifier (TGen _) (TGen _) = return []
 unifier (TGen i) t = return [(i, t)]
 unifier t (TGen i) = return [(i, t)]
 unifier (TCon tc1) (TCon tc2) | tc1 == tc2 = return []
+unifier t1 t2 = trace ("warning: unifier: " ++ show (t1, t2)) $ return []
 
 subst :: Unifier -> Type -> Type
 subst s (TGen i) = case lookup i s of
