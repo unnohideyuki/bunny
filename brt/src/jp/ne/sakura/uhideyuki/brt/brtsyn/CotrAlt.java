@@ -7,4 +7,8 @@ public class CotrAlt extends Alt {
 	cotr = new Cotr(name);
 	e = expr;
     }
+    public String inspect(){
+	return "CotrAlt(cotr=" + cotr.inspect() + ", "
+	    + "e=" + e.inspect() + ")";
+    }
 }

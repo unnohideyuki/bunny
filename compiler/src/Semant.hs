@@ -236,8 +236,8 @@ renProg m = do
 renCDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]
 renCDecls [] tbs = return tbs
 renCDecls ((A.ClassDecl cls ds):cds) tbs = do
-  clsadd cls
-  let ds' = suppDs ds "Main.Monad" -- todo: have to extract from cls
+  cname <- clsadd cls
+  let ds' = suppDs ds cname
   tbs' <- renDecls $ addvar cls ds'
   renCDecls cds (tbs ++ tbs')
   where clsadd (ctx, (A.AppTy (A.Tycon n) _)) = do
@@ -248,7 +248,7 @@ renCDecls ((A.ClassDecl cls ds):cds) tbs = do
                 Just x -> x
                 Nothing -> error $ "addClass failed: " ++ (show (cname, ce))
           put $ st{rn_ce=ce'}
-          return ()
+          return cname
         addvar cls ds = let (_, sigvar) = cls
                             f (A.TypeSigDecl ns (_, sigdoc)) =
                               A.TypeSigDecl ns (Just sigvar, sigdoc)

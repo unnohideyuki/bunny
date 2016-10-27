@@ -16,4 +16,20 @@ public class FunAppExpr extends Expr {
 	args = as;
 	arity = n;
     }
+
+    public String inspect(){
+	String s1 = "FunAppExpr(arity=" + String.valueOf(arity) + ", ";
+	String s2 = "f=" + f.inspect() + ", ";
+
+	String s3 = "args = [";
+	for (int i = 0; i < args.length; i++){
+	    if (i > 0){
+		s3 = s3 + ", ";
+	    }
+	    s3 = s3 + args[i].inspect();
+	}
+	s3 = s3 + "])";
+
+	return s1 + s2 + s3;
+    }
 }

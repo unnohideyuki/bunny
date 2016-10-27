@@ -4,4 +4,7 @@ public class Cotr {
     public String ident;
     public Boolean equals(Cotr c){ return ident.equals(c.ident); }
     public Cotr(String s){ ident = s; }
+    public String inspect(){
+	return "Cotr(ident=" + ident + ")";
+    }
 }

@@ -54,5 +54,7 @@ public abstract class Expr {
 		     (((FunAppExpr)this).arity > 0));
 	return r;
     }
+
+    public abstract String inspect();
 }
 

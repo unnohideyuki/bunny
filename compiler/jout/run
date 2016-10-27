@@ -9,4 +9,7 @@ if [ -d /c ]; then
     s=";"
 fi
 
-java -ea -cp "../../brt/src$s$d" $c
+java -ea -cp "../../brt/src$s$d" $c 2> trace.txt
+if [ $? -ne 0 ];then
+    echo "abend!"
+fi

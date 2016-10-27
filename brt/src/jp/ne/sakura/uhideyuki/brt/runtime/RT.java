@@ -30,6 +30,10 @@ class EvalApply {
     }
 
     public Boolean runStep(){
+	/**** trace ****/
+	System.err.println("runStep:" + code.inspect());
+
+
 	if (code instanceof ErrExpr){
 	    ErrExpr e = (ErrExpr) code;
 	    System.out.println(e.message);
@@ -63,12 +67,9 @@ class EvalApply {
 	    evalRetFun();
 	} else {
 	    if (!((code.isValue() || code.isLiteral()) && s.empty())){
-		System.out.print("Warining:  ");
-		System.out.println(code);
+		System.out.println(code.inspect());
 	    }
-	    /*
 	    assert (code.isValue() || code.isLiteral()) && s.empty();
-	    */
 	    return false;
 	}
 
@@ -249,7 +250,7 @@ class EvalApply {
     private void evalRetFun(){
 	Expr f = code;
 	if (!(f.isFunObj() || f.isPapObj())){
-	    System.out.println(f);
+	    System.out.println(f.inspect());
 	}
 	assert f.isFunObj() || f.isPapObj();
 	CallCont c = (CallCont) s.pop();
