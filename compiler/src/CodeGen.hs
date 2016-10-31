@@ -171,7 +171,8 @@ genExpr (FunAppExpr (FunAppExpr (AtomExpr (VarAtom (TermVar "#overloaded#"))) [e
       enterLambda 1 lamname empty
       n <- nexti
       let dname = cls2dictNameM clsname
-      appendCode $ dname ++ " d = (" ++ dname ++ ") RTLib.extrDict(args[0]);"
+      appendCode $
+        dname ++ " d = (" ++ dname ++ ") RTLib.extrDict(args[0]);"
       appendCode $ "Expr t" ++ show n ++ " = d.mk" ++ mname ++ "();"
       exitLambda n
 
@@ -235,12 +236,16 @@ genExpr (CaseExpr scrut alts) = do
       appendCode $ s0 ++ s1
       genalts alts ts'
 
-genExpr (Dps v dn) = do
+genExpr e@(Dps ns v dn) = do
+  trace ("genExpr: " ++ show e) $ return ()
   let e = AtomExpr (VarAtom v)
   n1 <- genExpr e
   n2 <- nexti
   n3 <- nexti
-  let s = cls2dictNameM dn
+  let qn = case ns of
+        [n] -> n
+        _ -> error $ "genExpr for Dps error, ns: " ++ show ns
+      s = cls2dictNameM $ dn ++ "@" ++ qn
   appendCode $
     "Expr t" ++ show n2 ++
     " = (Expr) new AtomExpr(new Dict(new " ++ s ++ "()));"
@@ -424,7 +429,8 @@ emitDicts dest (dict:ds) = do
       msM = map mangle $ methods dict
   h <- openFile (dest ++ "/" ++ dname ++ ".java") WriteMode
   emitPreamble h
-  hPutStrLn h $ "public abstract class " ++ dname ++ " {"
+  hPutStrLn h $
+    "public abstract class " ++ dname ++ " extends Dictionary {"
   sequence_ $ map
     (\s -> hPutStrLn h $ "    abstract public Expr mk" ++ s ++ "();")
     msM
@@ -441,7 +447,7 @@ emitInsts dest dicts ((qin, qcn):ctab) = do
         _ -> methods $ head dicts'
       msM = map mangle ms
       pdname = cls2dictNameM qcn
-      dname = cls2dictNameM qin
+      dname = cls2dictNameM $ qin ++ "@" ++ qcn
       mname = modname qin
   h <- openFile (dest ++ "/" ++ dname ++ ".java") WriteMode
   emitPreamble h

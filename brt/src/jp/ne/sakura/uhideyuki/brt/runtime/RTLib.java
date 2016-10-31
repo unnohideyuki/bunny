@@ -130,8 +130,10 @@ public class RTLib {
 	return new AtomExpr(new LitInt(i));
     }
 
-    public static Object extrDict(AtomExpr e){
-	Dict d = (Dict) e.a;
-	return d.obj;
+    public static Dictionary extrDict(AtomExpr e){
+	if (!(e.a instanceof Dict)){
+	    System.err.println("extrDict Error: " + e.inspect());
+	}
+	return ((Dict) e.a).d;
     }
 }

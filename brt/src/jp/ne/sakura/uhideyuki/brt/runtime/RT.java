@@ -66,10 +66,14 @@ class EvalApply {
 	} else if (peek() instanceof CallCont){
 	    evalRetFun();
 	} else {
-	    if (!((code.isValue() || code.isLiteral()) && s.empty())){
+	    if (!(code.isLitOrValue() && s.empty())){
+		System.out.println(code.isLiteral());
+		System.out.println(code.isValue());
+		System.out.println(s.empty());
+		System.out.println(s);
 		System.out.println(code.inspect());
 	    }
-	    assert (code.isValue() || code.isLiteral()) && s.empty();
+	    assert code.isLitOrValue() && s.empty();
 	    return false;
 	}
 
@@ -87,7 +91,11 @@ class EvalApply {
 	AtomExpr[] args = new AtomExpr[e.es.length];
 
 	for (int i = 0; i < e.es.length; i++){
-	    args[i] = (AtomExpr) mkVarExpr(new Thunk(e.es[i]));
+	    if (e.es[i] instanceof AtomExpr){
+		args[i] = (AtomExpr)e.es[i];
+	    } else {
+		args[i] = (AtomExpr) mkVarExpr(new Thunk(e.es[i]));
+	    }
 	}
 
 	code = e.lambda.call(args);

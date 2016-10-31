@@ -1,7 +1,10 @@
 module TrSTG where
 
 import qualified Core
+import qualified Typing as Ty
 import STG
+
+import Debug.Trace
 
 trVar (Core.TermVar n _) = TermVar n
 
@@ -46,7 +49,14 @@ trExpr e@(Core.Case scrut _ alts) = CaseExpr scrut' alts'
           vs' -> (Core.Lam vs' expr)
     tralt (Core.DEFAULT, vs, expr) = DefaultAlt $ trExpr (Core.Lam vs expr)
 
-trExpr (Core.Dps v (Core.Dict n)) = Dps (trVar v) n
+trExpr (Core.Dps v (Core.Dict n)) = e'
+  where
+    e' = Dps (extrSupers v) (trVar v) n
+    extrSupers v =let
+      qs = case v of
+        Core.TermVar _ (xs Ty.:=> _) -> xs
+      in
+       map (\(Ty.IsIn n _) -> n) qs
 
 trExpr e = error $ "Non-exhaustive pattern in trExpr: " ++ show e
 
