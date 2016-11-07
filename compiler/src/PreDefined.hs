@@ -33,7 +33,7 @@ cShow :: String
 cShow  = "Prim.Show"
 
 cOrd :: String
-cOrd  = "Main.Ord"
+cOrd  = "Prelude.Ord"
 
 leMfun :: Assump
 leMfun
@@ -53,7 +53,7 @@ errorCfun
                       ([] :=> (tString `fn` TGen 0)))
 
 tIO :: Type
-tIO = TCon (Tycon "Main.IO" (Kfun Star Star)) -- todo: Prim.IO
+tIO = TCon (Tycon "Prelude.IO" (Kfun Star Star)) -- todo: Prim.IO
 
 primRetCfun :: Assump
 primRetCfun

@@ -1,7 +1,9 @@
 #!/bin/bash -v
 # usage (eg.) : compile0 sample0
 
-f=$1
+source_file=$1
+
+f=`basename $1 .hs`
 
 mkdir -p jout/$f
 
@@ -11,10 +13,12 @@ import jp.ne.sakura.uhideyuki.brt.runtime.*;
 
 public class Sample {
     public static void main(String[] args){
-      RT.eval(Prelude.mkmain());
+      RT.eval(Main.mkmain());
     }
 }
 EOF
 
-# sample/compiler0 < testcases/$f.hs > jout/$f/Main.java
-sample/compiler1 -d jout/$f testcases/$f.hs 
+
+bin/bunnyc -d jout/$f --xno-implicit-prelude lib/Prelude.hs
+
+bin/bunnyc -d jout/$f --xlibrary-path ./lib $source_file

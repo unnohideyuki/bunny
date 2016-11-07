@@ -1,13 +1,14 @@
+execs = bin/bunnyc
+
 samples = sample/parser_sample sample/drive_semant sample/parse2core \
 	sample/compiler0 sample/parse2bg sample/compiler1
-
 
 temps = src/Lexer.x src/Lexer.hs src/Parser.hs
 objs = src/Lexer.o src/Parser.o src/Absyn.o src/Types.o src/Symbol.o \
        src/Typing.o src/Semant.o src/PreDefined.o \
        src/Core.o src/Desugar.o src/TrCore.o src/STG.o src/TrSTG.o \
        src/CodeGen.o src/DictPass.o
-all: $(samples)
+all: $(samples) $(execs)
 
 OPTIONS = -Wall -XFlexibleContexts
 
@@ -53,5 +54,11 @@ sample/compiler0:	sample/compiler0.hs $(objs)
 sample/compiler1:	sample/compiler1.hs $(objs)
 	ghc $(OPTIONS) -isrc $<
 
+bin/bunnyc:	src/compiler-main.hs $(objs)
+	ghc $(OPTIONS) -o $@ -isrc $<
+
 clean:	
-	rm -f src/*.hi src/*.o sample/*.o $(samples) $(temps) $(objs)
+	rm -f src/*.hi src/*.o sample/*.o $(samples) $(temps) $(objs) $(execs)
+
+check:
+	cd test; ./run-test.sh

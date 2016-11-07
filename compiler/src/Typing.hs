@@ -199,13 +199,13 @@ overlap p q = defined (mguPred p q)
 exampleInsts :: EnvTransformer
 exampleInsts  = addPreludeClasses
 {-
-            <:> addInst [] (IsIn "Main.Ord" tUnit)
-            <:> addInst [] (IsIn "Main.Ord" tChar)
-            <:> addInst [] (IsIn "Main.Ord" tInt)
-            <:> addInst [] (IsIn "Main.Ord" tInteger)
-            <:> addInst [ IsIn "Main.Ord" (TVar (Tyvar "a" Star))
-                        , IsIn "Main.Ord" (TVar (Tyvar "b" Star))]
-                        (IsIn "Main.Ord" (pair (TVar (Tyvar "a" Star))
+            <:> addInst [] (IsIn "Prelude.Ord" tUnit)
+            <:> addInst [] (IsIn "Prelude.Ord" tChar)
+            <:> addInst [] (IsIn "Prelude.Ord" tInt)
+            <:> addInst [] (IsIn "Prelude.Ord" tInteger)
+            <:> addInst [ IsIn "Prelude.Ord" (TVar (Tyvar "a" Star))
+                        , IsIn "Prelude.Ord" (TVar (Tyvar "b" Star))]
+                        (IsIn "Prelude.Ord" (pair (TVar (Tyvar "a" Star))
                                           (TVar (Tyvar "b" Star))))
             <:> addInst [] (IsIn cShow tChar)
             <:> addInst [] (IsIn cShow tInt)
@@ -370,7 +370,7 @@ data Literal = LitInt  Integer
 tiLit :: Literal -> TI ([Pred], Type)
 tiLit (LitChar _) = return ([], tChar)
 tiLit (LitInt _)  = do v <- newTVar Star
-                       return ([IsIn "Main.Num" v], v)
+                       return ([IsIn "Prelude.Num" v], v)
 tiLit (LitStr _) = return ([], tString)
 tiLit (LitRat _) = do v <- newTVar Star
                       return ([IsIn "Fractional" v], v)
@@ -509,11 +509,11 @@ ambiguities _ vs ps = [(v, filter (elem v . tv) ps) | v <- tv ps \\ vs]
 
 numClasses :: [Id]
 numClasses  = ["Num", "Integral", "Floating", "Fractional",
-               "Main.Num", "Main.Integer",
+               "Prelude.Num", "Prelude.Integer",
                "Real", "RealFloat", "RealFrac"]
 
 stdClasses :: [Id]
-stdClasses  = ["Eq", "Ord", "Main.Eq", "Main.Ord", "Prim.Show", "Read", "Bounded", "Enum", "Ix",
+stdClasses  = ["Eq", "Ord", "Prelude.Eq", "Prelude.Ord", "Prim.Show", "Read", "Bounded", "Enum", "Ix",
                "Functor", "Monad", "MonadPlus"] ++ numClasses
 
 candidates           :: ClassEnv -> Ambiguity ->[Type]
