@@ -1,0 +1,11 @@
+#!/bin/bash -v
+
+target=$1
+d=`dirname $1`
+
+s=":"
+if [ -d /c ]; then
+    s=";"
+fi
+
+javac -cp "../../brt/src$s$d" $target

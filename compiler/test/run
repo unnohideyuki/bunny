@@ -1,0 +1,15 @@
+#!/bin/bash
+
+target=$1
+d=`dirname $1`
+c=`basename $1 .java`
+
+s=":"
+if [ -d /c ]; then
+    s=";"
+fi
+
+java -ea -cp "../../brt/src$s$d" $c
+if [ $? -ne 0 ];then
+    echo "abend!"
+fi

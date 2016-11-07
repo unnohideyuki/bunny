@@ -1,0 +1,21 @@
+filename (oldname): description
+
+sample010 (sample1) : Hello, World!
+sample020 (sample2) : where clause
+sample021 (sample2b) : where-let nesting 1
+sample022 (sample2c) : where-let nesting 2 (with name hiding)
+sample023 (sample2d) : where-letrec nesting
+sample024 (sample2e) : closure conversion
+sample040 (sample4) : Simple pattern matching
+sample050 (sample5) : Pattern matching and recursive function
+sample060 (sample6) : Free var (and closure conversion) (same as 024)
+sample070 (sample7) : Letrec (very similar to 024)
+sample071 (sample7b) : Letrec with a tricky name hiding.
+sample090 (sample9) : first-class function
+sample091 (sample9b) : Letrec (similar to 024, 070)
+sample100 (test3) : do and bind for IO monad.
+
+pending samples...
+sample3.hs -- NG, bunnyc.exe: insts: Prelude.Num
+
+
