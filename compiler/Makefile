@@ -55,6 +55,7 @@ sample/compiler1:	sample/compiler1.hs $(objs)
 	ghc $(OPTIONS) -isrc $<
 
 bin/bunnyc:	src/compiler-main.hs $(objs)
+	mkdir -p bin
 	ghc $(OPTIONS) -o $@ -isrc $<
 
 clean:	

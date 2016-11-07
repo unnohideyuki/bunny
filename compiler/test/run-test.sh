@@ -3,6 +3,7 @@
 i=0
 
 mkdir -p results
+mkdir -p jout
 
 for f in `ls samples/*.hs`; do
   echo "----"
