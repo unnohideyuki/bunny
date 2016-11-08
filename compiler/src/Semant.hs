@@ -208,9 +208,7 @@ cdecl2dict modid (A.ClassDecl (_, (A.AppTy (A.Tycon n) _)) ds) =
   in
    DictDef{qclsname = name, methods = ms, decls = vdcls}
 
-
-renProg  :: A.Module -> RN ([BindGroup], [Assump], [DictDef], [(Id, Id)])
-renProg m = do
+renProg_common m = do
   let body = snd (A.body m)
       modid = case A.modid m of
         Just (Name{orig_name=s}) -> s
@@ -226,11 +224,22 @@ renProg m = do
   -- NOTE#1: followings are not clear! see the note page 233.
   let bgs = toBg $ tbs ++ itbs
       bgs'' = toBg $ ctbs ++ tbs ++ itbs
+  return (bgs, bgs'', as2, dicts, ctab)
+
+renProg m cont = do
+  (bgs, bgs'', as2, dicts, ctab) <- renProg_common m
   st <- get
   let ce = rn_ce st
       as = rn_cms st
-      as' = tiProgram ce (as ++ as2) bgs
+      as' = tiProgram ce (as ++ as2) bgs cont
   return (bgs'', as' ++ as2, dicts, ctab)
+
+renProg2 m = do
+  (bgs, bgs'', as2, dicts, ctab) <- renProg_common m
+  st <- get
+  let ce = rn_ce st
+      as = rn_cms st
+  return $ tiProgram2 ce (as ++ as2) bgs
 
 
 renCDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]

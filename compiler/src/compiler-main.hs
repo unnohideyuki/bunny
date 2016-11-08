@@ -10,6 +10,7 @@ import Desugar
 import qualified TrSTG as TR
 import qualified CodeGen
 import DictPass (tcBind)
+import Typing (initialEnv, initialTI)
 
 import Control.Monad.State.Strict (runState)
 
@@ -82,7 +83,7 @@ get_init_rnstate = RnState { rn_modid = ""
                            , rn_lvs = []
                            , rn_tenv = Symbol.empty
                            , rn_ifxenv = Symbol.empty
-                           , rn_ce = preludeClasses
+                           , rn_ce = initialEnv -- preludeClasses
                            , rn_cms = primConsMems
                            , rn_tbs = []
                            , rn_tbstack = []
@@ -90,7 +91,8 @@ get_init_rnstate = RnState { rn_modid = ""
                            , rn_cdicts = []
                            }
 
-implicit_prelude ::  String -> IO RnState
+ti_as (_, _, as) = as
+
 implicit_prelude prelude_dir = do
   trace "implicit_prelude ..." $ return ()
   let src = prelude_dir ++ "/Prelude.hs"
@@ -105,18 +107,17 @@ implicit_prelude prelude_dir = do
         st0 = get_init_rnstate
         lv = (initialLevel $ Absyn.modid m){lv_dict=primNames}
         st = st0{rn_modid = (lv_prefix lv), rn_lvs = [lv]}
-        ((_, as, _, _), st') = runState (renProg m) st
-        as' = rn_cms st'
-        st'' = st'{rn_cms = as ++ as'} -- see memo#p259
-      in st''
+        (cont, rnstate) = runState (renProg2 m) st
+        as = rn_cms rnstate
+        as' = ti_as cont
+      in (cont, rnstate{rn_cms = as ++ as'})
 
-do_compile :: RnState -> Absyn.Module -> String -> IO ()
-do_compile st0 m dest = do
+do_compile st0 m dest cont = do
   trace "do_compile ..." $ return ()
   -- TODO: regular way to add primitive names.
   let lv = (initialLevel $ Absyn.modid m){lv_dict=primNames}
   let st = st0{rn_modid = (lv_prefix lv), rn_lvs = (lv : rn_lvs st0)}
-      ((bgs, as, dicts, ctab), st') = runState (renProg m) st
+      ((bgs, as, dicts, ctab), st') = runState (renProg m cont) st
   let cmod = dsgModule (rn_modid st') bgs (as ++ rn_cms st) -- see memo#p-258
   let b = case cmod of
         Module _ [b'] -> b'
@@ -132,8 +133,8 @@ do_compile st0 m dest = do
 main :: IO ()
 main = do
   opts <- customExecParser (prefs showHelpOnError) myParserInfo
-  st <- case xnoImplicitPrelude opts of
-    True -> return get_init_rnstate
+  (cont, rnstate) <- case xnoImplicitPrelude opts of
+    True -> return (initialTI, get_init_rnstate)
     False -> implicit_prelude (xlibPath opts)
   let src = head $ inputFiles opts
       dest = destDir opts
@@ -142,5 +143,5 @@ main = do
   let r = parse s
   case r of
     Left  mes -> putStrLn $ "Error: " ++ mes
-    Right m -> do do_compile st m dest
+    Right m -> do do_compile rnstate m dest cont
 

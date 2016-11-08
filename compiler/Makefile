@@ -1,7 +1,6 @@
 execs = bin/bunnyc
 
-samples = sample/parser_sample sample/drive_semant sample/parse2core \
-	sample/compiler0 sample/parse2bg sample/compiler1
+samples = sample/test-20161108
 
 temps = src/Lexer.x src/Lexer.hs src/Parser.hs
 objs = src/Lexer.o src/Parser.o src/Absyn.o src/Types.o src/Symbol.o \
@@ -36,24 +35,6 @@ src/PreDefined.o:	src/PreDefined.hs
 src/Core.o:	src/Core.hs
 src/Desugar.o:	src/Desugar.hs
 
-sample/parser_sample:	sample/parser_sample.hs $(objs)
-	ghc $(OPTIONS) -isrc $<
-
-sample/drive_semant:	sample/drive_semant.hs $(objs)
-	ghc $(OPTIONS) -isrc $<
-
-sample/parse2bg:	sample/parse2bg.hs $(objs)
-	ghc $(OPTIONS) -isrc $<
-
-sample/parse2core:	sample/parse2core.hs $(objs)
-	ghc $(OPTIONS) -isrc $<
-
-sample/compiler0:	sample/compiler0.hs $(objs)
-	ghc $(OPTIONS) -isrc $<
-
-sample/compiler1:	sample/compiler1.hs $(objs)
-	ghc $(OPTIONS) -isrc $<
-
 bin/bunnyc:	src/compiler-main.hs $(objs)
 	mkdir -p bin
 	ghc $(OPTIONS) -o $@ -isrc $<
@@ -63,3 +44,8 @@ clean:
 
 check:
 	cd test; ./run-test.sh
+
+sample/test-20161108:	sample/test-20161108.hs $(objs)
+	ghc $(OPTIONS) -isrc $<
+
+

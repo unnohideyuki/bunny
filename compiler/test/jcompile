@@ -1,4 +1,4 @@
-#!/bin/bash -v
+#!/bin/bash
 
 target=$1
 d=`dirname $1`

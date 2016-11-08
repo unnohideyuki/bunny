@@ -1,3 +1,16 @@
+----------------------------------------------------------------------------
+-- Typing.hs
+-- 
+-- This Typing module is based on `Typing Haskell in Haskell', version of
+-- November 23, 2000.  Copyright (c) Mark P Jones and the Oregon Graduate
+-- Institute of Science and Technology, 1999-2000
+-- 
+-- This program is distributed as Free Software under the terms
+-- in the file "License-Thih.txt" that is included in the distribution
+-- of this software, copies of which may be obtained from:
+--             http://www.cse.ogi.edu/~mpj/thih/
+-- 
+----------------------------------------------------------------------------
 module Typing where
 
 import Data.List (nub, (\\), intersect, union, partition)
@@ -161,28 +174,29 @@ addClass i is ce
   | any (not.defined.classes ce) is = fail "superclass not defined"
   | otherwise                       = return (modify ce i (is, []))
 
+
 addPreludeClasses :: EnvTransformer
 addPreludeClasses  = addCoreClasses <:> addNumClasses
 
 addCoreClasses :: EnvTransformer
-addCoreClasses  =addClass "Eq" []
-              <:> addClass "Ord" ["Eq"]
-              
-              <:> addClass "Show" []
-              <:> addClass "Read" []
-              <:> addClass "Bounded" []
-              <:> addClass "Enum" []
-              <:> addClass "Functor" []
-              <:> addClass "Monad" []
+addCoreClasses = addClass "Prelude.Eq" []
+                 <:> addClass "Prelude.Ord" ["Prelude.Eq"]
+                 <:> addClass "Prelude.Show" []
+                 <:> addClass "Prelude.Read" []
+                 <:> addClass "Prelude.Bounded" []
+                 <:> addClass "Prelude.Enum" []
+                 <:> addClass "Prelude.Functor" []
+                 <:> addClass "Prelude.Monad" []
 
 addNumClasses :: EnvTransformer
-addNumClasses  = addClass "Num" ["Eq", "Show"]
-             <:> addClass "Real" ["Num", "Ord"]
-             <:> addClass "Fractional" ["Num"]
-             <:> addClass "Integral" ["Real", "Enum"]
-             <:> addClass "RealFrac" ["Real", "Fractional"]
-             <:> addClass "Floating" ["Fractional"]
-             <:> addClass "RealFloat" ["RealFrac", "Floating"]
+addNumClasses =
+  addClass "Prelude.Num" ["Prelude.Eq", "Prelude.Show"]
+  <:> addClass "Prelude.Real" ["Prelude.Num", "Prelude.Ord"]
+  <:> addClass "Prelude.Fractional" ["Prelude.Num"]
+  <:> addClass "Prelude.Integral" ["Prelude.Real", "Prelude.Enum"]
+  <:> addClass "Prelude.RealFrac" ["Prelude.Real", "Prelude.Fractional"]
+  <:> addClass "Prelude.Floating" ["Prelude.Fractional"]
+  <:> addClass "Prelude.RealFloat" ["Prelude.RealFrac", "Prelude.Floating"]
 
 addInst :: [Pred] -> Pred -> EnvTransformer
 addInst ps p@(IsIn i _) ce
@@ -198,25 +212,6 @@ overlap p q = defined (mguPred p q)
 
 exampleInsts :: EnvTransformer
 exampleInsts  = addPreludeClasses
-{-
-            <:> addInst [] (IsIn "Prelude.Ord" tUnit)
-            <:> addInst [] (IsIn "Prelude.Ord" tChar)
-            <:> addInst [] (IsIn "Prelude.Ord" tInt)
-            <:> addInst [] (IsIn "Prelude.Ord" tInteger)
-            <:> addInst [ IsIn "Prelude.Ord" (TVar (Tyvar "a" Star))
-                        , IsIn "Prelude.Ord" (TVar (Tyvar "b" Star))]
-                        (IsIn "Prelude.Ord" (pair (TVar (Tyvar "a" Star))
-                                          (TVar (Tyvar "b" Star))))
-            <:> addInst [] (IsIn cShow tChar)
-            <:> addInst [] (IsIn cShow tInt)
-            <:> addInst [] (IsIn cShow tInteger)
-            <:> addInst [ IsIn "Prim.Show" (TVar (Tyvar "a" Star))]
-                        (IsIn "Prim.Show" (list (TVar (Tyvar "a" Star))))
--}
---          <:> addInst [] (IsIn "Num" tChar)
---          <:> addInst [] (IsIn "Num" tInt)
---          <:> addInst [] (IsIn "Num" tInteger)
-
 
 -------------------------------------------------------------------------------
 
@@ -304,8 +299,8 @@ find i ((i' :>: sc):as) = if i == i' then return sc else find i as
 
 type TI a = State (Subst, Int, [Assump]) a
 
-runTI :: TI a -> a
-runTI ti = x where (x, _) = runState ti (nullSubst, 0, [])
+runTI :: (Subst, Int, [Assump]) -> TI a -> a
+runTI st ti = x where (x, _) = runState ti st 
 
 getSubst :: TI Subst
 getSubst  = state $ \st@(s, _, _) -> (s, st)
@@ -508,13 +503,15 @@ ambiguities        :: ClassEnv -> [Tyvar] -> [Pred] -> [Ambiguity]
 ambiguities _ vs ps = [(v, filter (elem v . tv) ps) | v <- tv ps \\ vs]
 
 numClasses :: [Id]
-numClasses  = ["Num", "Integral", "Floating", "Fractional",
-               "Prelude.Num", "Prelude.Integer",
-               "Real", "RealFloat", "RealFrac"]
+numClasses  = ["Prelude.Num", "Prelude.Integral", "Prelude.Floating",
+               "Prelude.Fractional", "Prelude.Integer",
+               "Prelude.Real", "Prelude.RealFloat", "Prelude.RealFrac"]
 
 stdClasses :: [Id]
-stdClasses  = ["Eq", "Ord", "Prelude.Eq", "Prelude.Ord", "Prim.Show", "Read", "Bounded", "Enum", "Ix",
-               "Functor", "Monad", "MonadPlus"] ++ numClasses
+stdClasses  = [ "Prelude.Eq", "Prelude.Ord", "Prelude.Show"
+              , "Prelude.Read", "Prelude.Bounded", "Prelude.Enum"
+              , "Prelude.Ix", "Prelude.Functor"
+              , "Prelude.Monad", "MonadPlus"] ++ numClasses
 
 candidates           :: ClassEnv -> Ambiguity ->[Type]
 candidates ce (v, qs) = [t' | let is = [i | IsIn i _ <- qs]
@@ -529,7 +526,7 @@ candidates ce (v, qs) = [t' | let is = [i | IsIn i _ <- qs]
 withDefaults :: Monad m => ([Ambiguity] -> [Type] -> a)
                   -> ClassEnv -> [Tyvar] -> [Pred] -> m a
 withDefaults f ce vs ps
-  | any null tss = fail $ "cannot resolve ambiguity: " ++ show (vps, tss)
+  | any null tss = fail $ "cannot resolve ambiguity: " ++ show (ce, vs, ps, vps, tss)
   | otherwise    = return (f vps (map head tss))
   where vps = ambiguities ce vs ps
         tss = map (candidates ce) vps
@@ -615,11 +612,22 @@ tiSeq ti ce as (bs:bss) = do (ps, as')  <- ti ce as bs
 
 type Program = [BindGroup]
 
-tiProgram :: ClassEnv -> [Assump] -> Program -> [Assump]
-tiProgram ce as bgs = runTI $
-                      do (ps, as') <- tiSeq tiBindGroup ce as bgs
-                         s         <- getSubst
-                         rs        <- reduce ce (apply s ps)
-                         s'        <- defaultSubst ce [] rs
-                         as''      <- getAssump
-                         return (apply (s'@@s) as' ++ as'')
+tiProgram ce as bgs cont = runTI cont $
+                           do (ps, as') <- tiSeq tiBindGroup ce as bgs
+                              s         <- getSubst
+                              rs        <- reduce ce (apply s ps)
+                              s'        <- defaultSubst ce [] rs
+                              as''      <- getAssump
+                              st <- get
+                              return (apply (s'@@s) as' ++ as'')
+
+initialTI = (nullSubst, 0, [])
+
+-- tiProgram is modified and tiProgram2 is a new version.
+-- tiProgram2 (for Prelude), then continue to tiProgram.
+-- sa. memo#p260 and TODO#260
+
+tiProgram2 ce as bgs = runTI initialTI $
+                       do (_, as') <- tiSeq tiBindGroup ce as bgs
+                          (s, n, as'') <- get
+                          return (s, n, as++as')
