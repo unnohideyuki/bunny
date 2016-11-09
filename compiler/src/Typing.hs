@@ -621,13 +621,10 @@ tiProgram ce as bgs cont = runTI cont $
                               st <- get
                               return (apply (s'@@s) as' ++ as'')
 
+initialTI :: (Subst, Int, [Assump])
 initialTI = (nullSubst, 0, [])
 
--- tiProgram is modified and tiProgram2 is a new version.
--- tiProgram2 (for Prelude), then continue to tiProgram.
--- sa. memo#p260 and TODO#260
-
-tiProgram2 ce as bgs = runTI initialTI $
-                       do (_, as') <- tiSeq tiBindGroup ce as bgs
-                          (s, n, as'') <- get
-                          return (s, n, as++as')
+tiImportedProgram ce as bgs st = runTI st $
+                                 do (_, as') <- tiSeq tiBindGroup ce as bgs
+                                    (s, n, as'') <- get
+                                    return (s, n, as++as')

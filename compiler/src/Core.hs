@@ -4,8 +4,6 @@ import Symbol
 import Types
 import Typing (Qual(..))
 
-import qualified Text.PrettyPrint.ANSI.Leijen as PP
-
 data Module = Module Id [Bind] {- [Axiom] -}
 
 data Var = TermVar Id (Qual Type)
@@ -45,13 +43,3 @@ data AltCon = DataAlt DataCon
 
 data DataCon = DataCon Id [Var] (Qual Type)
              deriving (Show, Eq)
-
-ppModule :: Module -> PP.Doc
-ppModule (Module modident bs) =
-  PP.text "Module" PP.<+> PP.text modident PP.<> PP.line PP.<$> ppBinds bs
-
-ppBinds :: [Bind] -> PP.Doc
-ppBinds bs = PP.list $ map ppBind bs
-
-ppBind :: Bind -> PP.Doc
-ppBind b = PP.text (show b)

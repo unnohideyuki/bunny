@@ -19,6 +19,6 @@ public class Sample {
 EOF
 
 
-bin/bunnyc -d jout/$f --xno-implicit-prelude lib/Prelude.hs
+bin/bunnyc -d jout/$f --xno-implicit-prelude -v lib/Prelude.hs
 
-bin/bunnyc -d jout/$f --xlibrary-path ./lib $source_file
+bin/bunnyc -d jout/$f --xlibrary-path ./lib -v $source_file

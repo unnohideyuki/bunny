@@ -1,7 +1,6 @@
 module STG where
 
 import Prelude hiding((<$>))
-import Text.PrettyPrint.ANSI.Leijen
 import Data.List.Split
 import Data.Char
 import Data.List

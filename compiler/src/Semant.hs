@@ -234,12 +234,12 @@ renProg m cont = do
       as' = tiProgram ce (as ++ as2) bgs cont
   return (bgs'', as' ++ as2, dicts, ctab)
 
-renProg2 m = do
+renPrelude m = do
   (bgs, bgs'', as2, dicts, ctab) <- renProg_common m
   st <- get
   let ce = rn_ce st
       as = rn_cms st
-  return $ tiProgram2 ce (as ++ as2) bgs
+  return $ tiImportedProgram ce (as ++ as2) bgs initialTI
 
 
 renCDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]
