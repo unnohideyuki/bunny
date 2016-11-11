@@ -146,7 +146,14 @@ tcExpr e _ =
    trace ("warning: temporary dummy tcExpr: " ++ s ++ "...") e
 
 tcBind :: Bind -> Bind
-tcBind (Rec bs) = Rec $ map trbind bs
+tcBind (Rec bs) = Rec $ map tcbind bs
   where
-    trbind (v@(TermVar _ ([] :=> t)), e) = (v, tcExpr e t)
-    trbind b@((TermVar _ (q :=> _)), _) = b -- #overloaded#
+    tcbind (v@(TermVar _ ([] :=> t)), e) = (v, tcExpr e t)
+    tcbind b@(v@(TermVar _ (q :=> _)), e)
+      | isOVExpr e = b -- #overloaded#
+      | otherwise  = trace ("Polymorphism: " ++ show v) b
+
+
+isOVExpr :: Expr -> Bool -- whether (#overloaded# a b) form or not
+isOVExpr (App (App (Var (TermVar "#overloaded#" _)) _) _) = True
+isOVExpr _ = False

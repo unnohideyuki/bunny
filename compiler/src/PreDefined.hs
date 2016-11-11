@@ -138,6 +138,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun
                   (Forall []
                    ([] :=> (TAp tList tChar `fn` TAp tIO tUnit)))
                 , overloadedCfun
+                , "Main.main" :>: (Forall [Star] ([] :=> TAp tIO (TGen 0)))
                 ]
 
 primConsNames :: [(Id, Id)]

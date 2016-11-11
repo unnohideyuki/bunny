@@ -1,0 +1,24 @@
+Issue#2016Nov001: Missing default assumption of main :: IO ()
+
+testcases/test8c.hs fails with "cannot resolve ambiguity."
+
+- Added to tnitial Assump, Main::IO t0, however, does not work, why?
+- When an explicit type signature, Main::IO (), specified,
+  it should be type checked and override the initial assumption.
+
+Issue#2016Nov002: (todo) the order of concatenation of Assumps.
+
+(as1 ++ as2) and (as2 ++ as1) are different.
+Did I write this correctly every times?
+
+Issue#2016Nov003: Type classes having two or more super-class
+
+for example, Ord => Char dictionary shoud have a way to invoke (==) method of Eq.
+
+
+
+
+
+
+
+
