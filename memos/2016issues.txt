@@ -15,6 +15,11 @@ Issue#2016Nov003: Type classes having two or more super-class
 
 for example, Ord => Char dictionary shoud have a way to invoke (==) method of Eq.
 
+Issue#2016Nov004: Temporary use of TermVar to bind a dictionary.
+
+I used TermVar with a name like "Main.f.DARG0" and a dummy type like TGen (-3).
+It is not beautiful and I should use appropreate element to express this kind of object.
+
 
 
 
