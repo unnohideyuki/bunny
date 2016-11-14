@@ -1,12 +1,16 @@
-#!/bin/bash -v
+#!/bin/bash 
 # usage (eg.) : compile0 sample0
 
 source_file=$1
 shift
 
-f=`basename $1 .hs`
+f=`basename $source_file .hs`
 
 mkdir -p jout/$f
+
+echo "source file: $source_file"
+echo "dst dir: $jout/$f"
+
 
 cat <<EOF > jout/$f/Sample.java
 import jp.ne.sakura.uhideyuki.brt.brtsyn.*;

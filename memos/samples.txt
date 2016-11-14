@@ -14,6 +14,7 @@ sample071 (sample7b) : Letrec with a tricky name hiding.
 sample090 (sample9) : first-class function
 sample091 (sample9b) : Letrec (similar to 024, 070)
 sample100 (test3) : do and bind for IO monad.
+sample101 (test8d) : First passed sample of dictionary-passing style function.
 
 pending samples...
 sample3.hs -- NG, bunnyc.exe: insts: Prelude.Num
