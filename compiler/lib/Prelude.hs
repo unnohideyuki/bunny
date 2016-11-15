@@ -1,5 +1,7 @@
 module Prelude where
 
+infixr 5 :
+
 infixl 1 >>, >>=
 
 class Monad m where
@@ -28,7 +30,7 @@ infixr 9 .
 infixr 5 ++
 (++) :: [a] -> [a] -> [a]
 (++) []     ys = ys
-(++) (x:xs) ys = x : xs ++ ys
+(++) (x:xs) ys = x : (xs ++ ys)
 
 concatMap  :: (a -> [b]) -> [a] -> [b]
 concatMap f = foldr ((++) . f) []

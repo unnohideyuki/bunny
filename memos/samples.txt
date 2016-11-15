@@ -16,6 +16,7 @@ sample091 (sample9b) : Letrec (similar to 024, 070)
 sample100 (test3) : do and bind for IO monad.
 sample101 (test8d) : First passed sample of dictionary-passing style function.
 sample102 (test8)
+sample103 (test9) : testing (++)
 
 pending samples...
 sample3.hs -- NG, bunnyc.exe: insts: Prelude.Num

@@ -20,10 +20,13 @@ Issue#2016Nov004: Temporary use of TermVar to bind a dictionary.
 I used TermVar with a name like "Main.f.DARG0" and a dummy type like TGen (-3).
 It is not beautiful and I should use appropreate element to express this kind of object.
 
+Issue#2016Nov005: fixity resolution
 
+Fixity resolution doesn't work, that needs the last parenthesis of the 
+following code:
 
+(++) :: [a] -> [a] -> [a]
+(++) []     ys = ys
+(++) (x:xs) ys = x : (xs ++ ys)
 
-
-
-
-
+The test code for this is: test9a.hs

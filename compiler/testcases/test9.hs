@@ -1,0 +1,3 @@
+main = putStrLn $ "hello, " ++ "world"
+
+
