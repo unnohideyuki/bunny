@@ -22,17 +22,21 @@ import System.IO
 import Control.Monad
 
 get_init_rnstate :: RnState
-get_init_rnstate = RnState { rn_modid = ""
-                           , rn_lvs = []
-                           , rn_tenv = Symbol.empty
-                           , rn_ifxenv = Symbol.empty
-                           , rn_ce = initialEnv -- preludeClasses
-                           , rn_cms = primConsMems
-                           , rn_tbs = []
-                           , rn_tbstack = []
-                           , rn_kdict = Symbol.empty
-                           , rn_cdicts = []
-                           }
+get_init_rnstate =
+  let
+    ifxenv = insert "Prim.:" (RightAssoc 5) Symbol.empty
+  in
+   RnState { rn_modid = ""
+           , rn_lvs = []
+           , rn_tenv = Symbol.empty
+           , rn_ifxenv = ifxenv
+           , rn_ce = initialEnv -- preludeClasses
+           , rn_cms = primConsMems
+           , rn_tbs = []
+           , rn_tbstack = []
+           , rn_kdict = Symbol.empty
+           , rn_cdicts = []
+           }
 
 ti_as :: (a, b, c) -> c
 ti_as (_, _, as) = as
