@@ -32,17 +32,11 @@ getTy (Lam vs e) = [] :=> (foldr fn te ts)
 getTy (Case _ _ as) =
   let
     ts = map ((\(_ :=> t) -> t).getTy.(\(_,_,e) -> e)) as
-
-    unifTy [t] = t
-    unifTy (t:ts) =
-      let
-        s = case unifier t (unifTy ts) of
-          Just s -> s
-          Nothing -> error $ "type-error in getTy(for Case):unifty: " ++ show (t, ts)
-      in
-       subst s t
+    t = case unifyTs ts of
+      Just t' -> t'
+      Nothing -> error $ "type-error in getTy for Case: " ++ show ts
   in
-   [] :=> unifTy ts
+   [] :=> t
 
 getTy (Let _ e) = getTy e
 
@@ -70,6 +64,18 @@ unifier (TGen i) t = return [(i, t)]
 unifier t (TGen i) = return [(i, t)]
 unifier (TCon tc1) (TCon tc2) | tc1 == tc2 = return []
 unifier t1 t2 = trace ("warning: unifier: " ++ show (t1, t2)) $ return []
+
+unifyTs :: [Type] -> Maybe Type
+unifyTs [t] = Just t
+unifyTs (t:ts) =
+  let
+    maybe_s = case unifyTs ts of
+      Nothing -> Nothing
+      Just t' -> unifier t t'
+  in
+    case maybe_s of
+      Nothing -> Nothing
+      Just s' -> Just $ subst s' t
 
 subst :: Unifier -> Type -> Type
 subst s (TGen i) = case lookup i s of
