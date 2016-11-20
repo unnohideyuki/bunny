@@ -199,6 +199,24 @@ tcExpr (Let bs e) t = do
   e' <- tcExpr e t
   return $ Let bs' e'
 
+-- TODO: type-check scrut
+tcExpr e@(Case scrut v as) t =
+  let
+    te = case getTy e of { _ :=> x -> x}
+    s = case unifier t te of
+      Nothing -> error $ "type-error in tcExpr for Case: " ++ show (t, t')
+      Just s' -> s'
+    t' = subst s te
+
+    tcAs [] _ = return []
+    tcAs ((ac, vs, e):as) t = do
+      e' <- tcExpr e t
+      as' <- tcAs as t
+      return $ (ac, vs, e') : as'
+  in
+   do as' <- tcAs as t'
+      return $ Case scrut v as'
+
 tcExpr e _ =
   let
     s = take 30 (show e)

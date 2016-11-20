@@ -18,6 +18,7 @@ sample101 (test8d) : First passed sample of dictionary-passing style function.
 sample102 (test8)
 sample103 (test9) : testing (++)
 sample104 (test9a) : Fixity resolution sample.
+sample105 (test9b) : tcExpr for Case.
 
 pending samples...
 sample3.hs -- NG, bunnyc.exe: insts: Prelude.Num
