@@ -3,7 +3,7 @@ module TrCore where -- Translate from Pattern.Expr to Core.
 import Symbol
 import Core
 import qualified Pattern as Pat
-import Typing (Qual(..), Pred(..), Assump(..), Scheme(..), find)
+import Typing (Qual(..), Pred(..), Assump(..), Scheme(..), find, tv, quantify)
 import qualified Typing as Ty (Expr(..), Pat(..), Literal(..))
 import Types
 
@@ -99,8 +99,16 @@ transVdef (n, Pat.Lambda ns expr) = do
                              Nothing  -> error $ "type not found 1:" ++ show (n, as)
       (ts, ks) = case sc of
         Forall ks' (_ :=> t') -> (ptypes t', ks') -- doto: preds?
-      vs = map (\(n', t') -> TermVar n' ([] :=> t')) $ zip ns ts
-      as' = [n' :>: (Forall ks ([] :=> t')) | (n', t') <- zip ns ts]
+      vs = map f $ zip ns ts
+      -- f (n', t') = TermVar n' ([] :=> t')
+      f (n', t') =
+        let
+          tvs = tv t'
+          qt = case quantify tvs ([] :=> t') of
+            Forall _ qt' -> qt'
+        in TermVar n' qt
+           
+      as' = [n' :>: quantify (tv t') ([] :=> t') | (n', t') <- zip ns ts]
   appendAs as'
   expr' <- transExpr expr
   appendBind (n, lam' vs expr')
@@ -201,7 +209,7 @@ trExpr2 (Ty.Let bg e) = do
   transVdefs vdefs
   b' <- popBind
   e' <- trExpr2 e
-  return $ Let b' e'
+  return $ Let (checkBinds b') e'
   where
     (es, iss) = bg
     is = concat iss
@@ -215,6 +223,15 @@ trExpr2 (Ty.Const (n :>: sc)) = do
 
 trExpr2 expr = error $ "Non-exaustive patterns in trExpr2: " ++ show expr
 
+checkBinds (Rec bs) = Rec $ chkbs bs
+  where
+    chkbs [] = []
+    chkbs (((TermVar n qt), e):bs) =
+      let
+        tvs = tv qt
+        qt' = case quantify tvs qt of
+          Forall _ qt' -> qt'
+      in ((TermVar n qt'), e) : chkbs bs
 
 dsgIs vds [] = vds
 dsgIs vds (impl:is) = dsgIs (desis impl:vds) is

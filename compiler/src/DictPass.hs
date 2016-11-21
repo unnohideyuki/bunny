@@ -2,7 +2,7 @@ module DictPass where
 
 import Core
 import Types
-import Typing (Qual(..), Pred(..), mgu, apply)
+import Typing (Qual(..), Pred(..), mgu, apply, Scheme(..), tv, quantify)
 import Symbol
 
 import Data.List
@@ -12,7 +12,10 @@ import Debug.Trace
 
 getTy :: Expr -> Qual Type
 
-getTy (Var (TermVar _ t)) = t
+-- TODO: quantify here is ok?
+getTy (Var (TermVar _ qt)) =
+  case quantify (tv qt) qt of
+    Forall _ qt' -> qt'
 
 getTy (Lit (LitInt _ t)) = ([] :=> t)
 getTy (Lit (LitChar _ t)) = ([] :=> t)
@@ -27,7 +30,9 @@ getTy (App e f) =
 getTy (Lam vs e) = [] :=> (foldr fn te ts)
   where
     te = case getTy e of {_ :=> t -> t}
-    ts = map (\(TermVar _ qt) -> case qt of {_ :=> t -> t})  vs
+    quantifyType qt = case quantify (tv qt) qt of
+      Forall _ (_ :=> t) -> t
+    ts = map (\(TermVar _ qt) -> quantifyType qt)  vs
 
 getTy (Case _ _ as) =
   let
@@ -87,11 +92,13 @@ subst _ t = t
 tcBind :: Bind -> Bind
 tcBind (Rec bs) = Rec $ map tcbind bs
   where
-    tcbind (v@(TermVar n (qs :=> t)), e)
+    tcbind (v@(TermVar n qt@(qs :=> t)), e)
       | isOVExpr e = (v, e)
       | otherwise = 
         let st = mkTcState n qs
-            (e', _) = runState (tcExpr e t) st
+            t' = case quantify (tv qt) qt of
+              Forall _ (qs :=> x) -> x
+            (e', _) = runState (tcExpr e t') st
         in
          if null qs then (v, e')
          else (v, Lam (mkVs n qs) e')
@@ -135,10 +142,14 @@ mkTcState n ps = TcState{tc_name=n, tc_ps=ps}
 
 tcExpr :: Expr -> Type -> TC Expr
 
-tcExpr e@(Var v@(TermVar _ (qv :=> tv))) t = do
+-- tcExpr e@(Var v@(TermVar _ (qv :=> tv))) t = do
+tcExpr e@(Var v@(TermVar _ qt)) t = do
+  let qt' = case quantify (tv qt) qt of
+        Forall _ x -> x
+      (qv :=> t') = qt'
   n <- getName
   ps <- getPs
-  let s = case unifier tv t of
+  let s = case unifier t' t of
         Just s' -> s'
         Nothing -> error "fatal: do not unified in tcExpr'."
 
@@ -157,7 +168,8 @@ tcExpr e@(Var v@(TermVar _ (qv :=> tv))) t = do
         in
          (Dps v (Dict dictname)) 
 
-  when (ps /= []) $ trace (show (n, ps, e, t, i, s, lookup i s)) $ return ()
+  when ((not $ null ps) || (not $ null qv)) $
+    trace (show (n, ps, e, qv, t', t, i, s, lookup i s, null qv)) $ return ()
 
   if null qv then return e
     else
@@ -165,7 +177,7 @@ tcExpr e@(Var v@(TermVar _ (qv :=> tv))) t = do
       Just t -> return $ mkdps e t
       Nothing -> do v <- lookupDictArg i
                     case v of
-                      Nothing -> error "dictionary not found."
+                      Nothing -> error $ "dictionary not found: " ++ show i
                       Just v' -> return $ App e (Var v')
 
 tcExpr e@(Lit _) _ = return e

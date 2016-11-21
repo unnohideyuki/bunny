@@ -83,6 +83,7 @@ do_compile st0 m dest cont opts = do
         _ -> error "Must not occur, cmod must be a Module."
       b' = tcBind b
 
+  when (opt_ddumpcore opts) $ ddump_core b
   when (opt_ddumpcore opts) $ ddump_core b'
   
   let b'' = TR.trBind b'

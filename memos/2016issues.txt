@@ -6,20 +6,24 @@ testcases/test8c.hs fails with "cannot resolve ambiguity."
 - When an explicit type signature, Main::IO (), specified,
   it should be type checked and override the initial assumption.
 
+----
 Issue#2016Nov002: (todo) the order of concatenation of Assumps.
 
 (as1 ++ as2) and (as2 ++ as1) are different.
 Did I write this correctly every times?
 
+----
 Issue#2016Nov003: Type classes having two or more super-class
 
 for example, Ord => Char dictionary shoud have a way to invoke (==) method of Eq.
 
+----
 Issue#2016Nov004: Temporary use of TermVar to bind a dictionary.
 
 I used TermVar with a name like "Main.f.DARG0" and a dummy type like TGen (-3).
 It is not beautiful and I should use appropreate element to express this kind of object.
 
+----
 Issue#2016Nov005: fixity resolution (done.)
 
 Fixity resolution doesn't work, that needs the last parenthesis of the 
@@ -34,3 +38,20 @@ The test code for this is: test9a.hs
 => fixed (2016-11-16).
 
 I have to set ["Prim.:", (RightAssoc, 5)] to the ifxenv of the initail RnState.
+
+----
+Issue#2016Nov006:  type-check for scrutinee of Case
+
+tcExpr for Case has just bee implemented in 20/Nov/2016, however,
+it doesn't type-check the scrutinee and alts.
+(see note p.264)
+
+----
+Issue#2016Nov007:  quantify all types in the core language
+
+Some types are found unqualified in the core language and caused
+error in type-checking.
+
+I put some "quantify" temporary, that should be refactored.
+(see note p.264)
+
