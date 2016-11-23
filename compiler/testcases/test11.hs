@@ -1,3 +1,3 @@
-f s = [s | c <- s, c <= 'd']
+f s = [c | c <- s, c <= 'd']
 
 main = putStrLn $ f "abcdefgh"
