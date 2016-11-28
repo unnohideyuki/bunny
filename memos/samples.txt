@@ -19,6 +19,9 @@ sample102 (test8)
 sample103 (test9) : testing (++)
 sample104 (test9a) : Fixity resolution sample.
 sample105 (test9b) : tcExpr for Case.
+sample106 (test11e) : confirming (++)
+sample107 (test11f) : modified version of foldr without let binding.
+sample108 (test11h) : pattern matching in let bindings.
 
 pending samples...
 sample3.hs -- NG, bunnyc.exe: insts: Prelude.Num

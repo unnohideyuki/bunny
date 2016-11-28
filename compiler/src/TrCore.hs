@@ -236,19 +236,19 @@ checkBinds (Rec bs) = Rec $ chkbs bs
 dsgIs vds [] = vds
 dsgIs vds (impl:is) = dsgIs (desis impl:vds) is
   where
-    desis (n, alts) = (n, dsgAlts $ cnvalts alts)
+    desis (n, alts) = (n, dsgAlts n $ cnvalts alts)
 
-dsgAlts alts@((pats,_):_) =
+dsgAlts n alts@((pats,_):_) =
   let
     k = length pats
-    us = [Pat.mkVar i | i <- [1..k]]
+    us = [Pat.mkVar n i| i <- [1..k]]
 
     alts' = rmWild alts [] -- for temporary fix (#t002), see the note p.212
     rmWild [] as = reverse as
     rmWild (([Ty.PWildcard], e):alts) as = rmWild alts (([Ty.PVar "_"], e):as)
     rmWild (alt:alts) as = rmWild alts (alt:as)
     
-    e = Pat.match k us alts' Pat.Error
+    e = Pat.match n k us alts' Pat.Error
   in
    Pat.Lambda us e
 

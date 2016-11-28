@@ -26,4 +26,8 @@ EOF
 
 bin/bunnyc -d jout/$f --xno-implicit-prelude -v lib/Prelude.hs
 
-bin/bunnyc -d jout/$f --xlibrary-path ./lib -v $* $source_file
+if [ $? -ne 0 ];then
+    exit 1
+else
+    bin/bunnyc -d jout/$f --xlibrary-path ./lib -v $* $source_file
+fi

@@ -73,8 +73,9 @@ getCon :: Equation -> Typing.Assump
 getCon (Typing.PCon a _:_, _) = a
 getCon _ = error $ "must not happen, getCon"
 
-mkVar :: Int -> Variable
-mkVar k = "_U" ++ show k
+-- Note: Starting with "_" guarantees that will be treated as a local variable
+mkVar :: String -> Int -> Variable
+mkVar n k = "_" ++ n ++ ".U" ++ show k
 
 partition :: Eq b => (a -> b) -> [a] -> [[a]]
 partition _ [] = []
@@ -85,8 +86,8 @@ partition f (x:x':xs)
   where
     tack x xss = (x : head xss) : tail xss
 
-match k [] qs def = foldr Fatbar def [e | ([], e) <- qs]
-match k (u:us) qs def =
+match _ k [] qs def = foldr Fatbar def [e | ([], e) <- qs]
+match n k (u:us) qs def =
   let
     matchVarCon k us qs def
       | isVar (head qs) = matchVar k us qs def
@@ -94,7 +95,7 @@ match k (u:us) qs def =
       | otherwise       = error $ "matchVarCon error: " ++ show (head qs)
 
     matchVar k (u:us) qs def =
-      match k us [(ps, subst e u v) | (Typing.PVar v:ps, e) <- qs] def
+      match n k us [(ps, subst e u v) | (Typing.PVar v:ps, e) <- qs] def
 
     matchCon k (u:us) qs def =
       Case u [matchClause c k (u:us) (choose c qs) def | c <- cs]
@@ -102,13 +103,14 @@ match k (u:us) qs def =
 
     matchClause c k (u:us) qs def =
       Clause c us' (match
+                    n
                     (k + k)
                     (us' ++ us)
                     [(ps' ++ ps, e) | (Typing.PCon c ps':ps, e) <- qs]
                     def)
       where
         k' = arity c
-        us' = [mkVar (i+k) | i <- [1..k']]
+        us' = [mkVar n (i+k)| i <- [1..k']]
 
     choose c qs = [q | q <-qs, (getCon q) `cequal` c]
       where

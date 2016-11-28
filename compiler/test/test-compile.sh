@@ -18,4 +18,10 @@ public class Sample {
 EOF
 
 ../bin/bunnyc -d jout/$f --xno-implicit-prelude ../lib/Prelude.hs
-../bin/bunnyc -d jout/$f --xlibrary-path ../lib $source_file
+
+if [ $? -ne 0 ];then
+    exit 1
+else
+    ../bin/bunnyc -d jout/$f --xlibrary-path ../lib $source_file
+fi
+
