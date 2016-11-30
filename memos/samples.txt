@@ -22,6 +22,12 @@ sample105 (test9b) : tcExpr for Case.
 sample106 (test11e) : confirming (++)
 sample107 (test11f) : modified version of foldr without let binding.
 sample108 (test11h) : pattern matching in let bindings.
+sample109 (test11g2) : foldr without pattern matching and free vars.
+sample110 (test11g) : foldr without free vars
+sample111 (test11d) : using Prelude.foldr 
+sample112 (test11c) : preparation for a list comprehension
+sample113 (test11) : list comprehension
+
 
 pending samples...
 sample3.hs -- NG, bunnyc.exe: insts: Prelude.Num

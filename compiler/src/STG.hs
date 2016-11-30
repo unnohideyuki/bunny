@@ -64,7 +64,7 @@ fv (AtomExpr (VarAtom (TermVar n))) =
     True -> [n]
     False -> []
 
-fv (FunAppExpr f args) = fv f ++ concatMap fv args
+fv (FunAppExpr f args) = nub (fv f ++ concatMap fv args)
 
 fv expr@(LetExpr bs e) = nub (fv e ++ concatMap fv' bs) \\ nub (concatMap bv bs)
   where
