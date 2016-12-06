@@ -429,8 +429,19 @@ tiExpr ce as (Ap e f)         = do (ps, te) <- tiExpr ce as e
                                    return (ps ++ qs, t)
 tiExpr ce as (Let bg e)       = do (ps, as') <- tiBindGroup ce as bg
                                    (qs, t)   <- tiExpr ce (as' ++ as) e
-                                   appendAssump as'
+                                   let as'' = qualifyAs ps as'
+                                   appendAssump as''
                                    return (ps ++ qs, t)
+
+-- temporary in 2016-12-06
+qualifyAs [] as = as
+qualifyAs _ [] = []
+qualifyAs [p@(IsIn _ tv)] ((n :>: (Forall ks (ps :=> t))):as) =
+  let
+    k = kind tv
+  in
+   (n :>: (Forall (k:ks) ((p:ps) :=> t))) : qualifyAs [p] as
+qualifyAs ps as = error $ "Non-exaustive patterns in qualifyAs: " ++ show (ps, as)
 
 -- Substitution (for variable, not for type vars), used from Pattern.hs
 vsubst :: Expr -> Id -> Id -> Expr
