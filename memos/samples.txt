@@ -27,7 +27,7 @@ sample110 (test11g) : foldr without free vars
 sample111 (test11d) : using Prelude.foldr 
 sample112 (test11c) : preparation for a list comprehension
 sample113 (test11) : list comprehension
-
+sample114 (test11b) : list comprehension with polymorpic type.
 
 pending samples...
 sample3.hs -- NG, bunnyc.exe: insts: Prelude.Num
