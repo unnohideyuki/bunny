@@ -8,8 +8,6 @@ import qualified Data.Map as Map
 import qualified Data.Graph as G
 import qualified Data.Tree as T
 
-import Debug.Trace
-
 import Symbol
 import qualified Absyn as A
 import Types
@@ -534,8 +532,7 @@ renRhs (A.UnguardedRhs (A.VarExp n) []) = do
   case c_pat of
     Just pat -> return (Const pat)
     Nothing | not (isConName n) -> return (Var qname_c)
-            | otherwise -> trace "warning: unexpected pattern in renRhs." $
-                           return (Var qname_c)
+            | otherwise -> return (Var qname_c)
 
 
 renRhs (A.UnguardedRhs e []) = renExp e

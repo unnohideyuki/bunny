@@ -168,9 +168,6 @@ tcExpr e@(Var v@(TermVar _ qt)) t = do
         in
          (Dps v (Dict dictname)) 
 
-  when ((not $ null ps) || (not $ null qv)) $
-    trace (show (n, ps, e, qv, t', t, i, s, lookup i s, null qv)) $ return ()
-
   if null qv then return e
     else
     case lookup i s of

@@ -17,8 +17,6 @@ import Data.List (nub, (\\), intersect, union, partition)
 import Control.Monad (msum)
 import Control.Monad.State.Strict (State, state, runState, get, put)
 
-import Debug.Trace
-
 import Types
 import Symbol
 
@@ -531,8 +529,8 @@ candidates           :: ClassEnv -> Ambiguity ->[Type]
 candidates ce (v, qs) = [t' | let is = [i | IsIn i _ <- qs]
                                   ts = [t | IsIn _ t <- qs],
                               all ((TVar v)==) ts,
-                              trace (show is) $ any (`elem` numClasses) is,
-                              trace (show is) $ all (`elem` stdClasses) is,
+                              any (`elem` numClasses) is,
+                              all (`elem` stdClasses) is,
                               t' <- defaults ce,
                               all (entail ce []) [IsIn i t' | i<- is]
                             ]

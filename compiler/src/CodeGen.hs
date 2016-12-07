@@ -11,8 +11,6 @@ import Data.List (intersperse)
 
 import System.IO
 
-import Debug.Trace
-
 emitPreamble h =
   let
      preamble = [ "import jp.ne.sakura.uhideyuki.brt.brtsyn.*;"
@@ -237,7 +235,6 @@ genExpr (CaseExpr scrut alts) = do
       genalts alts ts'
 
 genExpr e@(Dps ns v dn) = do
-  trace ("genExpr: " ++ show e) $ return ()
   let e = AtomExpr (VarAtom v)
   n1 <- genExpr e
   n2 <- nexti
