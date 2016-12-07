@@ -433,15 +433,18 @@ tiExpr ce as (Let bg e)       = do (ps, as') <- tiBindGroup ce as bg
                                    appendAssump as''
                                    return (ps ++ qs, t)
 
--- temporary in 2016-12-06
-qualifyAs [] as = as
-qualifyAs _ [] = []
-qualifyAs [p@(IsIn _ tv)] ((n :>: (Forall ks (ps :=> t))):as) =
-  let
-    k = kind tv
-  in
-   (n :>: (Forall (k:ks) ((p:ps) :=> t))) : qualifyAs [p] as
-qualifyAs ps as = error $ "Non-exaustive patterns in qualifyAs: " ++ show (ps, as)
+{- The assumptions for local variable in Let expressions are
+-- lacking qualifiers, that are added by qualifyAs.
+-- It might be a temporary fix because i don't know the best way to do it.
+-}                                   
+qualifyAs ps as = fmap (qualas ps) as
+  where
+    qualas [] a = a
+    qualas (p@(IsIn _ t1@(TVar v)):ps1) a@(n :>: (Forall ks (ps2 :=> t2))) =
+      if elem v (tv t2) then
+        qualas ps1 (n :>: (Forall (kind t1:ks) ((p:ps2) :=> t2)))
+      else
+        qualas ps1 a
 
 -- Substitution (for variable, not for type vars), used from Pattern.hs
 vsubst :: Expr -> Id -> Id -> Expr

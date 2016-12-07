@@ -32,6 +32,11 @@ public class Prim {
 	return RTLib.fromJString(l.value.toString());
     }
 
+    public static Expr show$Char(AtomExpr x){
+	LitChar c = (LitChar) x.a;
+	return RTLib.fromJString("'" + c.value + "'");
+    }
+
     // for Monad IO
     // (>>=) = Prim.bindIO
     public static class BindIOFunc implements LambdaForm {
@@ -108,10 +113,24 @@ class ShowFunc implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
-	Expr x = RT.eval(args[0]);
+	Expr x = args[0];
+	if (!x.isLitOrValue()){
+	    x = RT.eval(x);
+	}
 
 	if (x instanceof AtomExpr && ((AtomExpr)x).a instanceof LitInt){
 	    return Prim.show$Int((AtomExpr)x);
+	} else if (x instanceof AtomExpr && ((AtomExpr)x).a instanceof LitChar){
+	    return Prim.show$Char((AtomExpr)x);
+	} else if (isList(x)){
+	    Expr h = head(x);
+	    Expr t = tail(x);
+
+	    if (h instanceof AtomExpr && ((AtomExpr)h).a instanceof LitChar){
+		return showstring((AtomExpr)x);
+	    } else {
+		return showlist((AtomExpr)x);
+	    }
 	} else {
 	    System.out.println(x);
 	    if (x instanceof AtomExpr){
@@ -120,6 +139,78 @@ class ShowFunc implements LambdaForm {
 	    /*return new ErrExpr("unsupported show");*/
 	    return RTLib.fromJString("warn: unsupported show");
 	}
+    }
+
+    boolean isList(Expr e){
+	if (e instanceof AtomExpr){
+	    Atom a = ((AtomExpr)e).a;
+	    if (a instanceof Var && ((Var)a).obj instanceof ConObj){
+		Cotr c = ((ConObj)((Var)a).obj).cotr;
+		return c.ident == "Prim.:";
+	    }
+	}
+	return false;
+    }
+
+    Expr head(Expr e){
+	assert(isList(e));
+	Atom a = ((AtomExpr)e).a;
+	ConObj obj = (ConObj)((Var)a).obj;
+	Expr r = obj.args[0];
+	if (!r.isLitOrValue()){
+	    r = RT.eval(r);
+	}
+	return r;
+    }
+
+    Expr tail(Expr e){
+	assert(isList(e));
+	Atom a = ((AtomExpr)e).a;
+	ConObj obj = (ConObj)((Var)a).obj;
+	Expr r = obj.args[1];
+	if (!r.isLitOrValue()){
+	    r = RT.eval(r);
+	}
+	return r;
+    }
+
+    Expr showstring(Expr x){
+	assert(isList(x));
+	String s = "\"";
+
+	while(isList(x)){
+	    AtomExpr e = (AtomExpr) head(x);
+	    LitChar c = (LitChar) e.a;
+	    s += c.value;
+	    x = tail(x);
+	}
+
+	s += "\"";
+
+	return RTLib.fromJString(s);
+    }
+
+    /* todo: only for [Int] */
+    Expr showlist(Expr x){
+	assert(isList(x));
+	String s = "[";
+	int i = 0;
+
+	while(isList(x)){
+	    if (i++ > 0){
+		s += ",";
+	    }
+
+	    AtomExpr e = (AtomExpr) head(x);
+	    assert(e.a instanceof LitInt);
+	    LitInt l = (LitInt) e.a;
+	    s += l.value.toString();
+	    x = tail(x);
+	}
+
+	s += "]";
+
+	return RTLib.fromJString(s);
     }
 }
 
