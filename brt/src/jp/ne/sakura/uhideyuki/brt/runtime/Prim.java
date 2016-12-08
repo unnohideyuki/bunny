@@ -27,13 +27,11 @@ public class Prim {
 	return RTLib.mkFun(new ShowFunc());
     }
 
-    public static Expr show$Int(AtomExpr x){
-	LitInt l = (LitInt) x.a;
-	return RTLib.fromJString(l.value.toString());
+    public static Expr show$Int(BoxedIntObj x){
+	return RTLib.fromJString(x.value.toString());
     }
 
-    public static Expr show$Char(AtomExpr x){
-	LitChar c = (LitChar) x.a;
+    public static Expr show$Char(BoxedCharObj c){
 	return RTLib.fromJString("'" + c.value + "'");
     }
 
@@ -107,26 +105,33 @@ public class Prim {
     public static Expr mkintegerEq(){
 	return RTLib.mkFun(new IntegerEq());
     }
+
+    public static Expr mkintegerAdd(){
+	return RTLib.mkFun(new IntegerAdd());
+    }
 }
 
 class ShowFunc implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
-	Expr x = args[0];
-	if (!x.isLitOrValue()){
-	    x = RT.eval(x);
-	}
+	Expr x = RT.eval(args[0]);
 
-	if (x instanceof AtomExpr && ((AtomExpr)x).a instanceof LitInt){
-	    return Prim.show$Int((AtomExpr)x);
-	} else if (x instanceof AtomExpr && ((AtomExpr)x).a instanceof LitChar){
-	    return Prim.show$Char((AtomExpr)x);
+	if (x instanceof AtomExpr && 
+	    ((AtomExpr)x).a instanceof Var &&
+	    ((Var)((AtomExpr)x).a).obj instanceof BoxedIntObj){
+	    return Prim.show$Int((BoxedIntObj) ((Var)((AtomExpr)x).a).obj);
+	} else if (x instanceof AtomExpr && 
+	    ((AtomExpr)x).a instanceof Var &&
+	    ((Var)((AtomExpr)x).a).obj instanceof BoxedCharObj){
+	    return Prim.show$Char((BoxedCharObj) ((Var)((AtomExpr)x).a).obj);
 	} else if (isList(x)){
 	    Expr h = head(x);
 	    Expr t = tail(x);
 
-	    if (h instanceof AtomExpr && ((AtomExpr)h).a instanceof LitChar){
+	    if (h instanceof AtomExpr && 
+		((AtomExpr)h).a instanceof Var &&
+		((Var)((AtomExpr)h).a).obj instanceof BoxedCharObj){
 		return showstring((AtomExpr)x);
 	    } else {
 		return showlist((AtomExpr)x);
@@ -156,10 +161,7 @@ class ShowFunc implements LambdaForm {
 	assert(isList(e));
 	Atom a = ((AtomExpr)e).a;
 	ConObj obj = (ConObj)((Var)a).obj;
-	Expr r = obj.args[0];
-	if (!r.isLitOrValue()){
-	    r = RT.eval(r);
-	}
+	Expr r = RT.eval(obj.args[0]);
 	return r;
     }
 
@@ -167,10 +169,7 @@ class ShowFunc implements LambdaForm {
 	assert(isList(e));
 	Atom a = ((AtomExpr)e).a;
 	ConObj obj = (ConObj)((Var)a).obj;
-	Expr r = obj.args[1];
-	if (!r.isLitOrValue()){
-	    r = RT.eval(r);
-	}
+	Expr r = RT.eval(obj.args[1]);
 	return r;
     }
 
@@ -180,7 +179,9 @@ class ShowFunc implements LambdaForm {
 
 	while(isList(x)){
 	    AtomExpr e = (AtomExpr) head(x);
-	    LitChar c = (LitChar) e.a;
+	    assert(((AtomExpr)e).a instanceof Var);
+	    assert(((Var)((AtomExpr)e).a).obj instanceof BoxedCharObj);
+	    BoxedCharObj c = (BoxedCharObj)((Var)((AtomExpr)e).a).obj;
 	    s += c.value;
 	    x = tail(x);
 	}
@@ -190,7 +191,6 @@ class ShowFunc implements LambdaForm {
 	return RTLib.fromJString(s);
     }
 
-    /* todo: only for [Int] */
     Expr showlist(Expr x){
 	assert(isList(x));
 	String s = "[";
@@ -202,15 +202,21 @@ class ShowFunc implements LambdaForm {
 	    }
 
 	    AtomExpr e = (AtomExpr) head(x);
-	    assert(e.a instanceof LitInt);
-	    LitInt l = (LitInt) e.a;
-	    s += l.value.toString();
+	    s += elemToString(e);
 	    x = tail(x);
 	}
 
 	s += "]";
 
 	return RTLib.fromJString(s);
+    }
+
+    // todo; make it more general, only for Int now.
+    String elemToString(AtomExpr x){
+	assert(((AtomExpr)x).a instanceof Var);
+	assert(((Var)((AtomExpr)x).a).obj instanceof BoxedIntObj);
+	BoxedIntObj t = (BoxedIntObj)((Var)((AtomExpr)x).a).obj;
+	return t.value.toString();
     }
 }
 
@@ -401,6 +407,23 @@ class IntegerEq implements LambdaForm {
 	} else {
 	    return Prim.mkFalse();
 	}
+    }
+}
+
+class IntegerAdd implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	assert args[0].a instanceof LitInt;
+	assert args[1].a instanceof LitInt;
+
+	LitInt il = (LitInt) args[0].a;
+	LitInt ir = (LitInt) args[1].a;
+	
+	LitInt r = new LitInt(il.value + ir.value);
+
+	return new AtomExpr(r);
     }
 }
 

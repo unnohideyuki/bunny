@@ -38,15 +38,17 @@ class EvalApply {
 	    ErrExpr e = (ErrExpr) code;
 	    System.out.println(e.message);
 	    System.exit(-1);
+	} if (code.isLiteral()){
+	    evalLiteral();
 	} if (code instanceof LetExpr){
 	    evalLet();
 	} else if (code instanceof CaseExpr){
 	    evalCase(); // CASECON, CASEANY or CASE
-	} else if (code.isLitOrValue() && (peek() instanceof CaseCont)){
+	} else if (code.isValue() && (peek() instanceof CaseCont)){
 	    evalRet();
 	} else if (code.isThunk()){
 	    evalThunk();
-	} else if (code.isLitOrValue() && (peek() instanceof UpdCont)){
+	} else if (code.isValue() && (peek() instanceof UpdCont)){
 	    evalUpdate();
 	} else if (code.isKnownCall()){
 	    evalKnownCall();
@@ -66,14 +68,14 @@ class EvalApply {
 	} else if (peek() instanceof CallCont){
 	    evalRetFun();
 	} else {
-	    if (!(code.isLitOrValue() && s.empty())){
-		System.out.println(code.isLiteral());
+	    if (!(code.isValue() && s.empty())){
 		System.out.println(code.isValue());
 		System.out.println(s.empty());
 		System.out.println(s);
+		System.out.println(code.isLiteral());
 		System.out.println(code.inspect());
 	    }
-	    assert code.isLitOrValue() && s.empty();
+	    assert code.isValue() && s.empty();
 	    return false;
 	}
 
@@ -84,6 +86,19 @@ class EvalApply {
 	Var v = new Var(obj);
 	AtomExpr a = new AtomExpr(v);
 	return a;
+    }
+
+    private void evalLiteral(){
+	AtomExpr e = (AtomExpr) code;
+	Literal x = (Literal) e.a;
+
+	if (x instanceof LitInt) {
+	    code = new AtomExpr(new Var(new BoxedIntObj((LitInt)x)));
+	} else if (x instanceof LitChar){
+	    code = new AtomExpr(new Var(new BoxedCharObj((LitChar)x)));
+	} else {
+	    code = new ErrExpr("non-exaustive cases in evalLiteral.");
+	}
     }
 
     private void evalLet(){

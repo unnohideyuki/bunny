@@ -45,7 +45,7 @@ public class RTLib {
 		ConObj con = (ConObj)((Var)((AtomExpr)s).a).obj;
 		if (con.cotr.ident == "Prim.:"){
 		    Expr c = RT.eval(con.args[0]);
-		    t.append(((LitChar)((AtomExpr)c).a).value);
+		    t.append(((BoxedCharObj)((Var)((AtomExpr)c).a).obj).value);
 		    s = RT.eval(con.args[1]);
 		} else {
 		    break;

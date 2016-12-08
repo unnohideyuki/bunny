@@ -30,6 +30,7 @@ sample113 (test11) : list comprehension
 sample114 (test11b) : list comprehension with polymorpic type.
 sample115 (tqd - show) : qsort! qsort!
 sample116 (tqd) : tqd!
+sample117 (test12) : Integer addition.
 
 pending samples...
 sample3.hs -- NG, bunnyc.exe: insts: Prelude.Num

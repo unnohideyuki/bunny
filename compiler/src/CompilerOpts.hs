@@ -3,6 +3,12 @@ module CompilerOpts where
 import Data.Monoid
 import Options.Applicative
 
+verstr :: String
+verstr = "0.0.1"
+
+descstr :: String
+descstr = "Bunny -- A Haskell compiler for Android."
+
 data Options = Options
                { destDir :: String
                , xlibPath :: String
@@ -80,7 +86,7 @@ optionsP = (<*>) helper $
 myParserInfo :: ParserInfo Options
 myParserInfo = info optionsP $ mconcat
                [ fullDesc
-               , progDesc "Bunny, a Haskell compiler for Android."
+               , progDesc descstr
                , header ""
                , footer ""
                ]

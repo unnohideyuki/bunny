@@ -92,6 +92,9 @@ primCharEqCfun = "Prim.charEq" :>: sc_charcharbool
 sc_integerintegerbool
   = (Forall [] ([] :=> (tInteger `fn` tInteger `fn` tBool)))
 
+sc_integerintegerinteger
+  = (Forall [] ([] :=> (tInteger `fn` tInteger `fn` tInteger)))
+
 primIntegerLtCfun :: Assump
 primIntegerLtCfun = "Prim.integerLt" :>: sc_integerintegerbool
 
@@ -106,6 +109,9 @@ primIntegerGtCfun = "Prim.integerGt" :>: sc_integerintegerbool
 
 primIntegerEqCfun :: Assump
 primIntegerEqCfun = "Prim.integerEq" :>: sc_integerintegerbool
+
+primIntegerAddCfun :: Assump
+primIntegerAddCfun = "Prim.integerAdd" :>: sc_integerintegerinteger
 
 primCharShow :: Assump
 primCharShow = "Prim.charShow" :>: (Forall [] ([] :=> (tChar `fn` tString)))
@@ -131,6 +137,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun
                 , primIntegerLtCfun, primIntegerLeCfun
                 , primIntegerGeCfun, primIntegerGtCfun
                 , primIntegerEqCfun
+                , primIntegerAddCfun
 --                , primCharShow, primIntegerShow
                 , showCfun
                 , errorCfun
@@ -161,6 +168,7 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.integerGe", "Prim.integerGe")
                  , ("Prim.integerGt", "Prim.integerGt")
                  , ("Prim.integerEq", "Prim.integerEq")
+                 , ("Prim.integerAdd", "Prim.integerAdd")
 --                 , ("Prim.charShow", "Prim.charShow")
 --                 , ("Prim.integerShow", "Prim.integerShow")
                  , ("show", "Prim.show")

@@ -16,16 +16,14 @@ public abstract class Expr {
     public Boolean isValue(){
 	if (this.isVar()){
 	    HeapObj obj = ((Var)((AtomExpr)this).a).obj;
-	    Boolean r = ((obj instanceof FunObj) ||
-			 (obj instanceof PapObj) ||
-			 (obj instanceof ConObj));
+	    Boolean r = (!(obj instanceof Thunk));
 	    return r;
 	}
 	return false;
     }
 
     public Boolean isLitOrValue(){
-	return this.isLiteral() || this.isValue();
+	return (this.isLiteral() || this.isValue());
     }
 
     public HeapObj getObj(){

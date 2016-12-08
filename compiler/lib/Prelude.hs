@@ -73,10 +73,13 @@ class (Eq a) => Num a where
   (+) :: a -> a -> a
 
 instance Num Integer where
-  (+)  = Prim.integerEq -- not Eq!
+  (+)  = Prim.integerAdd
 
 instance Ord Integer where
   (<)  = Prim.integerLt
   (<=) = Prim.integerLe
   (>=) = Prim.integerGe
   (>)  = Prim.integerGt
+
+instance Eq Integer where
+  (==) = Prim.integerEq
