@@ -133,7 +133,7 @@ lookupDictArg (c, i) = do
   n <- getName
   let d = zip (map (\(IsIn i t) -> (i, t)) ps) [0..]
       ret = case lookup (c, (TGen i)) d of
-        Nothing -> Nothing
+        Nothing -> trace (show (n, c, i, ps)) Nothing
         Just j -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> (TGen (-2)))
   return ret
       
@@ -174,7 +174,7 @@ tcExpr e@(Var v@(TermVar _ qt)) t = do
       Just t -> return $ mkdps e t
       Nothing -> do v <- lookupDictArg (c, i)
                     case v of
-                      Nothing -> error $ "dictionary not found: " ++ show i
+                      Nothing -> trace ("Error: dictionary not found: " ++ show i) $ return e
                       Just v' -> return $ App e (Var v')
 
 tcExpr e@(Lit _) _ = return e
