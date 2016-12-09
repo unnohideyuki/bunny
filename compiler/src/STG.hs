@@ -28,7 +28,7 @@ data Expr = AtomExpr Atom
           | LetExpr [Bind] Expr
           | LamExpr [Var] Expr
           | CaseExpr Expr [Alt] {- CaseExpr Expr Var [Alt] -}
-          | Dps [Id] Var Id
+          | Dps [Id] Var [Id]
           deriving Show
 
 data Bind = Bind Var Expr

@@ -234,7 +234,8 @@ genExpr (CaseExpr scrut alts) = do
       appendCode $ s0 ++ s1
       genalts alts ts'
 
-genExpr e@(Dps ns v dn) = do
+-- todo: support two or more dictnames.
+genExpr e@(Dps ns v [dn]) = do
   let e = AtomExpr (VarAtom v)
   n1 <- genExpr e
   n2 <- nexti

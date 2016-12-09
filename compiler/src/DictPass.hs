@@ -127,12 +127,12 @@ getPs = do
   st <- get
   return $ tc_ps st
 
-lookupDictArg :: Int -> TC (Maybe Var)
-lookupDictArg i = do
+lookupDictArg :: (Id, Int) -> TC (Maybe Var)
+lookupDictArg (c, i) = do
   ps <- getPs
   n <- getName
-  let d = zip (map (\(IsIn _ t) -> t) ps) [0..]
-      ret = case lookup (TGen i) d of
+  let d = zip (map (\(IsIn i t) -> (i, t)) ps) [0..]
+      ret = case lookup (c, (TGen i)) d of
         Nothing -> Nothing
         Just j -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> (TGen (-2)))
   return ret
@@ -154,9 +154,9 @@ tcExpr e@(Var v@(TermVar _ qt)) t = do
         Nothing -> error "fatal: do not unified in tcExpr'."
 
       -- todo: support the case when length qv > 1
-      i = case qv of
-        [IsIn _ (TGen j)] -> j
-        _ -> -1
+      (c, i) = case qv of
+        [IsIn n (TGen j)] -> (n, j)
+        _ -> ("", -1)
 
       mkdps e t =
         let
@@ -166,13 +166,13 @@ tcExpr e@(Var v@(TermVar _ qt)) t = do
 
           v = case e of { Var v -> v }
         in
-         (Dps v (Dict dictname)) 
+         (Dps v [Dict dictname]) 
 
   if null qv then return e
     else
     case lookup i s of
       Just t -> return $ mkdps e t
-      Nothing -> do v <- lookupDictArg i
+      Nothing -> do v <- lookupDictArg (c, i)
                     case v of
                       Nothing -> error $ "dictionary not found: " ++ show i
                       Just v' -> return $ App e (Var v')
