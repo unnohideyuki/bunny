@@ -312,7 +312,7 @@ extSubst   :: Subst -> TI ()
 extSubst s' = state $ \(s, n, as) -> ((), (s'@@s, n, as))
 
 enumId :: Int -> Id
-enumId n = "v" ++ show n
+enumId n = ".v" ++ show n
 
 newTVar :: Kind -> TI Type
 newTVar k = state $ \(s, n, as) -> let v = Tyvar (enumId n) k
