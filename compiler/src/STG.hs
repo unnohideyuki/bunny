@@ -29,7 +29,6 @@ data Expr = AtomExpr Atom
           | LetExpr [Bind] Expr
           | LamExpr [Var] Expr
           | CaseExpr Expr [Alt] {- CaseExpr Expr Var [Alt] -}
-          | Dps [Id] Var [Id]
           deriving Show
 
 data Bind = Bind Var Expr
@@ -81,7 +80,5 @@ fv (CaseExpr scrut alts) = fv scrut `union` fvalts alts []
     fvalts [] xs = xs
     fvalts (CotrAlt _ e:alts) xs = fvalts alts (fv e `union` xs)
     fvalts (DefaultAlt e:alts) xs = fvalts alts (fv e `union` xs)
-
-fv (Dps _ v _) = fv (AtomExpr (VarAtom v))
 
 fv e = error $ "Non-exaustive patterns in fv: " ++ show e

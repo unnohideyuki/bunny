@@ -51,15 +51,6 @@ trExpr e@(Core.Case scrut _ alts) = CaseExpr scrut' alts'
           vs' -> (Core.Lam vs' expr)
     tralt (Core.DEFAULT, vs, expr) = DefaultAlt $ trExpr (Core.Lam vs expr)
 
-trExpr (Core.Dps v ds) = e'
-  where
-    e' = Dps (extrSupers v) (trVar v) (map (\(Core.Dict n) -> n) ds)
-    extrSupers v =let
-      qs = case v of
-        Core.TermVar _ (xs Ty.:=> _) -> xs
-      in
-       map (\(Ty.IsIn n _) -> n) qs
-
 trExpr e = error $ "Non-exhaustive pattern in trExpr: " ++ show e
 
 trbind :: (Core.Var, Core.Expr) -> Bind

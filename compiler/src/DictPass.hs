@@ -171,7 +171,7 @@ tcExpr e@(Var v@(TermVar _ qt)) t = do
 
           dps = App e (Var (DictVar n1 n2))
         in
-         trace (show dps) dps
+         dps -- trace (show dps) dps
 
   if null qv then return e
     else

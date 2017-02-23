@@ -26,7 +26,6 @@ data Expr = Var Var
           | Lam [Var] Expr
           | Let Bind Expr
           | Case Expr Var [Alt]
-          | Dps Var [Dict] -- Dictionary Passing Style
           {- | Cast Expr Type -} -- unused
           {- | Type Type -} -- unused
           deriving (Show, Eq)

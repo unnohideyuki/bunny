@@ -234,24 +234,6 @@ genExpr (CaseExpr scrut alts) = do
       appendCode $ s0 ++ s1
       genalts alts ts'
 
--- todo: support two or more dictnames.
-genExpr e@(Dps ns v [dn]) = do
-  let e = AtomExpr (VarAtom v)
-  n1 <- genExpr e
-  n2 <- nexti
-  n3 <- nexti
-  let qn = case ns of
-        [n] -> n
-        _ -> error $ "genExpr for Dps error, ns: " ++ show ns
-      s = cls2dictNameM $ dn ++ "@" ++ qn
-  appendCode $
-    "Expr t" ++ show n2 ++
-    " = (Expr) new AtomExpr(new Dict(new " ++ s ++ "()));"
-  appendCode $
-    "Expr t" ++ show n3 ++
-    " = RTLib.app(t" ++ show n1 ++ ", t" ++ show n2 ++ ");"
-  return n3
-
 genExpr e = error $ "Non-exaustive pattern in genExpr: " ++ show e
 
 genExpr' (LetExpr bs e) delayed = do
