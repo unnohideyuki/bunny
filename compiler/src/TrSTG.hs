@@ -8,6 +8,8 @@ import Debug.Trace
 
 trVar (Core.TermVar n _) = TermVar n
 
+trVar (Core.DictVar n1 n2) = DictVar n1 n2
+
 trLit (Core.LitInt i _) = LitInt i
 
 trLit (Core.LitChar c _) = LitChar c

@@ -394,6 +394,14 @@ genAtomExpr (AtomExpr (VarAtom (TermVar n)))
       appendCode $ "Expr t" ++ show n ++ " = " ++ s ++ ";"
       return n
 
+genAtomExpr (AtomExpr (VarAtom (DictVar n1 n2))) = do
+  let s = cls2dictNameM $ n1 ++ "@" ++ n2
+  n <- nexti
+  appendCode $
+    "Expr t" ++ show n ++
+    " = (Expr) new AtomExpr(new Dict(new " ++ s ++ "()));"
+  return n
+
 genAtomExpr (AtomExpr (LitAtom (LitStr s))) = do
   n <- nexti
   appendCode $ "Expr t" ++ show n ++ " = RTLib.fromJString(" ++ show s ++ ");"

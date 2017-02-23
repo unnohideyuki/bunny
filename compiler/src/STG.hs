@@ -11,6 +11,7 @@ import qualified Core
 import Debug.Trace
 
 data Var = TermVar Id
+         | DictVar Id Id
          deriving Show
 
 data Literal = LitStr String
@@ -63,6 +64,8 @@ fv (AtomExpr (VarAtom (TermVar n))) =
   case isLocal n of
     True -> [n]
     False -> []
+
+fv (AtomExpr (VarAtom (DictVar _ _))) = []
 
 fv (FunAppExpr f args) = nub (fv f ++ concatMap fv args)
 

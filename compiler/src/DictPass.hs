@@ -160,13 +160,18 @@ tcExpr e@(Var v@(TermVar _ qt)) t = do
 
       mkdps e t =
         let
-          dictname = case t of
+          n1 = case t of
             (TCon (Tycon n _)) -> n
             _ -> error $ "illegal type for dictionary: " ++ show t
 
           v = case e of { Var v -> v }
+
+          n2 = case v of
+            Core.TermVar _ ([IsIn n _] :=> _) -> n
+
+          dps = App e (Var (DictVar n1 n2))
         in
-         (Dps v [Dict dictname]) 
+         trace (show dps) dps
 
   if null qv then return e
     else
