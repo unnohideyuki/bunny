@@ -153,10 +153,22 @@ tcExpr e@(Var v@(TermVar _ qt)) t = do
         Just s' -> s'
         Nothing -> error "fatal: do not unified in tcExpr'."
 
-      -- todo: support the case when length qv > 1
-      (c, i) = case qv of
+      mkdicts [] ds = return ds
+      mkdicts ((IsIn n2 (TGen j)):qs) ds = do
+        case lookup j s of
+          Just (TCon (Tycon n1 _)) -> mkdicts qs ((Var (DictVar n1 n2)):ds)
+          Nothing -> do v <- lookupDictArg (n2, j)
+                        case v of
+                          Nothing -> error ("Error: dictionary not found: " ++ show j)
+                          Just v' -> mkdicts qs ((Var v'):ds)
+
+  dicts <- mkdicts qv []
+  
+  -- todo: support the case when length qv > 1
+  let (c, i) = case qv of
         [IsIn n (TGen j)] -> (n, j)
-        _ -> ("", -1)
+        _ -> trace (show dicts) ("", -1)
+
 
       mkdps e t =
         let
@@ -173,14 +185,10 @@ tcExpr e@(Var v@(TermVar _ qt)) t = do
         in
          dps -- trace (show dps) dps
 
-  if null qv then return e
-    else
-    case lookup i s of
-      Just t -> return $ mkdps e t
-      Nothing -> do v <- lookupDictArg (c, i)
-                    case v of
-                      Nothing -> trace ("Error: dictionary not found: " ++ show i) $ return e
-                      Just v' -> return $ App e (Var v')
+      appdicts e [] = e
+      appdicts e (d:ds) = appdicts (App e d) ds
+
+  return $ appdicts e dicts
 
 tcExpr e@(Lit _) _ = return e
 
