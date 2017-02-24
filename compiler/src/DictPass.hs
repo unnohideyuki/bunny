@@ -164,28 +164,7 @@ tcExpr e@(Var v@(TermVar _ qt)) t = do
 
   dicts <- mkdicts qv []
   
-  -- todo: support the case when length qv > 1
-  let (c, i) = case qv of
-        [IsIn n (TGen j)] -> (n, j)
-        _ -> trace (show dicts) ("", -1)
-
-
-      mkdps e t =
-        let
-          n1 = case t of
-            (TCon (Tycon n _)) -> n
-            _ -> error $ "illegal type for dictionary: " ++ show t
-
-          v = case e of { Var v -> v }
-
-          n2 = case v of
-            Core.TermVar _ ([IsIn n _] :=> _) -> n
-
-          dps = App e (Var (DictVar n1 n2))
-        in
-         dps -- trace (show dps) dps
-
-      appdicts e [] = e
+  let appdicts e [] = e
       appdicts e (d:ds) = appdicts (App e d) ds
 
   return $ appdicts e dicts
