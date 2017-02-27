@@ -33,7 +33,6 @@ class EvalApply {
 	/**** trace ****/
 	System.err.println("runStep:" + code.inspect());
 
-
 	if (code instanceof ErrExpr){
 	    ErrExpr e = (ErrExpr) code;
 	    System.out.println(e.message);
@@ -176,7 +175,7 @@ class EvalApply {
 	Expr scrut = e.scrut;
 	Alt[] alts = e.alts;
 
-	if (scrut.isLitOrValue()){
+	if (scrut.isValue()){
 	    DefaultAlt dalt = getDefaultAlt(alts);
 	    assert dalt != null;
 	    AtomExpr[] a = new AtomExpr[1];
@@ -282,8 +281,9 @@ class EvalApply {
 }
 
 public class RT {
-    private static EvalApply rt = new EvalApply();
     public static Expr eval(Expr e){
-	return rt.eval(e);
+	EvalApply runtime = new EvalApply();
+	Expr ret = runtime.eval(e);
+	return ret;
     }
 }

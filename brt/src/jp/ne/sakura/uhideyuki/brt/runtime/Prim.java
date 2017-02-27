@@ -125,6 +125,7 @@ class ShowFunc implements LambdaForm {
 	    ((AtomExpr)x).a instanceof Var &&
 	    ((Var)((AtomExpr)x).a).obj instanceof BoxedCharObj){
 	    return Prim.show$Char((BoxedCharObj) ((Var)((AtomExpr)x).a).obj);
+
 	} else if (isList(x)){
 	    Expr h = head(x);
 	    Expr t = tail(x);
@@ -136,6 +137,23 @@ class ShowFunc implements LambdaForm {
 	    } else {
 		return showlist((AtomExpr)x);
 	    }
+
+	} else if (x instanceof AtomExpr && 
+	    ((AtomExpr)x).a instanceof Var &&
+		   ((Var)((AtomExpr)x).a).obj instanceof ConObj){
+	    ConObj co = (ConObj)((Var)((AtomExpr)x).a).obj;
+	    String ident = co.cotr.ident;
+
+	    String r = null;
+	    if (ident == "Prim.True") {
+		r = "True";
+	    } else if (ident == "Prim.False") {
+		r = "False";
+	    } else {
+		System.out.println(ident);
+		r = "warn: unsupported contr at show.";
+	    }
+	    return RTLib.fromJString(r);
 	} else {
 	    System.out.println(x);
 	    if (x instanceof AtomExpr){
@@ -225,11 +243,16 @@ class CharLt implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 
-	assert args[0].a instanceof LitChar;
-	assert args[1].a instanceof LitChar;
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
 
-	LitChar cl = (LitChar) args[0].a;
-	LitChar cr = (LitChar) args[1].a;
+	assert lhs.isBoxedChar();
+	assert rhs.isBoxedChar();
+
+	BoxedCharObj cl =
+	    (BoxedCharObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedCharObj cr =
+	    (BoxedCharObj)((Var)((AtomExpr)rhs).a).obj;
 	
 	if (cl.value < cr.value){
 	    return Prim.mkTrue();
@@ -244,11 +267,16 @@ class CharLe implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 
-	assert args[0].a instanceof LitChar;
-	assert args[1].a instanceof LitChar;
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
 
-	LitChar cl = (LitChar) args[0].a;
-	LitChar cr = (LitChar) args[1].a;
+	assert lhs.isBoxedChar();
+	assert rhs.isBoxedChar();
+
+	BoxedCharObj cl =
+	    (BoxedCharObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedCharObj cr =
+	    (BoxedCharObj)((Var)((AtomExpr)rhs).a).obj;
 	
 	if (cl.value <= cr.value){
 	    return Prim.mkTrue();
@@ -263,11 +291,16 @@ class CharGe implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 
-	assert args[0].a instanceof LitChar;
-	assert args[1].a instanceof LitChar;
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
 
-	LitChar cl = (LitChar) args[0].a;
-	LitChar cr = (LitChar) args[1].a;
+	assert lhs.isBoxedChar();
+	assert rhs.isBoxedChar();
+
+	BoxedCharObj cl =
+	    (BoxedCharObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedCharObj cr =
+	    (BoxedCharObj)((Var)((AtomExpr)rhs).a).obj;
 	
 	if (cl.value >= cr.value){
 	    return Prim.mkTrue();
@@ -282,12 +315,17 @@ class CharGt implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 
-	assert args[0].a instanceof LitChar;
-	assert args[1].a instanceof LitChar;
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
 
-	LitChar cl = (LitChar) args[0].a;
-	LitChar cr = (LitChar) args[1].a;
-	
+	assert lhs.isBoxedChar();
+	assert rhs.isBoxedChar();
+
+	BoxedCharObj cl =
+	    (BoxedCharObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedCharObj cr =
+	    (BoxedCharObj)((Var)((AtomExpr)rhs).a).obj;
+
 	if (cl.value > cr.value){
 	    return Prim.mkTrue();
 	} else {
@@ -301,12 +339,17 @@ class CharEq implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 
-	assert args[0].a instanceof LitChar;
-	assert args[1].a instanceof LitChar;
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
 
-	LitChar cl = (LitChar) args[0].a;
-	LitChar cr = (LitChar) args[1].a;
-	
+	assert lhs.isBoxedChar();
+	assert rhs.isBoxedChar();
+
+	BoxedCharObj cl =
+	    (BoxedCharObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedCharObj cr =
+	    (BoxedCharObj)((Var)((AtomExpr)rhs).a).obj;
+
 	if (cl.value == cr.value){
 	    return Prim.mkTrue();
 	} else {
@@ -320,11 +363,16 @@ class IntegerLt implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 
-	assert args[0].a instanceof LitInt;
-	assert args[1].a instanceof LitInt;
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
 
-	LitInt il = (LitInt) args[0].a;
-	LitInt ir = (LitInt) args[1].a;
+	assert lhs.isBoxedInt();
+	assert rhs.isBoxedInt();
+
+	BoxedIntObj il =
+	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntObj ir =
+	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
 	
 	if (il.value < ir.value){
 	    return Prim.mkTrue();
@@ -339,12 +387,17 @@ class IntegerLe implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 
-	assert args[0].a instanceof LitInt;
-	assert args[1].a instanceof LitInt;
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
 
-	LitInt il = (LitInt) args[0].a;
-	LitInt ir = (LitInt) args[1].a;
-	
+	assert lhs.isBoxedInt();
+	assert rhs.isBoxedInt();
+
+	BoxedIntObj il =
+	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntObj ir =
+	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
+
 	if (il.value <= ir.value){
 	    return Prim.mkTrue();
 	} else {
@@ -358,12 +411,17 @@ class IntegerGe implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 
-	assert args[0].a instanceof LitInt;
-	assert args[1].a instanceof LitInt;
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
 
-	LitInt il = (LitInt) args[0].a;
-	LitInt ir = (LitInt) args[1].a;
-	
+	assert lhs.isBoxedInt();
+	assert rhs.isBoxedInt();
+
+	BoxedIntObj il =
+	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntObj ir =
+	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
+
 	if (il.value >= ir.value){
 	    return Prim.mkTrue();
 	} else {
@@ -377,11 +435,16 @@ class IntegerGt implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 
-	assert args[0].a instanceof LitInt;
-	assert args[1].a instanceof LitInt;
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
 
-	LitInt il = (LitInt) args[0].a;
-	LitInt ir = (LitInt) args[1].a;
+	assert lhs.isBoxedInt();
+	assert rhs.isBoxedInt();
+
+	BoxedIntObj il =
+	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntObj ir =
+	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
 	
 	if (il.value > ir.value){
 	    return Prim.mkTrue();
@@ -396,12 +459,17 @@ class IntegerEq implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 
-	assert args[0].a instanceof LitInt;
-	assert args[1].a instanceof LitInt;
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
 
-	LitInt il = (LitInt) args[0].a;
-	LitInt ir = (LitInt) args[1].a;
-	
+	assert lhs.isBoxedInt();
+	assert rhs.isBoxedInt();
+
+	BoxedIntObj il =
+	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntObj ir =
+	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
+
 	if (il.value == ir.value){
 	    return Prim.mkTrue();
 	} else {
@@ -415,15 +483,19 @@ class IntegerAdd implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 
-	assert args[0].a instanceof LitInt;
-	assert args[1].a instanceof LitInt;
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
 
-	LitInt il = (LitInt) args[0].a;
-	LitInt ir = (LitInt) args[1].a;
-	
+	assert lhs.isBoxedInt();
+	assert rhs.isBoxedInt();
+
+	BoxedIntObj il =
+	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntObj ir =
+	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
+
 	LitInt r = new LitInt(il.value + ir.value);
 
 	return new AtomExpr(r);
     }
 }
-

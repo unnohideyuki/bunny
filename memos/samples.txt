@@ -31,6 +31,9 @@ sample114 (test11b) : list comprehension with polymorpic type.
 sample115 (tqd - show) : qsort! qsort!
 sample116 (tqd) : tqd!
 sample117 (test12) : Integer addition.
+sample118 (test13x) : show True/False
+sample119 (test13b) : addComp :: (Eq a, Num a) => a -> a -> Bool
+sample112 (test13c) : addComp in a where clause.
 
 pending samples...
 sample3.hs -- NG, bunnyc.exe: insts: Prelude.Num

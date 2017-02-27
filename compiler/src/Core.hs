@@ -7,7 +7,7 @@ import Typing (Qual(..))
 data Module = Module Id [Bind] {- [Axiom] -}
 
 data Var = TermVar Id (Qual Type)
-         | DictVar Id Id
+         | DictVar Id Id -- Should it be DictCon?
          {- | TypeVar Id Kind -} -- unused
          deriving (Show, Eq)
 

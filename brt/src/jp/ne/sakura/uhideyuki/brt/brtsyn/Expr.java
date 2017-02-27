@@ -13,18 +13,36 @@ public abstract class Expr {
 	return r;
     }
 
+    public Boolean isBoxedInt(){
+	Boolean r = (this.isVar() &&
+		     ((Var)((AtomExpr)this).a).obj instanceof BoxedIntObj);
+	return r;
+    }
+
+    public Boolean isBoxedChar(){
+	Boolean r = (this.isVar() &&
+		     ((Var)((AtomExpr)this).a).obj instanceof BoxedCharObj);
+	return r;
+    }
+
+    public Boolean isBoxedValue(){
+	return isBoxedInt() || isBoxedChar();
+    }
+
     public Boolean isValue(){
 	if (this.isVar()){
 	    HeapObj obj = ((Var)((AtomExpr)this).a).obj;
 	    Boolean r = (!(obj instanceof Thunk));
 	    return r;
 	}
-	return false;
+	return isBoxedValue();
     }
 
+    /*
     public Boolean isLitOrValue(){
 	return (this.isLiteral() || this.isValue());
     }
+    */
 
     public HeapObj getObj(){
 	assert this.isVar();
