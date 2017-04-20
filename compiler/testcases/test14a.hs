@@ -1,1 +1,1 @@
-main = show $ (1, 2)
+main = putStrLn $ show $ (1, 2)

@@ -109,6 +109,20 @@ public class Prim {
     public static Expr mkintegerAdd(){
 	return RTLib.mkFun(new IntegerAdd());
     }
+
+    // (,) = Prim.(,)
+    public static class PairFunc implements LambdaForm {
+	public int arity(){ return 2;}
+	public Expr call(AtomExpr[] args){
+	    assert args.length == arity();
+	    return new AtomExpr(new Var(new ConObj(new Cotr("Prim.(,)"),
+						   args)));
+	}
+    }
+
+    public static Expr mk_40__44__41_(){
+	return RTLib.mkFun(new PairFunc());
+    }
 }
 
 class ShowFunc implements LambdaForm {

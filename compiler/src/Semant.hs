@@ -544,6 +544,8 @@ renRhs rhs = do
   st <- get
   error $ "renRhs not yet implemented. " ++ show (st, rhs)
 
+renExp :: A.Exp -> RN Expr
+
 renExp (A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
   (prec1, fix1) <- lookupInfixOp op1
   (prec2, fix2) <- lookupInfixOp op2
@@ -672,6 +674,16 @@ renExp (A.LitExp (A.LitChar c _)) =
   return $ Lit (LitChar c)
 
 renExp (A.ParExp e) = renExp e
+
+-- pair
+renExp (A.TupleExp [Just a, Just b]) = do
+  e1 <- renExp a
+  e2 <- renExp b
+  let c = econst $ "Prim.(,)" :>: (Forall [Star, Star]
+                                   ([] :=>
+                                    (TGen 0 `fn` TGen 1 `fn`
+                                     pair (TGen 0) (TGen 1))))
+  return $ Ap (Ap c e1) e2
 
 renExp e = error $ "Non-exhaustive patterns in renExp: " ++ show e
 

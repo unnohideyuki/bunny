@@ -349,9 +349,9 @@ texp: exp                                       { $1 }
     | qopm infixexp                             { SectionR $1 $2 }
 
 tup_exprs: texp commas_tup_tail                 { Just $1 : $2 }
-         | commas tup_tail                      { replicate $1 Nothing ++ $2 }
+         | commas tup_tail                      { replicate ($1-1) Nothing ++ $2 }
 
-commas_tup_tail: commas tup_tail                { replicate $1 Nothing ++ $2 }
+commas_tup_tail: commas tup_tail                { replicate ($1-1) Nothing ++ $2 }
 
 tup_tail: texp commas_tup_tail                  { Just $1 : $2 }
         | texp                                  { [Just $1] }
