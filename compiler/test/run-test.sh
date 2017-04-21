@@ -5,7 +5,7 @@ i=0
 mkdir -p results
 mkdir -p jout
 
-for f in `ls samples/*.hs`; do
+for f in `ls -r samples/*.hs`; do
   echo "----"
   echo "Test: $f"
   ./test-compile.sh $f

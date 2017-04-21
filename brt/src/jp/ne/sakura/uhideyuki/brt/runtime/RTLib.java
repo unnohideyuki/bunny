@@ -37,21 +37,45 @@ public class RTLib {
 
     public static Expr cons = mkFun(new ConsFunc());
 
-    public static String toJString(Expr s){
-	StringBuilder t = new StringBuilder();
-
-	while(true){
-	    if (s.isConObj()){
-		ConObj con = (ConObj)((Var)((AtomExpr)s).a).obj;
-		if (con.cotr.ident == "Prim.:"){
-		    Expr c = RT.eval(con.args[0]);
-		    t.append(((BoxedCharObj)((Var)((AtomExpr)c).a).obj).value);
-		    s = RT.eval(con.args[1]);
-		} else {
-		    break;
-		}
+    public static boolean isList(Expr e){
+	if (e instanceof AtomExpr){
+	    Atom a = ((AtomExpr)e).a;
+	    if (a instanceof Var && ((Var)a).obj instanceof ConObj){
+		Cotr c = ((ConObj)((Var)a).obj).cotr;
+		return c.ident == "Prim.:";
 	    }
 	}
+	return false;
+    }
+
+    public static Expr head(Expr e){
+	assert(isList(e));
+	Atom a = ((AtomExpr)e).a;
+	ConObj obj = (ConObj)((Var)a).obj;
+	Expr r = RT.eval(obj.args[0]);
+	return r;
+    }
+
+    public static Expr tail(Expr e){
+	assert(isList(e));
+	Atom a = ((AtomExpr)e).a;
+	ConObj obj = (ConObj)((Var)a).obj;
+	Expr r = RT.eval(obj.args[1]);
+	return r;
+    }
+
+    public static String toJString(Expr x){
+	StringBuilder t = new StringBuilder();
+
+	while(isList(x)){
+	    AtomExpr e = (AtomExpr) head(x);
+	    assert(((AtomExpr)e).a instanceof Var);
+	    assert(((Var)((AtomExpr)e).a).obj instanceof BoxedCharObj);
+	    BoxedCharObj c = (BoxedCharObj)((Var)((AtomExpr)e).a).obj;
+	    t.append(c.value);
+	    x = tail(x);
+	}
+
 	return t.toString();
     }
 

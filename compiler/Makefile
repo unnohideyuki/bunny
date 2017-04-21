@@ -33,7 +33,10 @@ bin/bunnyc:	src/compiler-main.hs $(objs)
 clean:	
 	rm -f src/*.hi src/*.o sample/*.o $(samples) $(temps) $(objs) $(execs)
 
-check:	bin/bunnyc
+rt:	
+	cd ../brt; make
+
+check:	bin/bunnyc rt
 	cd test; ./run-test.sh
 
 sample/test-20161108:	sample/test-20161108.hs $(objs)

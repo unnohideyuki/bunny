@@ -152,6 +152,19 @@ class ShowFunc implements LambdaForm {
 		return showlist((AtomExpr)x);
 	    }
 
+	} else if (isTuple2(x)){
+	    String s = "(";
+
+	    AtomExpr a = (AtomExpr) fst(x);
+	    AtomExpr b = (AtomExpr) snd(x);
+
+	    s += elemToString(a);
+	    s += ",";
+	    s += elemToString(b);
+	    s += ")";
+
+	    return RTLib.fromJString(s);
+
 	} else if (x instanceof AtomExpr && 
 	    ((AtomExpr)x).a instanceof Var &&
 		   ((Var)((AtomExpr)x).a).obj instanceof ConObj){
@@ -178,27 +191,31 @@ class ShowFunc implements LambdaForm {
 	}
     }
 
-    boolean isList(Expr e){
+    boolean isList(Expr e){ return RTLib.isList(e); }
+    Expr head(Expr e){ return RTLib.head(e); }
+    Expr tail(Expr e){ return RTLib.tail(e); }
+
+    boolean isTuple2(Expr e){
 	if (e instanceof AtomExpr){
 	    Atom a = ((AtomExpr)e).a;
 	    if (a instanceof Var && ((Var)a).obj instanceof ConObj){
 		Cotr c = ((ConObj)((Var)a).obj).cotr;
-		return c.ident == "Prim.:";
+		return c.ident == "Prim.(,)";
 	    }
 	}
 	return false;
     }
 
-    Expr head(Expr e){
-	assert(isList(e));
+    Expr fst(Expr e){
+	assert(isTuple2(e));
 	Atom a = ((AtomExpr)e).a;
 	ConObj obj = (ConObj)((Var)a).obj;
 	Expr r = RT.eval(obj.args[0]);
 	return r;
     }
 
-    Expr tail(Expr e){
-	assert(isList(e));
+    Expr snd(Expr e){
+	assert(isTuple2(e));
 	Atom a = ((AtomExpr)e).a;
 	ConObj obj = (ConObj)((Var)a).obj;
 	Expr r = RT.eval(obj.args[1]);
@@ -207,19 +224,7 @@ class ShowFunc implements LambdaForm {
 
     Expr showstring(Expr x){
 	assert(isList(x));
-	String s = "\"";
-
-	while(isList(x)){
-	    AtomExpr e = (AtomExpr) head(x);
-	    assert(((AtomExpr)e).a instanceof Var);
-	    assert(((Var)((AtomExpr)e).a).obj instanceof BoxedCharObj);
-	    BoxedCharObj c = (BoxedCharObj)((Var)((AtomExpr)e).a).obj;
-	    s += c.value;
-	    x = tail(x);
-	}
-
-	s += "\"";
-
+	String s = "\"" + RTLib.toJString(x) + "\"";
 	return RTLib.fromJString(s);
     }
 
