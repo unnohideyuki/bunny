@@ -29,6 +29,14 @@ falseCfun  = "Prim.False" :>: (Forall [] ([] :=> tBool))
 trueCfun :: Assump
 trueCfun  = "Prim.True" :>: (Forall [] ([] :=> tBool))
 
+pairCfun :: Assump
+pairCfun =
+    let sc = Forall [Star, Star]
+           ([] :=>
+            (TGen 0 `fn` TGen 1 `fn`
+             pair (TGen 0) (TGen 1)))
+    in "Prim.(,)" :>: sc
+
 cShow :: String
 cShow  = "Prim.Show"
 

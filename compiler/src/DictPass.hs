@@ -82,6 +82,8 @@ unifyTs (t:ts) =
       Nothing -> Nothing
       Just s' -> Just $ subst s' t
 
+unifyTs ts = error $ "Non-exhaustive patterns in uniftyTs: " ++ show ts
+
 subst :: Unifier -> Type -> Type
 subst s (TGen i) = case lookup i s of
   Just t -> t

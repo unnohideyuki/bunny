@@ -521,6 +521,11 @@ renPat (A.FunAppExp e e') = renPCon (A.FunAppExp e e') []
           pat' <- renPat e'
           return $ PCon a (pat':pats)
 
+renPat e@(A.TupleExp [Just e1, Just e2]) = do
+  p1 <- renPat e1
+  p2 <- renPat e2
+  return $ PCon pairCfun [p1, p2]
+
 renPat A.WildcardPat = return PWildcard
 
 renPat e = error $ "renPat: " ++ show e
@@ -679,10 +684,7 @@ renExp (A.ParExp e) = renExp e
 renExp (A.TupleExp [Just a, Just b]) = do
   e1 <- renExp a
   e2 <- renExp b
-  let c = econst $ "Prim.(,)" :>: (Forall [Star, Star]
-                                   ([] :=>
-                                    (TGen 0 `fn` TGen 1 `fn`
-                                     pair (TGen 0) (TGen 1))))
+  let c = econst pairCfun
   return $ Ap (Ap c e1) e2
 
 renExp e = error $ "Non-exhaustive patterns in renExp: " ++ show e

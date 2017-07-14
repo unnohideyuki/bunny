@@ -15,6 +15,7 @@ arity (c Typing.:>: _) =
     "Prim.:"  -> 2
     "Prim.True"  -> 0
     "Prim.False" -> 0
+    "Prim.(,)" -> 2
     _ -> error $ "unknown arity: " ++ c
 
 constructors :: Typing.Assump -> [Typing.Assump]
@@ -25,6 +26,7 @@ constructors (c Typing.:>: _) =
     "Prim.:"  -> [PreDefined.nilCfun, PreDefined.consCfun]
     "Prim.True"  -> [PreDefined.falseCfun, PreDefined.trueCfun]
     "Prim.False" -> [PreDefined.falseCfun, PreDefined.trueCfun]
+    "Prim.(,)" -> [PreDefined.pairCfun]
     _ -> error $ "unknown constructors: " ++ c
 
 data Expression = Case Variable [Clause]
