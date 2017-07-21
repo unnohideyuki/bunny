@@ -125,14 +125,12 @@ data ArithSeqRange = From       Exp
 ---- Helper functions
 mkVName :: (String, AlexPosn) -> Name
 mkVName (s, pos) = Name { orig_name = s
-                        , qual_name = ""
                         , name_pos  = extrPos pos
                         , isConName = False
                         }
 
 mkCName :: (String, AlexPosn) -> Name
 mkCName (s, pos) = Name { orig_name = s
-                        , qual_name = ""
                         , name_pos  = extrPos pos
                         , isConName = True
                         }

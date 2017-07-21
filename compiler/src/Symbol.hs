@@ -13,7 +13,6 @@ posCol :: Pos -> Int
 posCol (_, col) = col
 
 data Name = Name { orig_name :: Id
-                 , qual_name :: Id
                  , name_pos  :: Pos
                  , isConName :: Bool
                  }

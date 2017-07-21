@@ -1,9 +1,27 @@
-module Semant where
+{- |
+Module      :  $Header$
+Description :
+Copyright   :  (c) UNNO Hideyuki
+License     :  MIT License
+
+Maintener   :  unno.hideyuki@nifty.com
+Stabiity    :  unstable
+Portability :  portable
+-}
+
+module Semant (
+    FixtyInfo(..)
+  , DictDef(..)
+  , RnState(..)
+  , Level(..)
+  , initialLevel
+  , renProg
+  , renPrelude
+  ) where
 
 import Data.List (foldl', (\\))
 import Control.Monad (when)
 import Control.Monad.State.Strict (State, state, get, put)
-import Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Graph as G
 import qualified Data.Tree as T
@@ -24,22 +42,22 @@ eNil :: Expr
 eNil  = econst nilCfun
 
 aTrue :: A.Exp
-aTrue  = A.VarExp $ Name "True" "" (0,0) True
+aTrue  = A.VarExp $ Name "True" (0,0) True
 
 aFalse :: A.Exp
-aFalse  = A.VarExp $ Name "False" "" (0,0) True
+aFalse  = A.VarExp $ Name "False" (0,0) True
 
 aThen :: A.Exp
-aThen  = A.VarExp $ Name ">>" "" (0,0) False
+aThen  = A.VarExp $ Name ">>" (0,0) False
 
 aNil :: A.Exp
-aNil  = A.VarExp $ Name "[]" "" (0,0) True
+aNil  = A.VarExp $ Name "[]" (0,0) True
 
 aCons :: A.Exp
-aCons  = A.VarExp $ Name ":" "" (0,0) True
+aCons  = A.VarExp $ Name ":" (0,0) True
 
 aBind :: A.Exp
-aBind  = A.VarExp $ Name ">>=" "" (0,0) False
+aBind  = A.VarExp $ Name ">>=" (0,0) False
 
 data FixtyInfo = LeftAssoc  Int
                | RightAssoc Int
@@ -106,8 +124,7 @@ pushTbs = do
 popTbs :: RN ()
 popTbs = do
   st <- get
-  let tbs = rn_tbs st
-      (tbs', tbstack') = case rn_tbstack st of
+  let (tbs', tbstack') = case rn_tbstack st of
         (x:xs) -> (x, xs)
         [] -> error "popTbs from empty stack."
   put st{rn_tbs=tbs', rn_tbstack=tbstack'}
@@ -130,7 +147,7 @@ regFixity fixity i (n:ns) = do reg (f i) n; regFixity fixity i ns
           A.Infixl -> LeftAssoc
           A.Infixr -> RightAssoc
           A.Infix  -> NoAssoc
-        reg finfo name = state $ \st@RnState{rn_lvs=(lv:lvs), rn_ifxenv=ifxenv} ->
+        reg finfo name = state $ \st@RnState{rn_lvs=(lv:_), rn_ifxenv=ifxenv} ->
           let
             qn = (lv_prefix lv) ++ "." ++ (orig_name name)
             ifxenv' = insert qn finfo ifxenv
@@ -149,9 +166,9 @@ extrName e                     = error $ "unexpected exp:" ++ show e
 collectNames :: ([A.Decl], [A.Decl], [A.Decl]) -> [A.Decl]
                 -> RN ([A.Decl], [A.Decl], [A.Decl])
 collectNames x [] = return x
-collectNames (ds, cds, ids) (decl:decls) = do
-  (ds', cds', ids') <- collname decl
-  collectNames (ds', cds', ids') decls
+collectNames (ds, cds, ids) (dcl:dcls) = do
+  (ds', cds', ids') <- collname dcl
+  collectNames (ds', cds', ids') dcls
   where
     collname d@(A.ValDecl e _) = do _ <- renameVar (extrName e)
                                     return (ds ++ [d], cds, ids)
@@ -178,6 +195,8 @@ collectNames (ds, cds, ids) (decl:decls) = do
 
     collname (A.DataDecl _ _ _)         = error "not yet: DataDecl"
     collname (A.NewtypeDecl _ _ _)      = error "not yet: NewtypeDecl"
+
+    collname _ = error "Sement.collectNames.collname"
 
 type TempBind = (Id, Maybe (Qual Type), [Alt])
 
@@ -206,6 +225,11 @@ cdecl2dict modid (A.ClassDecl (_, (A.AppTy (A.Tycon n) _)) ds) =
   in
    DictDef{qclsname = name, methods = ms, decls = vdcls}
 
+cdecl2dict _ _ = error "Semant.cdecl2dict"
+
+renProg_common ::
+  A.Module
+  -> RN ([BindGroup], [BindGroup], [Assump], [DictDef] ,[(Id, Id)])
 renProg_common m = do
   let body = snd (A.body m)
       modid = case A.modid m of
@@ -224,6 +248,8 @@ renProg_common m = do
       bgs'' = toBg $ ctbs ++ tbs ++ itbs
   return (bgs, bgs'', as2, dicts, ctab)
 
+renProg :: A.Module -> (Subst, Int, [Assump])
+           -> RN ([BindGroup], [Assump], [DictDef] ,[(Id, Id)])
 renProg m cont = do
   (bgs, bgs'', as2, dicts, ctab) <- renProg_common m
   st <- get
@@ -232,13 +258,13 @@ renProg m cont = do
       as' = tiProgram ce (as ++ as2) bgs cont
   return (bgs'', as' ++ as2, dicts, ctab)
 
+renPrelude :: A.Module -> RN (Subst, Int, [Assump])
 renPrelude m = do
-  (bgs, bgs'', as2, dicts, ctab) <- renProg_common m
+  (bgs, _, as2, _, _) <- renProg_common m
   st <- get
   let ce = rn_ce st
       as = rn_cms st
   return $ tiImportedProgram ce (as ++ as2) bgs initialTI
-
 
 renCDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]
 renCDecls [] tbs = return tbs
@@ -247,7 +273,7 @@ renCDecls ((A.ClassDecl cls ds):cds) tbs = do
   let ds' = suppDs ds cname
   tbs' <- renDecls $ addvar cls ds'
   renCDecls cds (tbs ++ tbs')
-  where clsadd (ctx, (A.AppTy (A.Tycon n) _)) = do
+  where clsadd (_, (A.AppTy (A.Tycon n) _)) = do
           cname <- qname $ orig_name n
           st <- get
           let ce = rn_ce st
@@ -256,11 +282,14 @@ renCDecls ((A.ClassDecl cls ds):cds) tbs = do
                 Nothing -> error $ "addClass failed: " ++ (show (cname, ce))
           put $ st{rn_ce=ce'}
           return cname
-        addvar cls ds = let (_, sigvar) = cls
-                            f (A.TypeSigDecl ns (_, sigdoc)) =
-                              A.TypeSigDecl ns (Just sigvar, sigdoc)
-                            f d = d
-                        in map f ds
+        clsadd _ = error "Semant.renCDecls.clsadd"
+        addvar c ds' = let (_, sigvar) = c
+                           f (A.TypeSigDecl ns (_, sigdoc)) =
+                             A.TypeSigDecl ns (Just sigvar, sigdoc)
+                           f d = d
+                        in map f ds'
+                           
+renCDecls _ _ = error "Sement.renCDecls"
 
 {- suppDs -- Exstract TypeSigDecls and supplement ValDecls that defines
              overloaded functions.
@@ -270,20 +299,22 @@ suppDs ds clsname =
   let
     extrId (Name{orig_name=s}) = s
 
-    ubNames [] cns cds = (cns, cds)
+    ubNames [] cns cds' = (cns, cds')
 
-    ubNames (cd@(A.TypeSigDecl ns _):ds) cns cds =
+    ubNames (cd@(A.TypeSigDecl ns _):ds'') cns cds =
       let
         ns' = map extrId ns
       in
-       ubNames ds (cns ++ ns') (cd : cds)
+       ubNames ds'' (cns ++ ns') (cd : cds)
 
     ubNames ((A.ValDecl e _):ds) cns cds = ubNames ds cns cds
 
-    (ns, cds) = ubNames ds [] []
+    ubNames _ _ _ = error "Sement.suppDs.ubNames"
+
+    (ns', cds) = ubNames ds [] []
 
     mkv n = A.VarExp $
-            Name{orig_name=n, qual_name="", name_pos=(-1, -1), isConName=False}
+            Name{orig_name=n, name_pos=(-1, -1), isConName=False}
     mkoldcl n = A.ValDecl (mkv n) (A.UnguardedRhs
                                    (A.FunAppExp
                                     (A.FunAppExp (mkv "#overloaded#") (mkv n))
@@ -291,7 +322,7 @@ suppDs ds clsname =
                                    )
                                    [])
 
-    ds' = map mkoldcl ns
+    ds' = map mkoldcl ns'
   in
    cds ++ ds'
 
@@ -601,18 +632,18 @@ renExp (A.ListCompExp e [stmt@(A.ExpStmt p)]) =
 -- [e | b, Q] = if b then [e | Q] else []
 renExp (A.ListCompExp e ((A.ExpStmt b):stmts)) =
   renExp (A.IfExp b (A.ListCompExp e stmts) nil)
-  where nil = A.VarExp $ Name "[]" "" (0,0) True
+  where nil = A.VarExp $ Name "[]" (0,0) True
 
 -- [e | p <- l, Q] = let ok p = [e | Q] in concatMap ok l
 renExp (A.ListCompExp e ((A.BindStmt p l):stmts)) = renExp letexp
   where
-    ok = Name "OK" "" (0,0) False -- "OK" is fresh,  will never parsed as a variable.
+    ok = Name "OK" (0,0) False -- "OK" is fresh,  will never parsed as a variable.
     okp = A.FunAppExp (A.VarExp ok) p
     rhs = case stmts of
       [] -> A.UnguardedRhs (A.ListExp [e]) []
       _  -> A.UnguardedRhs (A.ListCompExp e stmts) []
     decl = A.ValDecl okp rhs
-    body = A.FunAppExp (A.FunAppExp (A.VarExp $ Name "concatMap" "" (0,0) False)
+    body = A.FunAppExp (A.FunAppExp (A.VarExp $ Name "concatMap" (0,0) False)
                                     (A.VarExp ok))
                        l
     letexp = A.LetExp [decl] body
@@ -632,7 +663,7 @@ renExp (A.IfExp c t f) = renExp caseexp
     caseexp = A.CaseExp c [alt1, alt2]
 
 renExp (A.CaseExp c alts) = renExp (A.LetExp decls fc)
-  where f = Name "F" "" (0,0) False
+  where f = Name "F" (0,0) False
         fc = A.FunAppExp (A.VarExp f) c
         decls = map (\(A.Match p rhs) ->
                       A.ValDecl (A.FunAppExp (A.VarExp f) p) rhs) alts
@@ -652,7 +683,7 @@ renExp (A.DoExp (A.ExpStmt e:stmts)) =
 
 renExp (A.DoExp ((A.BindStmt p e):stmts)) = renExp letexp
   where
-    ok = Name "OK" "" (0,0) False
+    ok = Name "OK" (0,0) False
     okp = A.FunAppExp (A.VarExp ok) p
     rhs = A.UnguardedRhs (A.DoExp stmts) []
     decl = A.ValDecl okp rhs
@@ -664,7 +695,7 @@ renExp (A.DoExp ((A.LetStmt decls):stmts)) = renExp letexp
     letexp = A.LetExp decls (A.DoExp stmts)
 
 renExp (A.LamExp args e) = renExp (A.LetExp [decl] f)
-  where f = A.VarExp $ Name "F" "" (0,0) False
+  where f = A.VarExp $ Name "F" (0,0) False
         fexp = foldl' A.FunAppExp f args
         rhs = A.UnguardedRhs e []
         decl = A.ValDecl fexp rhs
@@ -744,39 +775,6 @@ exitLevel = do
   st <- get
   let lvs' = tail $ rn_lvs st
   put st{rn_lvs=lvs'}
-
-{-
-toBg :: [TempBind] -> [BindGroup]
-toBg tbs = toBg2 tbs' scdict
-  where (tbs', scdict) = toBg1 tbs [] empty
-        toBg1 :: [TempBind] -> [TempBind] -> Table Scheme -> ([TempBind], Table Scheme)
-        toBg1 [] tbs2 dct = (reverse tbs2, dct)
-        toBg1 (tb:tbs1) tbs2 dct = case tb of
-          (name, Just qt, alts)  -> let ts = tv qt
-                                        scm' = quantify ts qt
-                                        dct' = insert name scm' dct
-                                        tbs2' = tbAdd tbs2 name alts
-                                    in toBg1 tbs1 tbs2' dct'
-          (name, Nothing, alts)  -> let tbs2' = tbAdd tbs2 name alts
-                                    in toBg1 tbs1 tbs2' dct
-        tbAdd [] name alts = [(name, Nothing, alts)]
-        tbAdd tbs2 name alts =
-          let s2lv = length.(filter (== '.'))
-              flt (n, _, _) = s2lv n > s2lv name
-              (ts1, ts2) = span flt tbs2
-          in case ts2 of
-            ((n, _, a):ts) | n == name -> ts1 ++ (n, Nothing, a ++ alts) : ts
-                           | otherwise -> (name, Nothing, alts) : tbs2
-            _ -> (name, Nothing, alts) : tbs2
-        toBg2 :: [TempBind] -> Table Scheme -> [BindGroup]
-        toBg2 tbs2 dct = tobg2 [([], [[]])] tbs2
-          where tobg2 bg [] = bg
-                tobg2 [(es, [is])] (tb:tbs) = case tb of
-                  (_, _, []) -> tobg2 [(es, [is])] tbs
-                  (n, _, as) -> case tabLookup n dct of
-                    Just scm -> tobg2 [((n, scm, as):es, [is])] tbs
-                    Nothing  -> tobg2 [(es, [(n, as):is])] tbs
--}
 
 toBg :: [TempBind] -> [BindGroup]
 toBg tbs = [toBg2 tbs]
@@ -929,7 +927,7 @@ scc2bg sccs bm scdict = loop (reverse sccs) [] []
           Just scm -> ((name, scm, alts):es, is)
           Nothing -> (es, (name, alts):is)
       in
-       cnvScc xs es' is' 
+       cnvScc xs es' is'
 
         
 
