@@ -3,7 +3,7 @@ module CodeGen where
 import STG
 import Symbol
 import NameMangle
-import Semant (DictDef, qclsname, methods)
+import Semant (DictDef(..))
 
 import Control.Monad.State.Strict
 import qualified Data.Map as Map
@@ -413,8 +413,8 @@ refTopLevel n =
 emitDicts :: String -> [DictDef] -> IO ()
 emitDicts _ [] = return ()  
 emitDicts dest (dict:ds) = do
-  let dname = cls2dictNameM $ qclsname dict
-      msM = map mangle $ methods dict
+  let dname = cls2dictNameM $ dictdefQclsname dict
+      msM = map mangle $ dictdefMethods dict
   h <- openFile (dest ++ "/" ++ dname ++ ".java") WriteMode
   emitPreamble h
   hPutStrLn h $
@@ -429,10 +429,10 @@ emitDicts dest (dict:ds) = do
 emitInsts :: String -> [DictDef] -> [(Id, Id)] -> IO ()
 emitInsts _ _ [] = return ()
 emitInsts dest dicts ((qin, qcn):ctab) = do
-  let dicts' = dropWhile ((/= qcn).qclsname) dicts
+  let dicts' = dropWhile ((/= qcn).dictdefQclsname) dicts
       ms = case dicts' of
         [] -> error $ "Class name not found: " ++ qcn
-        _ -> methods $ head dicts'
+        _ -> dictdefMethods $ head dicts'
       msM = map mangle ms
       pdname = cls2dictNameM qcn
       dname = cls2dictNameM $ qin ++ "@" ++ qcn

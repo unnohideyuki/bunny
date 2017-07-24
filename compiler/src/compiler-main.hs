@@ -26,16 +26,16 @@ get_init_rnstate =
   let
     ifxenv = insert "Prim.:" (RightAssoc 5) Symbol.empty
   in
-   RnState { rn_modid = ""
-           , rn_lvs = []
-           , rn_tenv = Symbol.empty
-           , rn_ifxenv = ifxenv
-           , rn_ce = initialEnv -- preludeClasses
-           , rn_cms = primConsMems
-           , rn_tbs = []
-           , rn_tbstack = []
-           , rn_kdict = Symbol.empty
-           , rn_cdicts = []
+   RnState { rnstatModid = ""
+           , rnstatLvs = []
+           , rnstatTenv = Symbol.empty
+           , rnstatIfxenv = ifxenv
+           , rnstatCe = initialEnv -- preludeClasses
+           , rnstatCms = primConsMems
+           , rnstatTbs = []
+           , rnstatTbsStack = []
+           , rnstatKdict = Symbol.empty
+           , rnstatCdicts = []
            }
 
 ti_as :: (a, b, c) -> c
@@ -58,12 +58,12 @@ implicit_prelude prelude_dir verbose_mode = do
     do_implicit_prelude m = 
       let  
         st0 = get_init_rnstate
-        lv = (initialLevel $ Absyn.modid m){lv_dict=primNames}
-        st = st0{rn_modid = (lv_prefix lv), rn_lvs = [lv]}
+        lv = (initialLevel $ Absyn.modid m){lvDict=primNames}
+        st = st0{rnstatModid = (lvPrefix lv), rnstatLvs = [lv]}
         (cont, rnstate) = runState (renPrelude m) st
-        as = rn_cms rnstate
+        as = rnstatCms rnstate
         as' = ti_as cont
-      in (cont, rnstate{rn_cms = as ++ as'})
+      in (cont, rnstate{rnstatCms = as ++ as'})
 
 do_compile :: RnState -> Absyn.Module -> String -> (Subst, Int, [Assump])
               -> Options -> IO ()
@@ -71,13 +71,13 @@ do_compile st0 m dest cont opts = do
   let verbose_mode = opt_verbose opts
   debugmes verbose_mode "do_compile ... "
   -- TODO: regular way to add primitive names.
-  let lv = (initialLevel $ Absyn.modid m){lv_dict=primNames}
-  let st = st0{rn_modid = (lv_prefix lv), rn_lvs = (lv : rn_lvs st0)}
+  let lv = (initialLevel $ Absyn.modid m){lvDict=primNames}
+  let st = st0{rnstatModid = (lvPrefix lv), rnstatLvs = (lv : rnstatLvs st0)}
       ((bgs, as, dicts, ctab), st') = runState (renProg m cont) st
 
   when (opt_ddumpas opts) $ ddump_assump as
       
-  let cmod = dsgModule (rn_modid st') bgs (as ++ rn_cms st) -- see memo#p-258
+  let cmod = dsgModule (rnstatModid st') bgs (as ++ rnstatCms st) -- see memo#p-258
   let b = case cmod of
         Module _ [x] -> x
         _ -> error "Must not occur, cmod must be a Module."
