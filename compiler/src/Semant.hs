@@ -19,21 +19,22 @@ module Semant (
   , renPrelude
   ) where
 
-import Data.List (foldl', (\\))
-import Control.Monad (when)
-import Control.Monad.State.Strict (State, state, get, put)
-import qualified Data.Map as Map
-import qualified Data.Graph as G
-import qualified Data.Tree as T
+import           Control.Monad              (when)
+import           Control.Monad.State.Strict (State, get, put, state)
+import qualified Data.Graph                 as G
+import           Data.List                  (concatMap, foldl', notElem, (\\))
+import qualified Data.Map                   as Map
+import           Data.Maybe                 (fromMaybe)
+import qualified Data.Tree                  as T
 
-import Symbol
-import qualified Absyn as A
-import Types
-import Typing
-import PreDefined
+import qualified Absyn                      as A
+import           PreDefined
+import           Symbol
+import           Types
+import           Typing
 
 econst  :: Assump -> Expr
-econst c = (Const c)
+econst = Const
 
 pNil :: Pat
 pNil  = PCon nilCfun []
@@ -81,15 +82,15 @@ initialLevel modid = Level { lvPrefix = case modid of
 -- Renaming Monad
 
 data RnState = RnState { rnstatModid    :: !Id
-                       , rnstatLvs      :: !([Level])
+                       , rnstatLvs      :: ![Level]
                        , rnstatTenv     :: !(Table Id)
                        , rnstatIfxenv   :: !(Table FixtyInfo)
-                       , rnstatCe       :: !(ClassEnv)
-                       , rnstatCms      :: !([Assump])
-                       , rnstatTbs      :: !([TempBind])
-                       , rnstatTbsStack :: !([[TempBind]])
+                       , rnstatCe       :: !ClassEnv
+                       , rnstatCms      :: ![Assump]
+                       , rnstatTbs      :: ![TempBind]
+                       , rnstatTbsStack :: ![[TempBind]]
                        , rnstatKdict    :: !(Table Kind)
-                       , rnstatCdicts   :: !([DictDef])
+                       , rnstatCdicts   :: ![DictDef]
                        }
                deriving Show
 
@@ -112,21 +113,21 @@ lookupCDicts qcname = do
   let dicts' = dropWhile (\d -> dictdefQclsname d /= qcname) dicts
   case dicts' of
     [] -> error $ "lookupCDicts: class not found: " ++ show (qcname, dicts')
-    _ -> return $ head dicts'
+    _  -> return $ head dicts'
 
 pushTbs :: RN ()
 pushTbs = do
   st <- get
   let tbs = rnstatTbs st
       tbstack = rnstatTbsStack st
-  put st{rnstatTbs=[], rnstatTbsStack=(tbs:tbstack)}
+  put st{rnstatTbs=[], rnstatTbsStack= tbs:tbstack}
 
 popTbs :: RN ()
 popTbs = do
   st <- get
   let (tbs', tbstack') = case rnstatTbsStack st of
         (x:xs) -> (x, xs)
-        [] -> error "popTbs from empty stack."
+        []     -> error "popTbs from empty stack."
   put st{rnstatTbs=tbs', rnstatTbsStack=tbstack'}
 
 renameVar :: Name -> RN Id
@@ -138,7 +139,7 @@ renameVar name = state $ \st@RnState{rnstatLvs=(lv:lvs)} ->
     dict' = insert n n' (lvDict lv)
     lv' = lv{lvDict=dict'}
   in
-   (n', st{rnstatLvs=(lv':lvs)})
+   (n', st{rnstatLvs= lv':lvs})
 
 regFixity :: A.Fixity -> Int -> [Name] -> RN ()
 regFixity _ _ [] = return ()
@@ -149,7 +150,7 @@ regFixity fixity i (n:ns) = do reg (f i) n; regFixity fixity i ns
           A.Infix  -> NoAssoc
         reg finfo name = state $ \st@RnState{rnstatLvs=(lv:_), rnstatIfxenv=ifxenv} ->
           let
-            qn = (lvPrefix lv) ++ "." ++ (orig_name name)
+            qn = lvPrefix lv ++ "." ++ orig_name name
             ifxenv' = insert qn finfo ifxenv
           in
            if defined (tabLookup qn ifxenv) then
@@ -191,10 +192,10 @@ collectNames (ds, cds, ids) (dcl:dcls) = do
             colname' _ = return ()
 
 
-    collname d@(A.InstDecl _ _ _)       = return (ds, cds, ids ++ [d])
+    collname d@A.InstDecl{} = return (ds, cds, ids ++ [d])
 
-    collname (A.DataDecl _ _ _)         = error "not yet: DataDecl"
-    collname (A.NewtypeDecl _ _ _)      = error "not yet: NewtypeDecl"
+    collname A.DataDecl{}         = error "not yet: DataDecl"
+    collname A.NewtypeDecl{}      = error "not yet: NewtypeDecl"
 
     collname _ = error "Sement.collectNames.collname"
 
@@ -207,19 +208,19 @@ data DictDef = DictDef{ dictdefQclsname :: Id
               deriving Show
 
 cdecl2dict :: Id -> A.Decl -> DictDef
-cdecl2dict modid (A.ClassDecl (_, (A.AppTy (A.Tycon n) _)) ds) =
+cdecl2dict modid (A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds) =
   let
     extrId Name{orig_name=s} = s
 
     name = modid ++ "." ++ extrId n
 
     extrMName (A.TypeSigDecl ns _) = map extrId ns
-    extrMName _ = []
+    extrMName _                    = []
 
     ms = concatMap extrMName ds
 
     extrValDecl d@(A.ValDecl _ _) = [d]
-    extrValDecl _ = []
+    extrValDecl _                 = []
 
     vdcls = concatMap extrValDecl ds
   in
@@ -227,14 +228,14 @@ cdecl2dict modid (A.ClassDecl (_, (A.AppTy (A.Tycon n) _)) ds) =
 
 cdecl2dict _ _ = error "Semant.cdecl2dict"
 
-renProg_common ::
+renProgCommon ::
   A.Module
   -> RN ([BindGroup], [BindGroup], [Assump], [DictDef] ,[(Id, Id)])
-renProg_common m = do
+renProgCommon m = do
   let body = snd (A.body m)
       modid = case A.modid m of
-        Just (Name{orig_name=s}) -> s
-        Nothing -> "Main"
+        Just Name{orig_name=s} -> s
+        Nothing                -> "Main"
   (ds, cds, ids) <- collectNames ([], [], []) body
   ctbs <- renCDictdefDecls cds []
   let bgs' = toBg ctbs
@@ -251,7 +252,7 @@ renProg_common m = do
 renProg :: A.Module -> (Subst, Int, [Assump])
            -> RN ([BindGroup], [Assump], [DictDef] ,[(Id, Id)])
 renProg m cont = do
-  (bgs, bgs'', as2, dicts, ctab) <- renProg_common m
+  (bgs, bgs'', as2, dicts, ctab) <- renProgCommon m
   st <- get
   let ce = rnstatCe st
       as = rnstatCms st
@@ -260,7 +261,7 @@ renProg m cont = do
 
 renPrelude :: A.Module -> RN (Subst, Int, [Assump])
 renPrelude m = do
-  (bgs, _, as2, _, _) <- renProg_common m
+  (bgs, _, as2, _, _) <- renProgCommon m
   st <- get
   let ce = rnstatCe st
       as = rnstatCms st
@@ -268,18 +269,18 @@ renPrelude m = do
 
 renCDictdefDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]
 renCDictdefDecls [] tbs = return tbs
-renCDictdefDecls ((A.ClassDecl cls ds):cds) tbs = do
+renCDictdefDecls (A.ClassDecl cls ds : cds) tbs = do
   cname <- clsadd cls
   let ds' = suppDs ds cname
   tbs' <- renDictdefDecls $ addvar cls ds'
   renCDictdefDecls cds (tbs ++ tbs')
-  where clsadd (_, (A.AppTy (A.Tycon n) _)) = do
+  where clsadd (_, A.AppTy (A.Tycon n) _) = do
           cname <- qname $ orig_name n
           st <- get
           let ce = rnstatCe st
-              ce' = case addClass cname [] ce of -- todo: super class
-                Just x -> x
-                Nothing -> error $ "addClass failed: " ++ (show (cname, ce))
+              ce' = -- todo: super class
+                fromMaybe (error $ "addClass failed: " ++ show (cname, ce))
+                  (addClass cname [] ce)
           put $ st{rnstatCe=ce'}
           return cname
         clsadd _ = error "Semant.renCDictdefDecls.clsadd"
@@ -288,7 +289,7 @@ renCDictdefDecls ((A.ClassDecl cls ds):cds) tbs = do
                              A.TypeSigDecl ns (Just sigvar, sigdoc)
                            f d = d
                         in map f ds'
-                           
+
 renCDictdefDecls _ _ = error "Sement.renCDictdefDecls"
 
 {- suppDs -- Exstract TypeSigDictdefDecls and supplement ValDictdefDecls that defines
@@ -297,7 +298,7 @@ renCDictdefDecls _ _ = error "Sement.renCDictdefDecls"
 suppDs :: [A.Decl] -> String -> [A.Decl]
 suppDs ds clsname =
   let
-    extrId (Name{orig_name=s}) = s
+    extrId Name{orig_name=s} = s
 
     ubNames [] cns cds' = (cns, cds')
 
@@ -307,14 +308,13 @@ suppDs ds clsname =
       in
        ubNames ds'' (cns ++ ns') (cd : cds)
 
-    ubNames ((A.ValDecl e _):ds) cns cds = ubNames ds cns cds
+    ubNames (A.ValDecl e _ : ds) cns cds = ubNames ds cns cds
 
     ubNames _ _ _ = error "Sement.suppDs.ubNames"
 
     (ns', cds) = ubNames ds [] []
 
-    mkv n = A.VarExp $
-            Name{orig_name=n, name_pos=(-1, -1), isConName=False}
+    mkv n = A.VarExp Name{orig_name=n, name_pos=(-1, -1), isConName=False}
     mkoldcl n = A.ValDecl (mkv n) (A.UnguardedRhs
                                    (A.FunAppExp
                                     (A.FunAppExp (mkv "#overloaded#") (mkv n))
@@ -328,22 +328,22 @@ suppDs ds clsname =
 
 renIDictdefDecls :: [A.Decl] -> RN ([TempBind], [(Id, Id)])
 renIDictdefDecls [] = return ([], [])
-renIDictdefDecls ((A.InstDecl ctx t ds):ids) = do
+renIDictdefDecls (A.InstDecl ctx t ds : ids) = do
   (qcn, qin, i, a) <- case t of
     (A.AppTy (A.Tycon n1) (A.Tycon n2)) -> do qcn <- qname $ orig_name n1
                                               qin <- renameVar n2
                                               return (qcn, qin, n2, "")
     (A.AppTy (A.Tycon n1) (A.ListTy (A.Tyvar n2))) -> do
       qcn <- qname $ orig_name n1
-      qin <- renameVar (Name {orig_name="[]"})
-      return (qcn, qin, (Name {orig_name="[]"}), orig_name n2)
-      
+      qin <- renameVar Name{orig_name="[]"}
+      return (qcn, qin, Name{orig_name="[]"}, orig_name n2)
+
     _ -> error $ "Non-exhaustive pattern in case: " ++ show t
-  
+
   k <- lookupKdict qcn
   let p = case orig_name i of
-        "[]" -> (IsIn qcn (TAp (TCon (Tycon qin k)) (TVar (Tyvar a Star))))
-        _ -> (IsIn qcn (TCon (Tycon qin k)))
+        "[]" -> IsIn qcn (TAp (TCon (Tycon qin k)) (TVar (Tyvar a Star)))
+        _    -> IsIn qcn (TCon (Tycon qin k))
 
   ps <- tops ctx
   instAdd ps p
@@ -351,32 +351,30 @@ renIDictdefDecls ((A.InstDecl ctx t ds):ids) = do
   dict <- lookupCDicts qcn
   let defds = dictdefDecls dict
       ds' = mergeDs ds defds
-  enterNewLevelWith $ "I%" ++ (orig_name i) -- see STG/isLocal
+  enterNewLevelWith $ "I%" ++ orig_name i -- see STG/isLocal
   (ds'', _, _) <- collectNames ([], [], []) ds'
   tbs <- renDictdefDecls ds''
   exitLevel
 
   (tbs', ctab') <- renIDictdefDecls ids
-  return $ (tbs ++ tbs', (qin, qcn):ctab')
+  return (tbs ++ tbs', (qin, qcn):ctab')
   where instAdd ps p = do
           st <- get
           let ce = rnstatCe st
-              ce' = case addInst ps p ce of
-                Just x -> x
-                Nothing -> error $ "addInst failed: " ++ show (p, ce)
+              ce' = fromMaybe (error $ "addInst failed: " ++ show (p, ce))
+                      (addInst ps p ce)
           put $ st{rnstatCe=ce'}
-
 
         extrId' (A.ValDecl e _) = orig_name $ extrName e
 
         mergeDs dcls defdictdefDecls =
           let
             names = map extrId' dcls
-            ds2 = filter (\d -> not $ elem (extrId' d) names) defdictdefDecls
+            ds2 = filter (\d -> extrId' d `notElem` names) defdictdefDecls
           in
            dcls ++ ds2
 
-        tops Nothing = return []
+        tops Nothing  = return []
         tops (Just t) = tops' t
 
         tops' (A.ParTy t) = tops' t
@@ -384,13 +382,13 @@ renIDictdefDecls ((A.InstDecl ctx t ds):ids) = do
           qcn <- qname $ orig_name n1
           let t = TVar $ Tyvar (orig_name n2) Star -- todo: always works?
           return [IsIn qcn t]
-           
-           
+
+
 lookupKdict :: Id -> RN Kind
 lookupKdict n = do
   st <- get
   case tabLookup n (rnstatKdict st) of
-    Just k -> return k
+    Just k  -> return k
     Nothing -> error $ "kind not found: " ++ n
 
 renDictdefDecls :: [A.Decl] -> RN [TempBind]
@@ -473,12 +471,12 @@ renSigdoc (A.ParTy e) kdict = renSigdoc e kdict
 -- TODO: should be fix this hard coding.
 renSigdoc (A.Tycon n) _ = case orig_name n of
   "Integer" -> return tInteger
-  "Int" -> return tInt
-  "String" -> return tString
-  "IO" -> return $ TCon (Tycon "IO" (Kfun Star Star))
-  "()" -> return tUnit
-  "Bool" -> return tBool
-  s -> error $ "renSigDoc $ A.Tycon " ++ s
+  "Int"     -> return tInt
+  "String"  -> return tString
+  "IO"      -> return $ TCon (Tycon "IO" (Kfun Star Star))
+  "()"      -> return tUnit
+  "Bool"    -> return tBool
+  s         -> error $ "renSigDoc $ A.Tycon " ++ s
 
 renSigdoc (A.ListTy e) kdict = do
   t <- renSigdoc e kdict
@@ -486,9 +484,8 @@ renSigdoc (A.ListTy e) kdict = do
 
 renSigdoc t kdict = error $ "renSigdoc" ++ show t
 
-kindLookup n kdict = case lookup n kdict of
-  Just k -> k
-  Nothing -> error $ "Kind not infered" ++ n
+kindLookup n kdict =
+  fromMaybe (error $ "Kind not infered" ++ n) (lookup n kdict)
 
 -- Todo:
 renFExp :: A.Exp -> RN (Id, [Pat])
@@ -497,8 +494,7 @@ renFExp (A.VarExp n) = do
   qname_f <- qname (orig_name n)
   return (qname_f, [])
 
-renFExp e@(A.FunAppExp _ _) = do
-  renfexp' e []
+renFExp e@(A.FunAppExp _ _) = renfexp' e []
   where
     renfexp' (A.FunAppExp e@(A.FunAppExp _ _) e') pats = do
       pat <- renPat e'
@@ -518,9 +514,9 @@ renFExp e = error $ "renFExp" ++ show e
 
 renPat (A.VarExp n) | isConName n = do qn <- qname (orig_name n)
                                        x <- findCMs qn
-                                       let a = case x of
-                                             Just a' -> a'
-                                             Nothing -> error $  "renPat error: " ++ qn
+                                       let a = fromMaybe
+                                               (error $  "renPat error: " ++ qn)
+                                               x
                                        return $ PCon a []
                     | otherwise   = do qn <- renameVar n
                                        return $ PVar qn
@@ -537,7 +533,7 @@ renPat(A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
          then renPat (A.InfixExp rest op2 (opAppExp op1 e2 e1))
          else renPat (opAppExp op1 (A.InfixExp rest op2 e2) e1)
   where
-    opAppExp op e e' = (A.FunAppExp (A.FunAppExp (A.VarExp op) e) e')
+    opAppExp op e = A.FunAppExp (A.FunAppExp (A.VarExp op) e)
 
 renPat (A.InfixExp e2 op e1) =
   renPat (A.FunAppExp (A.FunAppExp (A.VarExp op) e2) e1)
@@ -591,9 +587,9 @@ renExp (A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
          then renExp (A.InfixExp rest op2 (opAppExp op1 e2 e1))
          else renExp (opAppExp op1 (A.InfixExp rest op2 e2) e1)
   where
-    opAppExp op e e' = (A.FunAppExp (A.FunAppExp (A.VarExp op) e) e')
+    opAppExp op e = A.FunAppExp (A.FunAppExp (A.VarExp op) e)
 
-renExp (A.InfixExp e2 op e1) = 
+renExp (A.InfixExp e2 op e1) =
   renExp (A.FunAppExp (A.FunAppExp (A.VarExp op) e2) e1)
 
 renExp (A.FunAppExp e1 e2) = do
@@ -605,8 +601,7 @@ renExp (A.VarExp name) = do
   qn <- qname (orig_name name)
   return (Var qn)
 
-renExp (A.LitExp (A.LitInteger i _)) = do
-  return (Lit (LitInt i))
+renExp (A.LitExp (A.LitInteger i _)) = return (Lit (LitInt i))
 
 renExp (A.LetExp ds e) = do
   enterNewLevel
@@ -630,12 +625,12 @@ renExp (A.ListCompExp e [stmt@(A.ExpStmt p)]) =
   where ren' = renExp (A.ListCompExp e [stmt, A.ExpStmt aTrue])
 
 -- [e | b, Q] = if b then [e | Q] else []
-renExp (A.ListCompExp e ((A.ExpStmt b):stmts)) =
+renExp (A.ListCompExp e (A.ExpStmt b : stmts)) =
   renExp (A.IfExp b (A.ListCompExp e stmts) nil)
   where nil = A.VarExp $ Name "[]" (0,0) True
 
 -- [e | p <- l, Q] = let ok p = [e | Q] in concatMap ok l
-renExp (A.ListCompExp e ((A.BindStmt p l):stmts)) = renExp letexp
+renExp (A.ListCompExp e (A.BindStmt p l : stmts)) = renExp letexp
   where
     ok = Name "OK" (0,0) False -- "OK" is fresh,  will never parsed as a variable.
     okp = A.FunAppExp (A.VarExp ok) p
@@ -649,7 +644,7 @@ renExp (A.ListCompExp e ((A.BindStmt p l):stmts)) = renExp letexp
     letexp = A.LetExp [decl] body
 
 -- [e | let dictdefDecls, Q] = let dictdefDecls in [e | Q]
-renExp (A.ListCompExp e ((A.LetStmt dictdefDecls):stmts)) = renExp letexp
+renExp (A.ListCompExp e (A.LetStmt dictdefDecls : stmts)) = renExp letexp
   where
     body = case stmts of
       [] -> A.ListExp [e]
@@ -681,7 +676,7 @@ renExp (A.DoExp [stmt]) = case stmt of
 renExp (A.DoExp (A.ExpStmt e:stmts)) =
   renExp $ A.FunAppExp (A.FunAppExp aThen e) (A.DoExp stmts)
 
-renExp (A.DoExp ((A.BindStmt p e):stmts)) = renExp letexp
+renExp (A.DoExp (A.BindStmt p e : stmts)) = renExp letexp
   where
     ok = Name "OK" (0,0) False
     okp = A.FunAppExp (A.VarExp ok) p
@@ -690,7 +685,7 @@ renExp (A.DoExp ((A.BindStmt p e):stmts)) = renExp letexp
     body = A.FunAppExp (A.FunAppExp aBind e) (A.VarExp ok)
     letexp = A.LetExp [decl] body
 
-renExp (A.DoExp ((A.LetStmt dictdefDecls):stmts)) = renExp letexp
+renExp (A.DoExp (A.LetStmt dictdefDecls : stmts)) = renExp letexp
   where
     letexp = A.LetExp dictdefDecls (A.DoExp stmts)
 
@@ -731,13 +726,11 @@ lookupInfixOp op = do
     Nothing             -> return (9, A.Infixl)
 
 qname   :: Id -> RN Id
-qname name = state $ \st@RnState{rnstatLvs=lvs} -> 
+qname name = state $ \st@RnState{rnstatLvs=lvs} ->
   let {qn = findQName lvs name} in {-trace ("qn:" ++ show(name, qn))-} (qn, st)
   where findQName [] n = error $ "qname not found: " ++ n
-        findQName (lv:lvs) n = case tabLookup n (lvDict lv) of
-          Just qn -> qn
-          Nothing -> findQName lvs n
-
+        findQName (lv:lvs) n =
+          fromMaybe (findQName lvs n) (tabLookup n (lvDict lv))
 
 findCMs   :: Id -> RN (Maybe Assump)
 findCMs qn = state $ \st@RnState{rnstatCms=as} -> (find' as qn, st)
@@ -747,7 +740,7 @@ findCMs qn = state $ \st@RnState{rnstatCms=as} -> (find' as qn, st)
 
 pushLv :: Level -> RN ()
 pushLv lv = state $ \st@RnState{rnstatLvs=lvs} ->
-  ((), st{rnstatLvs=(lv:lvs)})
+  ((), st{rnstatLvs = lv:lvs})
 
 getPrefix :: RN Id
 getPrefix = state $ \st@RnState{rnstatLvs=(lv:_)} -> (lvPrefix lv, st)
@@ -756,7 +749,7 @@ newNum :: RN Int
 newNum = state $ \st@RnState{rnstatLvs=(lv:lvs)} ->
   let n   = lvNum lv
       lv' = lv{lvNum=n+1}
-  in (n, st{rnstatLvs=(lv':lvs)})
+  in (n, st{rnstatLvs = lv':lvs})
 
 enterNewLevelWith :: Id -> RN ()
 enterNewLevelWith n = do
@@ -786,7 +779,7 @@ toBg2 tbs =
     deps = map tbDepend tbs
 
     -- Calculating SCC
-    edges = concat $ map (d2es h) deps
+    edges = concatMap (d2es h) deps
     g' = G.buildG (0, idx - 1) edges
     sccs = map T.flatten $ G.scc g'
 
@@ -803,18 +796,18 @@ vars tbs = vars' tbs (Map.empty, Map.empty) 0
     vars' ((_,_,[]):tbs) (h, rh) i = vars' tbs (h, rh) i
     vars' ((n,_,_):tbs) (h, rh) i =
       case Map.lookup n h of
-        Just _ -> vars' tbs (h, rh) i
+        Just _  -> vars' tbs (h, rh) i
         Nothing -> vars' tbs (Map.insert n i h, Map.insert i n rh) (i+1)
 
 boundvars :: [Pat] -> [Id]
-boundvars ps = concat $ map boundvar ps
+boundvars = concatMap boundvar
 
 boundvar :: Pat -> [Id]
-boundvar (PVar n) = [n]
-boundvar PWildcard = []
-boundvar (PAs n p) = n : boundvar p
-boundvar (PLit _) = []
-boundvar (PCon _ ps) = concat $ map boundvar ps
+boundvar (PVar n)    = [n]
+boundvar PWildcard   = []
+boundvar (PAs n p)   = n : boundvar p
+boundvar (PLit _)    = []
+boundvar (PCon _ ps) = concatMap boundvar ps
 
 evar :: Expr -> [Id]
 evar (Var n) = [n]
@@ -836,9 +829,9 @@ evar (Let bg@(es, iss) e) =
 fvFromBg :: BindGroup -> [Id]
 fvFromBg (es, iss) =
   let
-    altsfv alts = concat $ map fv alts
-    vs1 = concat $ map (\(_, _, alts) -> altsfv alts) es
-    vs2 = concat $ map (\(_, alts) -> altsfv alts) (concat iss)
+    altsfv = concatMap fv
+    vs1 = concatMap (\(_, _, alts) -> altsfv alts) es
+    vs2 = concatMap (\(_, alts) -> altsfv alts) (concat iss)
   in
    vs1 ++ vs2
 
@@ -851,7 +844,7 @@ fv (ps, e) =
    vs \\ bvs
 
 tbDepend :: TempBind -> (Id, [Id])
-tbDepend (n, _, alts) = (n, concat $ map fv alts)
+tbDepend (n, _, alts) = (n, concatMap fv alts)
 
 d2es :: Map.Map Id Int -> (Id, [Id]) -> [G.Edge]
 d2es h (n, vs) =
@@ -859,15 +852,15 @@ d2es h (n, vs) =
     src = case Map.lookup n h of { Just i -> i }
 
     f v = case Map.lookup v h of
-      Just i -> [i]
+      Just i  -> [i]
       Nothing -> []
 
-    dests = concat $ map f vs
+    dests = concatMap f vs
   in
    zip (repeat src) dests
-                           
+
 collectTypes :: [TempBind] -> Map.Map Id Scheme
-collectTypes tbs = collty tbs (Map.empty)
+collectTypes tbs = collty tbs Map.empty
   where
     collty [] dict = dict
     collty ((name, Just qt, _):tbs) dict =
@@ -882,19 +875,17 @@ collectTypes tbs = collty tbs (Map.empty)
     collty ((_, Nothing, _):tbs) dict = collty tbs dict
 
 bindMap :: [TempBind] -> Map.Map Id Int -> Map.Map Int TempBind
-bindMap tbs rh = bmap tbs rh (Map.empty)
+bindMap tbs rh = bmap tbs rh Map.empty
   where
     bmap [] _ d = d
     bmap ((_, _, []):tbs) h d = bmap tbs h d
     bmap (tb@(name, _, alts):tbs) h d =
       let
-        i = case Map.lookup name h of
-          Just i' -> i'
-          Nothing -> error $ "Must not happen. Vertex Id not found: " ++ name
-
+        i = fromMaybe (error $ "Must not happen. Vertex Id not found: " ++ name)
+              (Map.lookup name h)
         tb' = case Map.lookup i d of
           Just (_, _, alts') -> (name, Nothing, alts++alts')
-          Nothing -> tb
+          Nothing            -> tb
 
         d' = Map.insert i tb' d
       in
@@ -910,7 +901,7 @@ scc2bg sccs bm scdict = loop (reverse sccs) [] []
 
         iss' = case is' of
           [] -> iss
-          _ -> (is':iss)
+          _  -> is':iss
       in
        loop cs (es++es') iss'
 
@@ -925,10 +916,6 @@ scc2bg sccs bm scdict = loop (reverse sccs) [] []
 
         (es', is') = case scm' of
           Just scm -> ((name, scm, alts):es, is)
-          Nothing -> (es, (name, alts):is)
+          Nothing  -> (es, (name, alts):is)
       in
        cnvScc xs es' is'
-
-        
-
-
