@@ -1,14 +1,13 @@
 module DictPass where
 
-import Core
-import Types
-import Typing (Qual(..), Pred(..), mgu, apply, Scheme(..), tv, quantify)
-import Symbol
+import           Core
+import           Symbol
+import           Types
+import           Typing                     (Pred (..), Qual (..), Scheme (..),
+                                             quantify, tv)
 
-import Data.List
-import Control.Monad (when)
-import Control.Monad.State.Strict (State, state, get, put, runState)
-import Debug.Trace
+import           Control.Monad.State.Strict (State, get, runState)
+import           Debug.Trace
 
 getTy :: Expr -> Qual Type
 
@@ -23,8 +22,8 @@ getTy (Lit (LitFrac _ t)) = ([] :=> t)
 getTy (Lit (LitStr _ t)) = ([] :=> t)
 
 getTy (App e f) =
-  let (qe, te) = case getTy e of {q :=> t -> (q, t)}
-      (qf, tf) = case getTy f of {q :=> t -> (q, t)}
+  let (_, te) = case getTy e of {q :=> t -> (q, t)}
+      (_, tf) = case getTy f of {q :=> t -> (q, t)}
   in [] :=> tyapp te tf -- empty qualifier is OK here, see Note #p.244.
 
 getTy (Lam vs e) = [] :=> (foldr fn te ts)
@@ -86,7 +85,7 @@ unifyTs ts = error $ "Non-exhaustive patterns in uniftyTs: " ++ show ts
 
 subst :: Unifier -> Type -> Type
 subst s (TGen i) = case lookup i s of
-  Just t -> t
+  Just t  -> t
   Nothing -> TGen i
 subst s (TAp l r) = TAp (subst s l) (subst s r)
 subst _ t = t
@@ -96,7 +95,7 @@ tcBind (Rec bs) = Rec $ map tcbind bs
   where
     tcbind (v@(TermVar n qt@(qs :=> t)), e)
       | isOVExpr e = (v, e)
-      | otherwise = 
+      | otherwise =
         let st = mkTcState n qs
             t' = case quantify (tv qt) qt of
               Forall _ (qs :=> x) -> x
@@ -107,13 +106,13 @@ tcBind (Rec bs) = Rec $ map tcbind bs
 
 isOVExpr :: Expr -> Bool -- whether (#overloaded# a b) form or not
 isOVExpr (App (App (Var (TermVar "#overloaded#" _)) _) _) = True
-isOVExpr _ = False
+isOVExpr _                                                = False
 
 mkVs n ps = [TermVar (n ++ ".DARG" ++ show i) ([] :=> (TGen (-2)))
             | (i, _) <- zip [0..] ps]
 
 data TcState = TcState { tc_name :: Id
-                       , tc_ps :: [Pred]
+                       , tc_ps   :: [Pred]
                        }
                deriving Show
 
@@ -138,7 +137,7 @@ lookupDictArg (c, i) = do
         Nothing -> trace (show (n, c, i, ps)) Nothing
         Just j -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> (TGen (-2)))
   return ret
-      
+
 mkTcState :: Id -> [Pred] -> TcState
 mkTcState n ps = TcState{tc_name=n, tc_ps=ps}
 
@@ -165,8 +164,8 @@ tcExpr e@(Var v@(TermVar _ qt)) t = do
                           Just v' -> mkdicts qs ((Var v'):ds)
 
   dicts <- mkdicts qv []
-  
-  let appdicts e [] = e
+
+  let appdicts e []     = e
       appdicts e (d:ds) = appdicts (App e d) ds
 
   return $ appdicts e dicts
