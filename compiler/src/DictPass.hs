@@ -4,7 +4,7 @@ import           Core
 import           Symbol
 import           Types
 import           Typing                     (Pred (..), Qual (..), Scheme (..),
-                                             quantify, tv)
+                                             apply, mgu)
 
 import           Control.Monad.State.Strict (State, get, runState)
 import           Debug.Trace
@@ -12,10 +12,7 @@ import           Debug.Trace
 getTy :: Expr -> Qual Type
 
 -- TODO: quantify here is ok?
-getTy (Var (TermVar _ qt)) =
-  case quantify (tv qt) qt of
-    Forall _ qt' -> qt'
-
+getTy (Var (TermVar _ qt)) = qt
 getTy (Lit (LitInt _ t)) = ([] :=> t)
 getTy (Lit (LitChar _ t)) = ([] :=> t)
 getTy (Lit (LitFrac _ t)) = ([] :=> t)
@@ -29,9 +26,7 @@ getTy (App e f) =
 getTy (Lam vs e) = [] :=> (foldr fn te ts)
   where
     te = case getTy e of {_ :=> t -> t}
-    quantifyType qt = case quantify (tv qt) qt of
-      Forall _ (_ :=> t) -> t
-    ts = map (\(TermVar _ qt) -> quantifyType qt)  vs
+    ts = map (\(TermVar _ (_ :=> t')) -> t')  vs
 
 getTy (Case _ _ as) =
   let
@@ -49,25 +44,13 @@ getTy e = error $ "Non-Exaustive Patterns in getTy: " ++ show e
 tyapp :: Type -> Type -> Type
 tyapp ta tb =
   let
-    tf = tb `fn` (TGen (-1))
-    s = case unifier ta tf of
+    a = TVar (Tyvar "a" Star)
+    tf = tb `fn` a
+    s = case mgu ta tf of
       Just s' -> s'
       Nothing -> error "do not unified in tyapp"
   in
-   subst s (TGen (-1))
-
-
-type Unifier = [(Int, Type)]
-
-unifier :: Type -> Type -> Maybe Unifier
-unifier (TAp l r) (TAp l' r') = do s1 <- unifier l l'
-                                   s2 <- unifier (subst s1 r) (subst s1 r')
-                                   return (s1 ++ s2)
-unifier (TGen _) (TGen _) = return []
-unifier (TGen i) t = return [(i, t)]
-unifier t (TGen i) = return [(i, t)]
-unifier (TCon tc1) (TCon tc2) | tc1 == tc2 = return []
-unifier t1 t2 = trace ("warning: unifier: " ++ show (t1, t2)) $ return []
+   apply s a
 
 unifyTs :: [Type] -> Maybe Type
 unifyTs [t] = Just t
@@ -75,20 +58,13 @@ unifyTs (t:ts) =
   let
     maybe_s = case unifyTs ts of
       Nothing -> Nothing
-      Just t' -> unifier t t'
+      Just t' -> mgu t t'
   in
     case maybe_s of
       Nothing -> Nothing
-      Just s' -> Just $ subst s' t
+      Just s' -> Just $ apply s' t
 
 unifyTs ts = error $ "Non-exhaustive patterns in uniftyTs: " ++ show ts
-
-subst :: Unifier -> Type -> Type
-subst s (TGen i) = case lookup i s of
-  Just t  -> t
-  Nothing -> TGen i
-subst s (TAp l r) = TAp (subst s l) (subst s r)
-subst _ t = t
 
 tcBind :: Bind -> Bind
 tcBind (Rec bs) = Rec $ map tcbind bs
@@ -97,8 +73,8 @@ tcBind (Rec bs) = Rec $ map tcbind bs
       | isOVExpr e = (v, e)
       | otherwise =
         let st = mkTcState n qs
-            t' = case quantify (tv qt) qt of
-              Forall _ (qs :=> x) -> x
+            t' = case qt of
+              (_ :=> x) -> x
             (e', _) = runState (tcExpr e t') st
         in
          if null qs then (v, e')
@@ -128,13 +104,13 @@ getPs = do
   st <- get
   return $ tc_ps st
 
-lookupDictArg :: (Id, Int) -> TC (Maybe Var)
-lookupDictArg (c, i) = do
+lookupDictArg :: (Id, Tyvar) -> TC (Maybe Var)
+lookupDictArg (c, tv) = do
   ps <- getPs
   n <- getName
   let d = zip (map (\(IsIn i t) -> (i, t)) ps) [0..]
-      ret = case lookup (c, (TGen i)) d of
-        Nothing -> trace (show (n, c, i, ps)) Nothing
+      ret = case lookup (c, TVar tv) d of
+        Nothing -> trace (show (n, c, tv, ps, d)) Nothing
         Just j -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> (TGen (-2)))
   return ret
 
@@ -145,23 +121,21 @@ tcExpr :: Expr -> Type -> TC Expr
 
 -- tcExpr e@(Var v@(TermVar _ (qv :=> tv))) t = do
 tcExpr e@(Var v@(TermVar _ qt)) t = do
-  let qt' = case quantify (tv qt) qt of
-        Forall _ x -> x
-      (qv :=> t') = qt'
+  let (qv :=> t') = qt
   n <- getName
   ps <- getPs
-  let s = case unifier t' t of
+  let s = case mgu t' t of
         Just s' -> s'
         Nothing -> error "fatal: do not unified in tcExpr'."
 
       mkdicts [] ds = return ds
-      mkdicts ((IsIn n2 (TGen j)):qs) ds = do
-        case lookup j s of
-          Just (TCon (Tycon n1 _)) -> mkdicts qs ((Var (DictVar n1 n2)):ds)
-          Nothing -> do v <- lookupDictArg (n2, j)
-                        case v of
-                          Nothing -> error ("Error: dictionary not found: " ++ show j)
-                          Just v' -> mkdicts qs ((Var v'):ds)
+      mkdicts ((IsIn n2 (TVar tv)):qs) ds = do
+        case apply s (TVar tv) of
+          (TCon (Tycon n1 _)) -> mkdicts qs ((Var (DictVar n1 n2)):ds)
+          _ -> do v <- lookupDictArg (n2, tv)
+                  case v of
+                    Nothing -> error ("Error: dictionary not found: " ++ show (tv,s))
+                    Just v' -> mkdicts qs ((Var v'):ds)
 
   dicts <- mkdicts qv []
 
@@ -176,9 +150,11 @@ tcExpr (App e f) t = do
   let (_ :=> te) = getTy e
       (_ :=> tf) = getTy f
       t' = tf `fn` t
-      s = case unifier te t' of {Just s' -> s'}
-      te' = subst s te
-      tf' = subst s tf
+      s = case mgu te t' of
+            Just s' -> s'
+            Nothing -> error $ "Error in mgu" ++ show(te, t')
+      te' = apply s te
+      tf' = apply s tf
   e1 <- tcExpr e te'
   e2 <- tcExpr f tf'
   return $ App e1 e2
@@ -189,10 +165,10 @@ tcExpr (Lam vs e) t =
     ts = map (\(TermVar _ qt) -> case qt of {_ :=> t -> t})  vs
     t' = foldr fn te ts
   in
-   case unifier t t' of
+   case mgu t t' of
      Just s -> do
-       -- todo: subst ts
-       e' <- tcExpr e (subst s te)
+       -- todo: apply ts
+       e' <- tcExpr e (apply s te)
        return (Lam vs e')
      Nothing -> error $ "type-check error in tcExpr: " ++ show (e, t)
 
@@ -205,10 +181,10 @@ tcExpr (Let bs e) t = do
 tcExpr e@(Case scrut v as) t =
   let
     te = case getTy e of { _ :=> x -> x}
-    s = case unifier t te of
+    s = case mgu t te of
       Nothing -> error $ "type-error in tcExpr for Case: " ++ show (t, t')
       Just s' -> s'
-    t' = subst s te
+    t' = apply s te
 
     tcAs [] _ = return []
     tcAs ((ac, vs, e):as) t = do

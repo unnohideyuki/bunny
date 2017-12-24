@@ -1,24 +1,26 @@
 ----------------------------------------------------------------------------
 -- Typing.hs
--- 
+--
 -- This Typing module is based on `Typing Haskell in Haskell', version of
 -- November 23, 2000.  Copyright (c) Mark P Jones and the Oregon Graduate
 -- Institute of Science and Technology, 1999-2000
--- 
+--
 -- This program is distributed as Free Software under the terms
 -- in the file "License-Thih.txt" that is included in the distribution
 -- of this software, copies of which may be obtained from:
 --             http://www.cse.ogi.edu/~mpj/thih/
--- 
+--
 ----------------------------------------------------------------------------
 module Typing where
 
-import Data.List (nub, (\\), intersect, union, partition)
-import Control.Monad (msum)
-import Control.Monad.State.Strict (State, state, runState, get, put)
+import           Control.Monad              (msum)
+import           Control.Monad.State.Strict (State, get, put, runState, state)
+import           Data.List                  (intersect, nub, partition, union,
+                                             (\\))
+import           Debug.Trace
 
-import Types
-import Symbol
+import           Symbol
+import           Types
 
 class HasKind t where
   kind :: t -> Kind
@@ -298,7 +300,7 @@ find i ((i' :>: sc):as) = if i == i' then return sc else find i as
 type TI a = State (Subst, Int, [Assump]) a
 
 runTI :: (Subst, Int, [Assump]) -> TI a -> a
-runTI st ti = x where (x, _) = runState ti st 
+runTI st ti = x where (x, _) = runState ti st
 
 getSubst :: TI Subst
 getSubst  = state $ \st@(s, _, _) -> (s, st)
@@ -434,7 +436,7 @@ tiExpr ce as (Let bg e)       = do (ps, as') <- tiBindGroup ce as bg
 {- The assumptions for local variable in Let expressions are
 -- lacking qualifiers, that are added by qualifyAs.
 -- It might be a temporary fix because i don't know the best way to do it.
--}                                   
+-}
 qualifyAs ps as = fmap (qualas ps) as
   where
     qualas [] a = a
@@ -462,10 +464,10 @@ vsubst (Let bg e) vnew vold
     isFree (es, iss) n =
       not $ elem n $ fmap (\(s,_,_) -> s) es ++ fmap fst (concat iss)
 
-    isFree_p (PVar s) n = (s /= n)
+    isFree_p (PVar s) n    = (s /= n)
     isFree_p (PAs s pat) n = (s /= n) && isFree_p pat n
     isFree_p (PCon _ ps) n = isFree_ps ps n
-    isFree_p _ _ = True
+    isFree_p _ _           = True
 
     isFree_ps ps n = and $ fmap (\pat -> isFree_p pat n) ps
 
@@ -480,7 +482,7 @@ vsubst (Let bg e) vnew vold
     vsubst_bg (es, iss) vn vo = (es', iss')
       where
         es' = fmap (\(n, sc, alts) -> (n, sc, vsubst_alts alts vn vo)) es
-        iss' = fmap 
+        iss' = fmap
                (\is ->
                  fmap (\(n, alts) -> (n, vsubst_alts alts vn vo)) is)
                iss
