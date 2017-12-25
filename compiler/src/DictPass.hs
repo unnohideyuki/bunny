@@ -52,19 +52,13 @@ tyapp ta tb =
   in
    apply s a
 
-unifyTs :: [Type] -> Maybe Type
-unifyTs [t] = Just t
-unifyTs (t:ts) =
-  let
-    maybe_s = case unifyTs ts of
-      Nothing -> Nothing
-      Just t' -> mgu t t'
-  in
-    case maybe_s of
-      Nothing -> Nothing
-      Just s' -> Just $ apply s' t
-
-unifyTs ts = error $ "Non-exhaustive patterns in uniftyTs: " ++ show ts
+unifyTs :: Monad m => [Type] -> m Type
+unifyTs [t] = return t
+unifyTs (t:ts) = do
+  t' <- unifyTs ts
+  s <- mgu t t'
+  return $ apply s t
+unifyTs [] = fail $ "Non-exhaustive patterns in uniftyTs."
 
 tcBind :: Bind -> Bind
 tcBind (Rec bs) = Rec $ map tcbind bs
@@ -75,7 +69,8 @@ tcBind (Rec bs) = Rec $ map tcbind bs
         let st = mkTcState n qs
             t' = case qt of
               (_ :=> x) -> x
-            (e', _) = runState (tcExpr e t') st
+            (e', _) = trace ("tcBind: " ++ show (e, t')) $
+                      runState (tcExpr e t') st
         in
          if null qs then (v, e')
          else (v, Lam (mkVs n qs) e')

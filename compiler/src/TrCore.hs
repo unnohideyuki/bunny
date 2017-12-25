@@ -114,11 +114,13 @@ transVdef (n, Pat.Lambda ns expr) = do
   qt <- freshInst' sc
   let ks = case sc of
         Forall ks' _ -> ks'
-      ts = case qt of
+      ts = trace ("transLam:" ++ show qt) $ case qt of
         (_ :=> t') -> ptypes t'
       vs = map f $ zip ns ts
-      f (n', t') = TermVar n' ([] :=> t')
-      as' = [n' :>: Forall [] ([] :=> t') | (n', t') <- zip ns ts]
+      qf = case qt of
+        (qf' :=> _) -> qf'
+      f (n', t') = TermVar n' (qf :=> t')
+      as' = [n' :>: Forall [] (qf :=> t') | (n', t') <- zip ns ts]
   appendAs as'
   expr' <- transExpr expr
   appendBind (n, lam' vs expr')
