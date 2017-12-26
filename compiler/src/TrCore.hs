@@ -114,7 +114,7 @@ transVdef (n, Pat.Lambda ns expr) = do
   qt <- freshInst' sc
   let ks = case sc of
         Forall ks' _ -> ks'
-      ts = trace ("transLam:" ++ show qt) $ case qt of
+      ts = case qt of
         (_ :=> t') -> ptypes t'
       vs = map f $ zip ns ts
       qf = case qt of

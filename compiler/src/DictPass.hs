@@ -4,9 +4,9 @@ import           Core
 import           Symbol
 import           Types
 import           Typing                     (Pred (..), Qual (..), Scheme (..),
-                                             apply, mgu)
+                                             Subst, apply, mgu)
 
-import           Control.Monad.State.Strict (State, get, runState)
+import           Control.Monad.State.Strict (State, get, put, runState)
 import           Debug.Trace
 
 getTy :: Expr -> Qual Type
@@ -69,8 +69,7 @@ tcBind (Rec bs) = Rec $ map tcbind bs
         let st = mkTcState n qs
             t' = case qt of
               (_ :=> x) -> x
-            (e', _) = trace ("tcBind: " ++ show (e, t')) $
-                      runState (tcExpr e t') st
+            (e', _) = trace (show (n, qt, e)) $ runState (tcExpr e t') st
         in
          if null qs then (v, e')
          else (v, Lam (mkVs n qs) e')
@@ -99,13 +98,20 @@ getPs = do
   st <- get
   return $ tc_ps st
 
-lookupDictArg :: (Id, Tyvar) -> TC (Maybe Var)
-lookupDictArg (c, tv) = do
+putPs :: [Pred] -> TC ()
+putPs ps = do
+  st <- get
+  put st{tc_ps = ps}
+
+lookupDictArg :: (Id, Tyvar) -> Subst -> TC (Maybe Var)
+lookupDictArg (c, tv) s = do
   ps <- getPs
   n <- getName
   let d = zip (map (\(IsIn i t) -> (i, t)) ps) [0..]
       ret = case lookup (c, TVar tv) d of
-        Nothing -> trace (show (n, c, tv, ps, d)) Nothing
+        Nothing -> case lookup (c, apply s (TVar tv)) d of
+                     Nothing -> trace (show (c, tv, d, s)) Nothing
+                     Just j -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> (TGen (-2)))
         Just j -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> (TGen (-2)))
   return ret
 
@@ -115,8 +121,9 @@ mkTcState n ps = TcState{tc_name=n, tc_ps=ps}
 tcExpr :: Expr -> Type -> TC Expr
 
 -- tcExpr e@(Var v@(TermVar _ (qv :=> tv))) t = do
-tcExpr e@(Var v@(TermVar _ qt)) t = do
-  let (qv :=> t') = qt
+tcExpr e@(Var v@(TermVar _ (qv :=> t'))) t
+  | null qv || notFunTy t' = return e
+  | otherwise = do
   n <- getName
   ps <- getPs
   let s = case mgu t' t of
@@ -127,7 +134,7 @@ tcExpr e@(Var v@(TermVar _ qt)) t = do
       mkdicts ((IsIn n2 (TVar tv)):qs) ds = do
         case apply s (TVar tv) of
           (TCon (Tycon n1 _)) -> mkdicts qs ((Var (DictVar n1 n2)):ds)
-          _ -> do v <- lookupDictArg (n2, tv)
+          _ -> do v <- lookupDictArg (n2, tv) s
                   case v of
                     Nothing -> error ("Error: dictionary not found: " ++ show (tv,s))
                     Just v' -> mkdicts qs ((Var v'):ds)
@@ -138,6 +145,8 @@ tcExpr e@(Var v@(TermVar _ qt)) t = do
       appdicts e (d:ds) = appdicts (App e d) ds
 
   return $ appdicts e dicts
+  where notFunTy (TAp (TAp (TCon (Tycon "(->)" _)) _) _) = False
+        notFunTy _ = True
 
 tcExpr e@(Lit _) _ = return e
 
@@ -162,8 +171,11 @@ tcExpr (Lam vs e) t =
   in
    case mgu t t' of
      Just s -> do
-       -- todo: apply ts
-       e' <- tcExpr e (apply s te)
+       ps <- getPs
+       let ps' = map (apply s) ps
+       putPs ps'
+       e' <- tcExpr e te
+       putPs ps
        return (Lam vs e')
      Nothing -> error $ "type-check error in tcExpr: " ++ show (e, t)
 
