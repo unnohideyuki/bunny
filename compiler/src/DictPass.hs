@@ -3,37 +3,37 @@ module DictPass where
 import           Core
 import           Symbol
 import           Types
-import           Typing                     (Pred (..), Qual (..), Scheme (..),
-                                             Subst, apply, mgu)
+import           Typing                     (Pred (..), Qual (..), Subst, apply,
+                                             mgu)
 
 import           Control.Monad.State.Strict (State, get, put, runState)
+import           Data.Maybe                 (fromMaybe)
 import           Debug.Trace
 
 getTy :: Expr -> Qual Type
 
 -- TODO: quantify here is ok?
 getTy (Var (TermVar _ qt)) = qt
-getTy (Lit (LitInt _ t)) = ([] :=> t)
-getTy (Lit (LitChar _ t)) = ([] :=> t)
-getTy (Lit (LitFrac _ t)) = ([] :=> t)
-getTy (Lit (LitStr _ t)) = ([] :=> t)
+getTy (Lit (LitInt _ t)) = [] :=> t
+getTy (Lit (LitChar _ t)) = [] :=> t
+getTy (Lit (LitFrac _ t)) = [] :=> t
+getTy (Lit (LitStr _ t)) = [] :=> t
 
 getTy (App e f) =
   let (_, te) = case getTy e of {q :=> t -> (q, t)}
       (_, tf) = case getTy f of {q :=> t -> (q, t)}
   in [] :=> tyapp te tf -- empty qualifier is OK here, see Note #p.244.
 
-getTy (Lam vs e) = [] :=> (foldr fn te ts)
+getTy (Lam vs e) = [] :=> foldr fn te ts
   where
     te = case getTy e of {_ :=> t -> t}
     ts = map (\(TermVar _ (_ :=> t')) -> t')  vs
 
 getTy (Case _ _ as) =
   let
-    ts = map ((\(_ :=> t) -> t).getTy.(\(_,_,e) -> e)) as
-    t = case unifyTs ts of
-      Just t' -> t'
-      Nothing -> error $ "type-error in getTy for Case: " ++ show ts
+    ts = map ((\(_ :=> t') -> t').getTy.(\(_,_,e) -> e)) as
+    t = fromMaybe (error $ "type-error in getTy for Case: " ++ show ts)
+        (unifyTs ts)
   in
    [] :=> t
 
@@ -46,9 +46,8 @@ tyapp ta tb =
   let
     a = TVar (Tyvar "a" Star)
     tf = tb `fn` a
-    s = case mgu ta tf of
-      Just s' -> s'
-      Nothing -> error "do not unified in tyapp"
+    s = fromMaybe (error "do not unified in tyapp")
+        (mgu ta tf)
   in
    apply s a
 
@@ -58,12 +57,12 @@ unifyTs (t:ts) = do
   t' <- unifyTs ts
   s <- mgu t t'
   return $ apply s t
-unifyTs [] = fail $ "Non-exhaustive patterns in uniftyTs."
+unifyTs [] = fail "Non-exhaustive patterns in uniftyTs."
 
 tcBind :: Bind -> Bind
 tcBind (Rec bs) = Rec $ map tcbind bs
   where
-    tcbind (v@(TermVar n qt@(qs :=> t)), e)
+    tcbind (v@(TermVar n qt@(qs :=> _)), e)
       | isOVExpr e = (v, e)
       | otherwise =
         let st = mkTcState n qs
@@ -73,16 +72,18 @@ tcBind (Rec bs) = Rec $ map tcbind bs
         in
          if null qs then (v, e')
          else (v, Lam (mkVs n qs) e')
+    tcbind _ = error "tcbind: must not occur."
 
 isOVExpr :: Expr -> Bool -- whether (#overloaded# a b) form or not
 isOVExpr (App (App (Var (TermVar "#overloaded#" _)) _) _) = True
 isOVExpr _                                                = False
 
-mkVs n ps = [TermVar (n ++ ".DARG" ++ show i) ([] :=> (TGen (-2)))
-            | (i, _) <- zip [0..] ps]
+mkVs :: Id -> [Pred] -> [Var]
+mkVs n ps = [TermVar (n ++ ".DARG" ++ show i) ([] :=> TGen (-2))
+            | (i, _) <- zip [(0::Int)..] ps]
 
-data TcState = TcState { tc_name :: Id
-                       , tc_ps   :: [Pred]
+data TcState = TcState { tcName :: Id
+                       , tcPs   :: [Pred]
                        }
                deriving Show
 
@@ -91,62 +92,55 @@ type TC a = State TcState a
 getName :: TC Id
 getName = do
   st <- get
-  return $ tc_name st
+  return $ tcName st
 
 getPs :: TC [Pred]
 getPs = do
   st <- get
-  return $ tc_ps st
+  return $ tcPs st
 
 putPs :: [Pred] -> TC ()
 putPs ps = do
   st <- get
-  put st{tc_ps = ps}
+  put st{tcPs = ps}
 
 lookupDictArg :: (Id, Tyvar) -> Subst -> TC (Maybe Var)
 lookupDictArg (c, tv) s = do
   ps <- getPs
   n <- getName
-  let d = zip (map (\(IsIn i t) -> (i, t)) ps) [0..]
+  let d = zip (map (\(IsIn i t) -> (i, t)) ps) [(0::Int)..]
       ret = case lookup (c, TVar tv) d of
         Nothing -> case lookup (c, apply s (TVar tv)) d of
                      Nothing -> trace (show (c, tv, d, s)) Nothing
-                     Just j -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> (TGen (-2)))
-        Just j -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> (TGen (-2)))
+                     Just j -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen (-2))
+        Just j -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen (-2))
   return ret
 
 mkTcState :: Id -> [Pred] -> TcState
-mkTcState n ps = TcState{tc_name=n, tc_ps=ps}
+mkTcState n ps = TcState{tcName=n, tcPs=ps}
 
 tcExpr :: Expr -> Type -> TC Expr
 
 -- tcExpr e@(Var v@(TermVar _ (qv :=> tv))) t = do
-tcExpr e@(Var v@(TermVar _ (qv :=> t'))) t
+tcExpr e@(Var (TermVar _ (qv :=> t'))) t
   | null qv || notFunTy t' = return e
   | otherwise = do
-  n <- getName
-  ps <- getPs
-  let s = case mgu t' t of
-        Just s' -> s'
-        Nothing -> error "fatal: do not unified in tcExpr'."
-
+  let s = fromMaybe (error "fatal: do not unified in tcExpr'.")
+          (mgu t' t)
       mkdicts [] ds = return ds
-      mkdicts ((IsIn n2 (TVar tv)):qs) ds = do
+      mkdicts (IsIn n2 (TVar tv) : qs) ds =
         case apply s (TVar tv) of
-          (TCon (Tycon n1 _)) -> mkdicts qs ((Var (DictVar n1 n2)):ds)
+          (TCon (Tycon n1 _)) -> mkdicts qs (Var (DictVar n1 n2) : ds)
           _ -> do v <- lookupDictArg (n2, tv) s
                   case v of
                     Nothing -> error ("Error: dictionary not found: " ++ show (tv,s))
-                    Just v' -> mkdicts qs ((Var v'):ds)
+                    Just v' -> mkdicts qs (Var v' : ds)
+      mkdicts _ _ = error "mkdicts: must not occur"
 
   dicts <- mkdicts qv []
-
-  let appdicts e []     = e
-      appdicts e (d:ds) = appdicts (App e d) ds
-
-  return $ appdicts e dicts
+  return $ foldl App e dicts
   where notFunTy (TAp (TAp (TCon (Tycon "(->)" _)) _) _) = False
-        notFunTy _ = True
+        notFunTy _                                       = True
 
 tcExpr e@(Lit _) _ = return e
 
@@ -154,9 +148,8 @@ tcExpr (App e f) t = do
   let (_ :=> te) = getTy e
       (_ :=> tf) = getTy f
       t' = tf `fn` t
-      s = case mgu te t' of
-            Just s' -> s'
-            Nothing -> error $ "Error in mgu" ++ show(te, t')
+      s = fromMaybe (error $ "Error in mgu" ++ show(te, t'))
+        (mgu te t')
       te' = apply s te
       tf' = apply s tf
   e1 <- tcExpr e te'
@@ -165,8 +158,8 @@ tcExpr (App e f) t = do
 
 tcExpr (Lam vs e) t =
   let
-    te = case getTy e of {_ :=> t -> t}
-    ts = map (\(TermVar _ qt) -> case qt of {_ :=> t -> t})  vs
+    te = case getTy e of {_ :=> x -> x}
+    ts = map (\(TermVar _ qt) -> case qt of {_ :=> x -> x})  vs
     t' = foldr fn te ts
   in
    case mgu t t' of
@@ -188,15 +181,14 @@ tcExpr (Let bs e) t = do
 tcExpr e@(Case scrut v as) t =
   let
     te = case getTy e of { _ :=> x -> x}
-    s = case mgu t te of
-      Nothing -> error $ "type-error in tcExpr for Case: " ++ show (t, t')
-      Just s' -> s'
+    s = fromMaybe (error $ "type-error in tcExpr for Case: " ++ show (t, t'))
+        (mgu t te)
     t' = apply s te
 
     tcAs [] _ = return []
-    tcAs ((ac, vs, e):as) t = do
-      e' <- tcExpr e t
-      as' <- tcAs as t
+    tcAs ((ac, vs, x):as'') t'' = do
+      e' <- tcExpr x t''
+      as' <- tcAs as'' t''
       return $ (ac, vs, e') : as'
   in
    do as' <- tcAs as t'
