@@ -4,13 +4,12 @@ import           Core
 import           Symbol
 import           Types
 import           Typing                     (Pred (..), Qual (..), Subst, apply,
-                                             mgu, tv)
+                                             mgu, nullSubst, tv, (@@))
 
 import           Control.Monad.State.Strict (State, get, put, runState)
 import           Data.List                  (nub)
 import           Data.Maybe                 (fromMaybe)
 import           Debug.Trace
-
 
 -- normalize Qualifier of Qual Type
 normQTy :: Qual Type -> Qual Type
@@ -20,38 +19,97 @@ normQTy (qs :=> t) = let
   in
    qs' :=> t
 
-getTy :: Expr -> Qual Type
--- TODO: quantify here is ok?
-getTy (Var (TermVar _ qt)) = qt
-getTy (Lit (LitInt _ t)) = [] :=> t
-getTy (Lit (LitChar _ t)) = [] :=> t
-getTy (Lit (LitFrac _ t)) = [] :=> t
-getTy (Lit (LitStr _ t)) = [] :=> t
-
-getTy (App f e) = let
-  (qe :=> te) = getTy e
-  (qf :=> tf) = getTy f
-  in
-   normQTy ((qe++qf) :=> tyapp tf te)
-
-getTy (Lam vs e) = normQTy ((qe++qv) :=> foldr fn te ts)
+tcBind :: Bind -> Bind
+tcBind (Rec bs) = Rec $ map tcbind bs
   where
-    (qe :=> te) = getTy e
+    tcbind (v@(TermVar n qt@(qs :=> _)), e)
+      | isOVExpr e = (v, e)
+      | otherwise =
+        let st = mkTcState n qs
+            (e', _) = runState (tcExpr e qt) st
+        in
+         if null qs then (v, e')
+         else (v, Lam (mkVs n qs) e')
+    tcbind _ = error "tcbind: must not occur."
+
+isOVExpr :: Expr -> Bool -- whether (#overloaded# a b) form or not
+isOVExpr (App (App (Var (TermVar "#overloaded#" _)) _) _) = True
+isOVExpr _                                                = False
+
+mkVs :: Id -> [Pred] -> [Var]
+mkVs n ps = [TermVar (n ++ ".DARG" ++ show i) ([] :=> TGen (-2))
+            | (i, _) <- zip [(0::Int)..] ps]
+
+data TcState = TcState { tcName  :: Id
+                       , tcPs    :: [Pred]
+                       , tcSubst :: Subst
+                       }
+               deriving Show
+
+type TC a = State TcState a
+
+getSubst :: TC Subst
+getSubst = do
+  st <- get
+  return $ tcSubst st
+
+putSubst :: Subst -> TC ()
+putSubst s = do
+  st <- get
+  put st{tcSubst = s}
+
+extSubst :: Subst -> TC ()
+extSubst s' = do
+  s <- getSubst
+  putSubst (s'@@s)
+
+-- it is equivalent to Typing.unify
+unify' :: Type -> Type -> TC ()
+unify' t1 t2 = do s <- getSubst
+                  u <- mgu (apply s t1) (apply s t2)
+                  extSubst u
+
+getName :: TC Id
+getName = do
+  st <- get
+  return $ tcName st
+
+getPs :: TC [Pred]
+getPs = do
+  st <- get
+  return $ tcPs st
+
+getTy :: Expr -> TC (Qual Type)
+-- TODO: quantify here is ok?
+getTy (Var (TermVar _ qt)) = return qt
+getTy (Lit (LitInt _ t)) = return ([] :=> t)
+getTy (Lit (LitChar _ t)) = return ([] :=> t)
+getTy (Lit (LitFrac _ t)) = return ([] :=> t)
+getTy (Lit (LitStr _ t)) = return ([] :=> t)
+
+getTy (App f e) = do
+  (qe :=> te) <- getTy e
+  (qf :=> tf) <- getTy f
+  return $ normQTy ((qe++qf) :=> tyapp tf te)
+
+getTy (Lam vs e) = do
+  (qe :=> te) <-  getTy e
+  let
     qv = concatMap (\(TermVar _ (ps :=> _)) -> ps)  vs
     ts = map (\(TermVar _ (_ :=> t')) -> t')  vs
+  return $ normQTy ((qe++qv) :=> foldr fn te ts)
 
-getTy (Case _ _ as) =
+getTy (Case _ _ as) = do
+  qts <- sequence $ map (getTy.(\(_,_,e) -> e)) as
   let
-    qs = concatMap ((\(q :=> _) -> q).getTy.(\(_,_,e) -> e)) as
-    ts = map ((\(_ :=> t') -> t').getTy.(\(_,_,e) -> e)) as
-    t = fromMaybe (error $ "type-error in getTy for Case: " ++ show ts)
-        (unifyTs ts)
-  in
-   normQTy (qs :=> t)
+    qs = concatMap (\(q :=> _) -> q) qts
+    ts = map (\(_ :=> t') -> t') qts
+  t <- unifyTs ts
+  return $ normQTy (qs :=> t)
 
 getTy (Let _ e) = getTy e
 
-getTy e = error $ "Non-Exaustive Patterns in getTy: " ++ show e
+getTy e = fail $ "Non-Exaustive Patterns in getTy: " ++ show e
 
 tyapp :: Type -> Type -> Type
 tyapp ta tb =
@@ -71,77 +129,34 @@ unifyTs (t:ts) = do
   return $ apply s t
 unifyTs [] = fail "Non-exhaustive patterns in uniftyTs."
 
-tcBind :: Bind -> Bind
-tcBind (Rec bs) = Rec $ map tcbind bs
-  where
-    tcbind (v@(TermVar n qt@(qs :=> _)), e)
-      | isOVExpr e = (v, e)
-      | otherwise =
-        let st = mkTcState n qs
-            (e', _) = trace (show (v, e)) $ runState (tcExpr e qt) st
-        in
-         if null qs then (v, e')
-         else (v, Lam (mkVs n qs) e')
-    tcbind _ = error "tcbind: must not occur."
-
-isOVExpr :: Expr -> Bool -- whether (#overloaded# a b) form or not
-isOVExpr (App (App (Var (TermVar "#overloaded#" _)) _) _) = True
-isOVExpr _                                                = False
-
-mkVs :: Id -> [Pred] -> [Var]
-mkVs n ps = [TermVar (n ++ ".DARG" ++ show i) ([] :=> TGen (-2))
-            | (i, _) <- zip [(0::Int)..] ps]
-
-data TcState = TcState { tcName :: Id
-                       , tcPs   :: [Pred]
-                       }
-               deriving Show
-
-type TC a = State TcState a
-
-getName :: TC Id
-getName = do
-  st <- get
-  return $ tcName st
-
-getPs :: TC [Pred]
-getPs = do
-  st <- get
-  return $ tcPs st
-
-putPs :: [Pred] -> TC ()
-putPs ps = do
-  st <- get
-  put st{tcPs = ps}
-
-lookupDictArg :: (Id, Tyvar) -> Subst -> TC (Maybe Var)
-lookupDictArg (c, x) s = do
-  ps <- getPs
+lookupDictArg :: (Id, Tyvar) -> TC (Maybe Var)
+lookupDictArg (c, x) = do
   n <- getName
-  let d = zip (map (\(IsIn i t) -> (i, t)) ps) [(0::Int)..]
-      ret = case lookup (c, TVar x) d of
-        Nothing -> case lookup (c, apply s (TVar x)) d of
-                     Nothing -> Nothing
-                     Just j -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen (-2))
+  s <- getSubst
+  ps' <- getPs
+  let ps = apply s ps'
+      d = zip (map (\(IsIn i t) -> (i, t)) ps) [(0::Int)..]
+      (TVar y) = apply s (TVar x)
+      ret = case lookup (c, TVar y) d of
+        Nothing -> Nothing
         Just j -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen (-2))
   return ret
 
 mkTcState :: Id -> [Pred] -> TcState
-mkTcState n ps = TcState{tcName=n, tcPs=ps}
+mkTcState n ps = TcState{tcName=n, tcPs=ps, tcSubst=nullSubst}
 
 tcExpr :: Expr -> Qual Type -> TC Expr
 
--- tcExpr e@(Var v@(TermVar _ (qv :=> tv))) t = do
 tcExpr e@(Var (TermVar n (qv :=> t'))) (_ :=> t)
-  | null qv || notFunTy t' = return e
+  | null qv || isTVar t' e || isArg n {- todo:too suspicious! -} = return e
   | otherwise = do
-  let s = fromMaybe (error "fatal: do not unified in tcExpr'.")
-          (mgu t' t)
-      mkdicts [] ds = return ds
+  unify' t' t
+  s <- getSubst
+  let mkdicts [] ds = return ds
       mkdicts (IsIn n2 (TVar x) : qs) ds =
         case apply s (TVar x) of
           (TCon (Tycon n1 _)) -> mkdicts qs (Var (DictVar n1 n2) : ds)
-          _ -> do v <- lookupDictArg (n2, x) s
+          _ -> do v <- lookupDictArg (n2, x)
                   case v of
                     Nothing -> error ("Error: dictionary not found: "
                                       ++ n ++ ", " ++ show (x,s))
@@ -150,31 +165,33 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) (_ :=> t)
 
   dicts <- mkdicts qv []
   return $ foldl App e dicts
-  where notFunTy (TAp (TAp (TCon (Tycon "(->)" _)) _) _) = False
+  where isTVar x@(TVar _) y | notFunTy x = True
+                            | otherwise = trace (show y) True
+        isTVar x y | notFunTy x == False = False
+                   | otherwise         = trace (show y) False
+        notFunTy (TAp (TAp (TCon (Tycon "(->)" _)) _) _) = False
         notFunTy _                                       = True
+        isArg ('_':_) = True
+        isArg _ = False
 
 tcExpr e@(Lit _) _ = return e
 
 tcExpr (App e f) (ps :=> t) = do
-  let (qe :=> te) = getTy e
-      (qf :=> tf) = getTy f
-      t' = tf `fn` t
-  s <- mgu te t'
+  (qe :=> te) <- getTy e
+  (qf :=> tf) <- getTy f
+  unify' te (tf `fn` t)
+  s <- getSubst
   e1 <- tcExpr e (normQTy ((ps++qe++qf) :=> apply s te))
   e2 <- tcExpr f (normQTy ((ps++qe++qf) :=> apply s tf))
   return $ App e1 e2
 
 tcExpr (Lam vs e) (qs :=> t) = do
+  (qe :=> te) <- getTy e
   let
-    (qe :=> te) = getTy e
     ts = map (\(TermVar _ qt) -> case qt of {_ :=> x -> x})  vs
     t' = foldr fn te ts
-  s <- mgu t t'
-  ps <- getPs
-  let ps' = apply s ps
-  putPs ps'
-  e' <- trace (show s) $ tcExpr e (normQTy ((qs++qe) :=> te))
-  putPs ps
+  unify' t t'
+  e' <- tcExpr e (normQTy ((qs++qe) :=> te))
   return (Lam vs e')
 
 tcExpr (Let bs e) qt = do
@@ -183,21 +200,19 @@ tcExpr (Let bs e) qt = do
   return $ Let bs' e'
 
 -- TODO: type-check scrut
-tcExpr e@(Case scrut v as) (ps :=> t) =
+tcExpr e@(Case scrut v as) (ps :=> t) = do
+  (qe :=> te) <- getTy e
+  unify' t te
+  s <- getSubst
   let
-    (qe :=> te) = getTy e
-    s = fromMaybe (error $ "type-error in tcExpr for Case: " ++ show (t, t'))
-        (mgu t te)
     t' = apply s te
-
     tcAs [] _ = return []
     tcAs ((ac, vs, x):as'') qt = do
       e' <- tcExpr x qt
       as' <- tcAs as'' qt
       return $ (ac, vs, e') : as'
-  in
-   do as' <- tcAs as (normQTy ((ps++qe) :=> t'))
-      return $ Case scrut v as'
+  as' <- tcAs as (normQTy ((ps++qe) :=> t'))
+  return $ Case scrut v as'
 
 tcExpr e _ =
   let
