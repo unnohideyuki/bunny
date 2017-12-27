@@ -4,13 +4,13 @@ import           Core
 import qualified Pattern                    as Pat
 import           Symbol
 import           Types
-import           Typing                     (Assump (..), Pred (..), Qual (..),
+import           Typing                     (Assump (..), Qual (..),
                                              Scheme (..), find, inst)
 import qualified Typing                     as Ty (Expr (..), Literal (..),
                                                    Pat (..))
 
 import           Control.Monad.State.Strict
-import           Debug.Trace
+-- import           Debug.Trace
 
 ptypes :: Type -> [Type]
 ptypes t =
@@ -28,10 +28,10 @@ ptypes t =
 
 -- Translation Monad
 
-data TrcState = TrcState { trc_as     :: [Assump]
-                         , trc_bind   :: Bind
-                         , trc_bstack :: [Bind]
-                         , trc_num    :: Int
+data TrcState = TrcState { trcAs     :: [Assump]
+                         , trcBind   :: Bind
+                         , trcBstack :: [Bind]
+                         , trcNum    :: Int
                          }
 
 type TRC a = State TrcState a
@@ -41,8 +41,8 @@ enumId' n = ".t" ++ show n
 
 newTVar' :: Kind -> TRC Type
 newTVar' k = do st <- get
-                let n = trc_num st
-                put st{trc_num = n + 1}
+                let n = trcNum st
+                put st{trcNum = n + 1}
                 return $ TVar (Tyvar (enumId' n) k)
 
 freshInst' :: Scheme -> TRC (Qual Type)
@@ -55,25 +55,23 @@ translateVdefs as vdefs =
     st = TrcState as (Rec []) [] 0
     (_, st') = runState (transVdefs vdefs) st
   in
-   trc_bind st'
+   trcBind st'
 
 typeLookup :: Id -> TRC (Qual Type)
 typeLookup n = do
   as <- getAs
-  let sc = case find n as of
-        Just sc' -> sc'
-        Nothing  -> error $ "type not found:" ++ n
+  sc <- find n as
   freshInst' sc
 
 getAs :: TRC [Assump]
 getAs = do
   st <- get
-  return $ trc_as st
+  return $ trcAs st
 
 putAs :: [Assump] -> TRC ()
 putAs as = do
   st <- get
-  put st{trc_as = as}
+  put st{trcAs = as}
 
 appendAs :: [Assump] -> TRC ()
 appendAs as' = do
@@ -84,42 +82,37 @@ appendBind :: (Id, Expr) -> TRC ()
 appendBind (n, e) = do
   st <- get
   t <- typeLookup n
-  let bs = case trc_bind st of
-        Rec bs' -> bs'
-        _       -> error "must not reach."
+  let Rec bs = trcBind st
       bs' = bs ++ [(TermVar n t, e)]
-  put st{trc_bind = Rec bs'}
+  put st{trcBind = Rec bs'}
 
 pushBind :: TRC ()
 pushBind = do
   st <- get
-  let bs = trc_bstack st
-      b = trc_bind st
-      st' = st{trc_bind = Rec [], trc_bstack = (b:bs)}
+  let bs = trcBstack st
+      b = trcBind st
+      st' = st{trcBind = Rec [], trcBstack = b:bs}
   put st'
 
 popBind :: TRC Bind
 popBind = do
   st <- get
-  let (b:bs) = trc_bstack st
-      st' = st{trc_bind=b, trc_bstack=bs}
+  let (b:bs) = trcBstack st
+      st' = st{trcBind=b, trcBstack=bs}
   put st'
-  return $ trc_bind st
+  return $ trcBind st
 
 transVdef :: (Id, Pat.Expression) -> TRC ()
 transVdef (n, Pat.Lambda ns expr) = do
   as <- getAs
-  let sc = case find n as of Just sc' -> sc'
-                             Nothing  -> error $ "type not found 1:" ++ show (n, as)
+  sc <- find n as
   qt <- freshInst' sc
-  let ks = case sc of
-        Forall ks' _ -> ks'
-      ts = case qt of
+  let ts = case qt of
         (_ :=> t') -> ptypes t'
-      vs = map f $ zip ns ts
+      vs = zipWith f ns ts
       qf = case qt of
         (qf' :=> _) -> qf'
-      f (n', t') = TermVar n' (qf :=> t')
+      f n' t' = TermVar n' (qf :=> t')
       as' = [n' :>: Forall [] (qf :=> t') | (n', t') <- zip ns ts]
   appendAs as'
   expr' <- transExpr expr
@@ -140,13 +133,11 @@ transVdefs (vd:vds) = do
   transVdefs vds
 
 transExpr :: Pat.Expression -> TRC Expr
+
 transExpr (Pat.Fatbar e Pat.Error) = transExpr e
+transExpr (Pat.OtherExpression e) = trExpr2 e
 
-transExpr (Pat.OtherExpression e) =
-  do
-    as <- getAs
-    trExpr2 e
-
+-- TODO: I should have naming rules about cs, cs', n, i etc.
 transExpr (Pat.Case n cs) = do
   vt <- typeLookup n
   let scrut = Var (TermVar n vt)
@@ -155,40 +146,41 @@ transExpr (Pat.Case n cs) = do
   return $ Case scrut case_bndr alts
   where
     trClauses [] alts = return alts
-    trClauses ((Pat.Clause a@(n :>: sc) ns expr):cs) alts = do
-      qt <- freshInst' sc
+    trClauses (Pat.Clause (i :>: scm) ns expr : cs') alts = do
+      qt <- freshInst' scm
       let
-        ks = case sc of
+        ks = case scm of
           Forall ks' _ -> ks'
         ts = case qt of
           (_ :=> t') -> ptypes t'
         vs = map (\(n', t') -> TermVar n' ([] :=> t')) $ zip ns ts
-        as' = [n' :>: (Forall ks ([] :=> t')) | (n', t') <- zip ns ts]
+        as' = [n' :>: Forall ks ([] :=> t') | (n', t') <- zip ns ts]
       as <- getAs
       appendAs as'
       expr' <- transExpr expr
       putAs as
-      let alt = (DataAlt (DataCon n vs qt), [], expr')
-      trClauses cs (alt:alts)
+      let alt = (DataAlt (DataCon i vs qt), [], expr')
+      trClauses cs' (alt:alts)
 
     {- for temporary fix (#t001) -}
-    trClauses ((Pat.DefaultClause n expr):cs) alts = do
+    trClauses (Pat.DefaultClause i expr : cs') alts = do
       expr' <- transExpr expr
-      let v = TermVar n undefined -- with dummy type
+      let v = TermVar i undefined -- with dummy type
           alt = (DEFAULT, [v], expr')
-      trClauses cs (alt:alts)
+      trClauses cs' (alt:alts)
 
-{- Todo: fix this.
+{- TODO: fix this.
    This is a temprary fix (#t001) to support default alts.
    See the note page 212.
 -}
 transExpr (Pat.Fatbar e (Pat.Case n cs)) = transExpr $ Pat.Case n cs'
   where cs' = addDefAlt cs []
         defcls = Pat.DefaultClause n e
-        addDefAlt [] ncs = reverse $ (defcls:ncs)
-        addDefAlt (cls@(Pat.Clause _ _ expr):cs) ncs = case expr of
-          Pat.Error -> addDefAlt cs ncs
-          _         -> addDefAlt cs (cls:ncs)
+        addDefAlt [] ncs = reverse (defcls:ncs)
+        addDefAlt (cl@(Pat.Clause _ _ expr):cls) ncs = case expr of
+          Pat.Error -> addDefAlt cls ncs
+          _         -> addDefAlt cls (cl:ncs)
+        addDefAlt _ _ = error "addDefAlt: not expected to reach here."
 
 transExpr Pat.Error = return $ Var (TermVar "Prim.neErr" undefined)
 
@@ -224,7 +216,7 @@ trExpr2 (Ty.Let bg e) = do
   e' <- trExpr2 e
   return $ Let b' e'
   where
-    (es, iss) = bg
+    (_, iss) = bg
     is = concat iss
     vdefs = dsgIs [] is
 
@@ -234,10 +226,15 @@ trExpr2 (Ty.Const (n :>: sc)) = do
 
 trExpr2 expr = error $ "Non-exaustive patterns in trExpr2: " ++ show expr
 
+dsgIs :: [(Id, Pat.Expression)]
+      -> [(Id, [([Ty.Pat], Ty.Expr)])] -> [(Id, Pat.Expression)]
+
 dsgIs vds [] = vds
 dsgIs vds (impl:is) = dsgIs (desis impl:vds) is
   where
     desis (n, alts) = (n, dsgAlts n $ cnvalts alts)
+
+dsgAlts :: Id -> [([Ty.Pat], Pat.Expression)] -> Pat.Expression
 
 dsgAlts n alts@((pats,_):_) =
   let
@@ -245,13 +242,16 @@ dsgAlts n alts@((pats,_):_) =
     us = [Pat.mkVar n i| i <- [1..k]]
 
     alts' = rmWild alts [] -- for temporary fix (#t002), see the note p.212
-    rmWild [] as                         = reverse as
-    rmWild (([Ty.PWildcard], e):alts) as = rmWild alts (([Ty.PVar "_"], e):as)
-    rmWild (alt:alts) as                 = rmWild alts (alt:as)
+    rmWild [] as = reverse as
+    rmWild (([Ty.PWildcard], e'):als') as =
+      rmWild als' (([Ty.PVar "_"], e'):as)
+    rmWild (alt:als') as = rmWild als' (alt:as)
 
     e = Pat.match n k us alts' Pat.Error
   in
    Pat.Lambda us e
 
-cnvalts alts =
-  fmap (\(pats, e) -> (pats, Pat.OtherExpression e)) alts
+dsgAlts _ [] = error "dsgAlts: must not occur"
+
+cnvalts :: [([Ty.Pat], Ty.Expr)] -> [([Ty.Pat], Pat.Expression)]
+cnvalts = fmap (\(pats, e) -> (pats, Pat.OtherExpression e))
