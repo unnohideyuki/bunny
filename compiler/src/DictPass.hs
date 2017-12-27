@@ -100,7 +100,7 @@ getTy (Lam vs e) = do
   return $ normQTy ((qe++qv) :=> foldr fn te ts)
 
 getTy (Case _ _ as) = do
-  qts <- sequence $ map (getTy.(\(_,_,e) -> e)) as
+  qts <- mapM (getTy.(\(_,_,e) -> e)) as
   let
     qs = concatMap (\(q :=> _) -> q) qts
     ts = map (\(_ :=> t') -> t') qts
@@ -167,7 +167,7 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) (_ :=> t)
   return $ foldl App e dicts
   where isTVar x@(TVar _) y | notFunTy x = True
                             | otherwise = trace (show y) True
-        isTVar x y | notFunTy x == False = False
+        isTVar x y | not (notFunTy x) = False
                    | otherwise         = trace (show y) False
         notFunTy (TAp (TAp (TCon (Tycon "(->)" _)) _) _) = False
         notFunTy _                                       = True
