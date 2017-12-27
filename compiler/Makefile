@@ -26,7 +26,7 @@ src/Lexer.x:	src/Lexer.x.source src/unisets.txt
 src/Parser.hs:	src/Parser.y
 	happy $<
 
-bin/bunnyc:	src/compiler-main.hs $(objs)
+bin/bunnyc:	app/Main.hs $(objs)
 	mkdir -p bin
 	ghc $(OPTIONS) -o $@ -isrc $<
 

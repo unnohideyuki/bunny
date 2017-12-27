@@ -1,28 +1,29 @@
 module Main where
 
-import Parser
 import qualified Absyn
-import Semant
-import Symbol
-import PreDefined
-import Core
-import Desugar
-import qualified TrSTG as TR
 import qualified CodeGen
-import DictPass (tcBind)
-import Typing (initialEnv, initialTI, Subst, Assump)
+import           Core
+import           Desugar
+import           DictPass                   (tcBind)
+import           Parser
+import           PreDefined
+import           Semant
+import           Symbol
+import qualified TrSTG                      as TR
+import           Typing                     (Assump, Subst, initialEnv,
+                                             initialTI)
 
-import CompilerOpts
-import DDumpAssump
-import DDumpCore
+import           CompilerOpts
+import           DDumpAssump
+import           DDumpCore
 
-import Options.Applicative
-import Control.Monad.State.Strict (runState)
-import System.IO
-import Control.Monad
+import           Control.Monad
+import           Control.Monad.State.Strict (runState)
+import           Options.Applicative
+import           System.IO
 
-get_init_rnstate :: RnState
-get_init_rnstate =
+initRnstate :: RnState
+initRnstate =
   let
     ifxenv = insert "Prim.:" (RightAssoc 5) Symbol.empty
   in
@@ -38,57 +39,57 @@ get_init_rnstate =
            , rnstatCdicts = []
            }
 
-ti_as :: (a, b, c) -> c
-ti_as (_, _, as) = as
+tiAs :: (a, b, c) -> c
+tiAs (_, _, as) = as
 
 debugmes :: Bool -> String -> IO ()
 debugmes verbose_mode message = when verbose_mode $ hPutStr stderr message
 
-implicit_prelude :: String -> Bool -> IO ((Subst, Int, [Assump]), RnState)
-implicit_prelude prelude_dir verbose_mode = do
-  debugmes verbose_mode "implicit_prelude ... "
+implicitPrelude :: String -> Bool -> IO ((Subst, Int, [Assump]), RnState)
+implicitPrelude prelude_dir verbose_mode = do
+  debugmes verbose_mode "implicitPrelude ... "
   let src = prelude_dir ++ "/Prelude.hs"
   h <- openFile src ReadMode
   s <- hGetContents h
   case parse s of
     Left mes -> error $ "Error: " ++ mes
     Right m -> do debugmes verbose_mode "done.\n"
-                  return $ do_implicit_prelude m
+                  return $ doImplicitPrelude m
   where
-    do_implicit_prelude m = 
-      let  
-        st0 = get_init_rnstate
+    doImplicitPrelude m =
+      let
+        st0 = initRnstate
         lv = (initialLevel $ Absyn.modid m){lvDict=primNames}
-        st = st0{rnstatModid = (lvPrefix lv), rnstatLvs = [lv]}
+        st = st0{rnstatModid = lvPrefix lv, rnstatLvs = [lv]}
         (cont, rnstate) = runState (renPrelude m) st
         as = rnstatCms rnstate
-        as' = ti_as cont
+        as' = tiAs cont
       in (cont, rnstate{rnstatCms = as ++ as'})
 
-do_compile :: RnState -> Absyn.Module -> String -> (Subst, Int, [Assump])
+doCompile :: RnState -> Absyn.Module -> String -> (Subst, Int, [Assump])
               -> Options -> IO ()
-do_compile st0 m dest cont opts = do
+doCompile st0 m dest cont opts = do
   let verbose_mode = opt_verbose opts
-  debugmes verbose_mode "do_compile ... "
+  debugmes verbose_mode "doCompile ... "
   -- TODO: regular way to add primitive names.
   let lv = (initialLevel $ Absyn.modid m){lvDict=primNames}
-  let st = st0{rnstatModid = (lvPrefix lv), rnstatLvs = (lv : rnstatLvs st0)}
+  let st = st0{rnstatModid = lvPrefix lv, rnstatLvs = lv : rnstatLvs st0}
       ((bgs, as, dicts, ctab), st') = runState (renProg m cont) st
 
   when (opt_ddumpas opts) $ ddump_assump as
-      
+
   let cmod = dsgModule (rnstatModid st') bgs (as ++ rnstatCms st) -- see memo#p-258
   let b = case cmod of
         Module _ [x] -> x
-        _ -> error "Must not occur, cmod must be a Module."
+        _            -> error "Must not occur, cmod must be a Module."
       b' = tcBind b
 
   when (opt_ddumpcore opts) $ ddump_core b
   when (opt_ddumpcore opts) $ ddump_core b'
-  
+
   let b'' = TR.trBind b'
       mname = case cmod of
-        Module n _ -> n                      
+        Module n _ -> n
   CodeGen.emitProgram b'' dest mname
   CodeGen.emitDicts dest dicts
   CodeGen.emitInsts dest dicts ctab
@@ -98,9 +99,9 @@ main :: IO ()
 main = do
   opts <- customExecParser (prefs showHelpOnError) myParserInfo
   let verbose_mode = opt_verbose opts
-  (cont, rnstate) <- case xnoImplicitPrelude opts of
-    True -> return (initialTI, get_init_rnstate)
-    False -> implicit_prelude (xlibPath opts) verbose_mode 
+  (cont, rnstate) <- if xnoImplicitPrelude opts
+                     then return (initialTI, initRnstate)
+                     else implicitPrelude (xlibPath opts) verbose_mode
   let src = head $ inputFiles opts
       dest = destDir opts
   handle <- openFile src ReadMode
@@ -108,5 +109,5 @@ main = do
   let r = parse s
   case r of
     Left  mes -> putStrLn $ "Error: " ++ mes
-    Right m -> do do_compile rnstate m dest cont opts
+    Right m   -> doCompile rnstate m dest cont opts
 
