@@ -1,7 +1,6 @@
 module CompilerOpts where
 
-import Data.Monoid
-import Options.Applicative
+import           Options.Applicative
 
 verstr :: String
 verstr = "0.0.1"
@@ -10,13 +9,13 @@ descstr :: String
 descstr = "Bunny -- A Haskell compiler for Android."
 
 data Options = Options
-               { destDir :: String
-               , xlibPath :: String
+               { destDir            :: String
+               , xlibPath           :: String
                , xnoImplicitPrelude :: Bool
-               , opt_verbose :: Bool
-               , opt_ddumpas :: Bool
-               , opt_ddumpcore :: Bool
-               , inputFiles :: [FilePath]
+               , optVerbose         :: Bool
+               , optDdumpas         :: Bool
+               , optDdumpcore       :: Bool
+               , inputFiles         :: [FilePath]
                } deriving Show
 
 destDirP :: Parser String

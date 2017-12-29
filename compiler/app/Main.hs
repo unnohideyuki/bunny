@@ -69,14 +69,14 @@ implicitPrelude prelude_dir verbose_mode = do
 doCompile :: RnState -> Absyn.Module -> String -> (Subst, Int, [Assump])
               -> Options -> IO ()
 doCompile st0 m dest cont opts = do
-  let verbose_mode = opt_verbose opts
+  let verbose_mode = optVerbose opts
   debugmes verbose_mode "doCompile ... "
   -- TODO: regular way to add primitive names.
   let lv = (initialLevel $ Absyn.modid m){lvDict=primNames}
   let st = st0{rnstatModid = lvPrefix lv, rnstatLvs = lv : rnstatLvs st0}
       ((bgs, as, dicts, ctab), st') = runState (renProg m cont) st
 
-  when (opt_ddumpas opts) $ ddumpAssump as
+  when (optDdumpas opts) $ ddumpAssump as
 
   let cmod = dsgModule (rnstatModid st') bgs (as ++ rnstatCms st) -- see memo#p-258
   let b = case cmod of
@@ -84,8 +84,8 @@ doCompile st0 m dest cont opts = do
         _            -> error "Must not occur, cmod must be a Module."
       b' = tcBind b
 
-  when (opt_ddumpcore opts) $ ddumpCore b
-  when (opt_ddumpcore opts) $ ddumpCore b'
+  when (optDdumpcore opts) $ ddumpCore b
+  when (optDdumpcore opts) $ ddumpCore b'
 
   let b'' = TR.trBind b'
       mname = case cmod of
@@ -98,7 +98,7 @@ doCompile st0 m dest cont opts = do
 main :: IO ()
 main = do
   opts <- customExecParser (prefs showHelpOnError) myParserInfo
-  let verbose_mode = opt_verbose opts
+  let verbose_mode = optVerbose opts
   (cont, rnstate) <- if xnoImplicitPrelude opts
                      then return (initialTI, initRnstate)
                      else implicitPrelude (xlibPath opts) verbose_mode
