@@ -1,14 +1,11 @@
 module STG where
 
-import Prelude hiding((<$>))
-import Data.List.Split
-import Data.Char
-import Data.List
+import           Symbol
 
-import Symbol
-import qualified Core
-
-import Debug.Trace
+import           Data.Char
+import           Data.List
+import           Data.List.Split
+-- import           Debug.Trace
 
 data Var = TermVar Id
          | DictVar Id Id
@@ -49,7 +46,7 @@ isLocal s =
     -- isLocal "Main.." will error and the last '.' should be replaced
     s' = case last s of
       '.' -> take (length s - 1) s ++ "dot"
-      _ -> s
+      _   -> s
     a = dropWhile (isUpper.head) $ splitOn "." s'
   in
    (length a > 1) || head s == '_'
@@ -59,26 +56,23 @@ fv :: Expr -> [Id]
 
 fv (AtomExpr (LitAtom _)) = []
 
-fv (AtomExpr (VarAtom (TermVar n))) =
-  case isLocal n of
-    True -> [n]
-    False -> []
+fv (AtomExpr (VarAtom (TermVar n))) = [n | isLocal n]
 
 fv (AtomExpr (VarAtom (DictVar _ _))) = []
 
 fv (FunAppExpr f args) = nub (fv f ++ concatMap fv args)
 
-fv expr@(LetExpr bs e) = nub (fv e ++ concatMap fv' bs) \\ nub (concatMap bv bs)
+fv (LetExpr bs e) = nub (fv e ++ concatMap fv' bs) \\ nub (concatMap bv bs)
   where
-    fv' (Bind _ e) = fv e
+    fv' (Bind _ e') = fv e'
     bv (Bind (TermVar n) _) = [n]
+    bv _                    = error "bv: not expected"
 
 fv (LamExpr vs e) = nub (fv e) \\ nub (map (\(TermVar n) -> n) vs)
 
 fv (CaseExpr scrut alts) = fv scrut `union` fvalts alts []
   where
-    fvalts [] xs = xs
-    fvalts (CotrAlt _ e:alts) xs = fvalts alts (fv e `union` xs)
-    fvalts (DefaultAlt e:alts) xs = fvalts alts (fv e `union` xs)
+    fvalts [] xs                   = xs
+    fvalts (CotrAlt _ e:alts') xs  = fvalts alts' (fv e `union` xs)
+    fvalts (DefaultAlt e:alts') xs = fvalts alts' (fv e `union` xs)
 
-fv e = error $ "Non-exaustive patterns in fv: " ++ show e
