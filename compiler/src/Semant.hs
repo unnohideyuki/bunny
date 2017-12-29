@@ -59,7 +59,7 @@ data Level = Level { lvPrefix :: !Id
 
 initialLevel      :: Maybe Name -> Level
 initialLevel modid = Level { lvPrefix = case modid of
-                                Just s  -> orig_name s
+                                Just s  -> origName s
                                 Nothing -> "Main"
                            , lvDict   = empty
                            , lvNum    = 0
@@ -120,7 +120,7 @@ renameVar :: Name -> RN Id
 renameVar name = state $ \st@RnState{rnstatLvs=(lv:lvs)} ->
   let
     prefix = lvPrefix lv
-    n  = orig_name name
+    n  = origName name
     n' = prefix ++ "." ++ n
     dict' = insert n n' (lvDict lv)
     lv' = lv{lvDict=dict'}
@@ -136,7 +136,7 @@ regFixity fixity i (n:ns) = do reg (f i) n; regFixity fixity i ns
           A.Infix  -> NoAssoc
         reg finfo name = state $ \st@RnState{rnstatLvs=(lv:_), rnstatIfxenv=ifxenv} ->
           let
-            qn = lvPrefix lv ++ "." ++ orig_name name
+            qn = lvPrefix lv ++ "." ++ origName name
             ifxenv' = insert qn finfo ifxenv
           in
            if defined (tabLookup qn ifxenv) then
@@ -196,9 +196,9 @@ data DictDef = DictDef{ dictdefQclsname :: Id
 cdecl2dict :: Id -> A.Decl -> DictDef
 cdecl2dict modid (A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds) =
   let
-    name = modid ++ "." ++ orig_name n
+    name = modid ++ "." ++ origName n
 
-    extrMName (A.TypeSigDecl ns _) = map orig_name ns
+    extrMName (A.TypeSigDecl ns _) = map origName ns
     extrMName _                    = []
 
     ms = concatMap extrMName ds
@@ -218,8 +218,8 @@ renProgCommon ::
 renProgCommon m = do
   let body = snd (A.body m)
       modid = case A.modid m of
-        Just Name{orig_name=s} -> s
-        Nothing                -> "Main"
+        Just Name{origName=s} -> s
+        Nothing               -> "Main"
   (ds, cds, ids) <- collectNames ([], [], []) body
   ctbs <- renCDictdefDecls cds []
   let bgs' = toBg ctbs
@@ -259,7 +259,7 @@ renCDictdefDecls (A.ClassDecl cls ds : cds) tbs = do
   tbs' <- renDictdefDecls $ addvar cls ds'
   renCDictdefDecls cds (tbs ++ tbs')
   where clsadd (_, A.AppTy (A.Tycon n) _) = do
-          cname <- qname $ orig_name n
+          cname <- qname $ origName n
           st <- get
           let ce = rnstatCe st
               ce' = -- todo: super class
@@ -285,7 +285,7 @@ suppDs ds clsname =
     ubNames [] cns cds' = (cns, cds')
 
     ubNames (cd@(A.TypeSigDecl ns _):ds'') cns cds' =
-       ubNames ds'' (cns ++ map orig_name ns) (cd : cds')
+       ubNames ds'' (cns ++ map origName ns) (cd : cds')
 
     ubNames (A.ValDecl _ _ : ds'') cns cds' = ubNames ds'' cns cds'
 
@@ -293,7 +293,7 @@ suppDs ds clsname =
 
     (ns', cds) = ubNames ds [] []
 
-    mkv n = A.VarExp Name{orig_name=n, name_pos=(-1, -1), isConName=False}
+    mkv n = A.VarExp Name{origName=n, namePos=(-1, -1), isConName=False}
     mkoldcl n = A.ValDecl (mkv n) (A.UnguardedRhs
                                    (A.FunAppExp
                                     (A.FunAppExp (mkv "#overloaded#") (mkv n))
@@ -309,18 +309,18 @@ renIDictdefDecls :: [A.Decl] -> RN ([TempBind], [(Id, Id)])
 renIDictdefDecls [] = return ([], [])
 renIDictdefDecls (A.InstDecl ctx t ds : ids) = do
   (qcn, qin, i, a) <- case t of
-    (A.AppTy (A.Tycon n1) (A.Tycon n2)) -> do qcn <- qname $ orig_name n1
+    (A.AppTy (A.Tycon n1) (A.Tycon n2)) -> do qcn <- qname $ origName n1
                                               qin <- renameVar n2
                                               return (qcn, qin, n2, "")
     (A.AppTy (A.Tycon n1) (A.ListTy (A.Tyvar n2))) -> do
-      qcn <- qname $ orig_name n1
+      qcn <- qname $ origName n1
       qin <- renameVar nNil
-      return (qcn, qin, nNil, orig_name n2)
+      return (qcn, qin, nNil, origName n2)
 
     _ -> error $ "Non-exhaustive pattern in case: " ++ show t
 
   k <- lookupKdict qcn
-  let p = case orig_name i of
+  let p = case origName i of
         "[]" -> IsIn qcn (TAp (TCon (Tycon qin k)) (TVar (Tyvar a Star)))
         _    -> IsIn qcn (TCon (Tycon qin k))
 
@@ -330,7 +330,7 @@ renIDictdefDecls (A.InstDecl ctx t ds : ids) = do
   dict <- lookupCDicts qcn
   let defds = dictdefDecls dict
       ds' = mergeDs ds defds
-  enterNewLevelWith $ "I%" ++ orig_name i -- see STG/isLocal
+  enterNewLevelWith $ "I%" ++ origName i -- see STG/isLocal
   (ds'', _, _) <- collectNames ([], [], []) ds'
   tbs <- renDictdefDecls ds''
   exitLevel
@@ -344,7 +344,7 @@ renIDictdefDecls (A.InstDecl ctx t ds : ids) = do
                       (addInst ps p ce)
           put $ st{rnstatCe=ce'}
 
-        extrId' (A.ValDecl e _) = orig_name $ extrName e
+        extrId' (A.ValDecl e _) = origName $ extrName e
         extrId' _               = error "extrId': unexpected"
 
         mergeDs dcls defdictdefDecls =
@@ -359,8 +359,8 @@ renIDictdefDecls (A.InstDecl ctx t ds : ids) = do
 
         tops' (A.ParTy x) = tops' x
         tops' (A.AppTy (A.Tycon n1) (A.Tyvar n2)) = do
-          qcn <- qname $ orig_name n1
-          let x = TVar $ Tyvar (orig_name n2) Star -- TODO: always works?
+          qcn <- qname $ origName n1
+          let x = TVar $ Tyvar (origName n2) Star -- TODO: always works?
           return [IsIn qcn x]
         tops' _ = error "tops': unexpected"
 
@@ -411,9 +411,9 @@ kiExpr (A.FunTy t1 t2) dict =
   in kiExpr t2 dict'
 kiExpr (A.AppTy t1 t2) dict = dict ++ [(extrid t1, Kfun Star Star)
                                       ,(extrid t2, Star)]
-  where extrid (A.Tyvar n) = orig_name n
+  where extrid (A.Tyvar n) = origName n
         extrid _           = "extrid: unexpected"
-kiExpr (A.Tyvar n) dict = dict ++ [(orig_name n, Star)]
+kiExpr (A.Tyvar n) dict = dict ++ [(origName n, Star)]
 kiExpr (A.ParTy e) dict = kiExpr e dict
 kiExpr (A.Tycon _) dict = dict
 kiExpr (A.ListTy e) dict = kiExpr e dict
@@ -429,8 +429,8 @@ insertKdict n k = do
 renSigvar :: Maybe A.Type -> [(Id, Kind)] -> RN [Pred]
 renSigvar Nothing _ = return []
 renSigvar (Just (A.AppTy (A.Tycon n) (A.Tyvar m))) kdict = do
-  qn <- qname $ orig_name n
-  let vname = orig_name m
+  qn <- qname $ origName n
+  let vname = origName m
       k = kindLookup vname kdict
   when (isConName n) (insertKdict qn k)
   return [IsIn qn (TVar (Tyvar vname k))]
@@ -442,7 +442,7 @@ renSigdoc (A.FunTy e1 e2) kdict = do
   t1 <- renSigdoc e1 kdict
   t2 <- renSigdoc e2 kdict
   return (t1 `fn` t2)
-renSigdoc (A.Tyvar n) kdict = let vname = orig_name n
+renSigdoc (A.Tyvar n) kdict = let vname = origName n
                                   k = kindLookup vname kdict
                               in return (TVar (Tyvar vname k))
 renSigdoc (A.AppTy e1 e2) kdict = do
@@ -453,7 +453,7 @@ renSigdoc (A.AppTy e1 e2) kdict = do
 renSigdoc (A.ParTy e) kdict = renSigdoc e kdict
 
 -- TODO: should be fix this hard coding.
-renSigdoc (A.Tycon n) _ = case orig_name n of
+renSigdoc (A.Tycon n) _ = case origName n of
   "Integer" -> return tInteger
   "Int"     -> return tInt
   "String"  -> return tString
@@ -476,7 +476,7 @@ kindLookup n kdict =
 renFExp :: A.Exp -> RN (Id, [Pat])
 
 renFExp (A.VarExp n) = do
-  qname_f <- qname (orig_name n)
+  qname_f <- qname (origName n)
   return (qname_f, [])
 
 renFExp f@(A.FunAppExp _ _) = renfexp' f []
@@ -485,13 +485,13 @@ renFExp f@(A.FunAppExp _ _) = renfexp' f []
       pat <- renPat e'
       renfexp' e (pat:pats)
     renfexp' (A.FunAppExp (A.VarExp n) e) pats = do
-      qn <- qname (orig_name n)
+      qn <- qname (origName n)
       pat <- renPat e
       return (qn, pat:pats)
     renfexp' _ _ = error "renfexp': unexpected"
 
 renFExp (A.InfixExp le op re) = do
-  qname_op <- qname (orig_name op)
+  qname_op <- qname (origName op)
   lpat <- renPat le
   rpat <- renPat re
   return (qname_op, [lpat, rpat])
@@ -499,7 +499,7 @@ renFExp (A.InfixExp le op re) = do
 renFExp e = error $ "renFExp" ++ show e
 
 renPat :: A.Exp -> RN Pat
-renPat (A.VarExp n) | isConName n = do qn <- qname (orig_name n)
+renPat (A.VarExp n) | isConName n = do qn <- qname (origName n)
                                        x <- findCMs qn
                                        let a = fromMaybe
                                                (error $  "renPat error: " ++ qn)
@@ -530,7 +530,7 @@ renPat (A.FunAppExp f f') = renPCon (A.FunAppExp f f') []
           pat <- renPat e''
           renPCon (A.FunAppExp e e') (pat:pats)
         renPCon (A.FunAppExp (A.VarExp n) e') pats = do
-          qn <- qname (orig_name n)
+          qn <- qname (origName n)
           Just a <- findCMs qn
           pat' <- renPat e'
           return $ PCon a (pat':pats)
@@ -547,7 +547,7 @@ renPat e = error $ "renPat: " ++ show e
 
 renRhs :: A.Rhs -> RN Expr
 renRhs (A.UnguardedRhs (A.VarExp n) []) = do
-  qname_c <- qname (orig_name n)
+  qname_c <- qname (origName n)
   c_pat   <- findCMs qname_c
   case c_pat of
     Just pat -> return (Const pat)
@@ -586,7 +586,7 @@ renExp (A.FunAppExp e1 e2) = do
   return (Ap expr1 expr2)
 
 renExp (A.VarExp name) = do
-  qn <- qname (orig_name name)
+  qn <- qname (origName name)
   return (Var qn)
 
 renExp (A.LetExp ds e) = do
@@ -605,7 +605,7 @@ renExp (A.LetExp ds e) = do
 -- [e | q] = [q, True]
 renExp (A.ListCompExp e [stmt@(A.ExpStmt p)]) =
   case p of
-    A.VarExp n  | orig_name n == "True" -> renExp (A.ListExp [e])
+    A.VarExp n  | origName n == "True" -> renExp (A.ListExp [e])
                 | otherwise             -> ren'
     _                                   -> ren'
   where ren' = renExp (A.ListCompExp e [stmt, A.ExpStmt aTrue])
@@ -700,7 +700,7 @@ renExp e = error $ "Non-exhaustive patterns in renExp: " ++ show e
 
 lookupInfixOp :: Name -> RN (Int, A.Fixity)
 lookupInfixOp op = do
-  op_qname <- qname (orig_name op)
+  op_qname <- qname (origName op)
   st <- get
   case tabLookup op_qname (rnstatIfxenv st) of
     Just (LeftAssoc  x) -> return (x, A.Infixl)

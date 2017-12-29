@@ -1,10 +1,10 @@
 module Absyn where
-import Lexer
-import Symbol
+import           Lexer
+import           Symbol
 
-data Module = Module { modid    :: Maybe Name
-                     , exports  :: Maybe [IE]
-                     , body     :: ([ImportDecl], [Decl])
+data Module = Module { modid   :: Maybe Name
+                     , exports :: Maybe [IE]
+                     , body    :: ([ImportDecl], [Decl])
                      }
              deriving Show
 
@@ -124,14 +124,14 @@ data ArithSeqRange = From       Exp
 
 ---- Helper functions
 mkVName :: (String, AlexPosn) -> Name
-mkVName (s, pos) = Name { orig_name = s
-                        , name_pos  = extrPos pos
+mkVName (s, pos) = Name { origName = s
+                        , namePos  = extrPos pos
                         , isConName = False
                         }
 
 mkCName :: (String, AlexPosn) -> Name
-mkCName (s, pos) = Name { orig_name = s
-                        , name_pos  = extrPos pos
+mkCName (s, pos) = Name { origName = s
+                        , namePos  = extrPos pos
                         , isConName = True
                         }
 

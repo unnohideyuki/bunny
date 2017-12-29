@@ -1,7 +1,7 @@
 module Symbol where
 
-import qualified Data.Map as Map
-import Data.Char
+import           Data.Char
+import qualified Data.Map  as Map
 
 type Id = String
 
@@ -12,8 +12,8 @@ posLine (line, _) = line
 posCol :: Pos -> Int
 posCol (_, col) = col
 
-data Name = Name { orig_name :: Id
-                 , name_pos  :: Pos
+data Name = Name { origName  :: Id
+                 , namePos   :: Pos
                  , isConName :: Bool
                  }
           deriving Show
@@ -23,17 +23,17 @@ type Table = Map.Map Id
 empty :: Table a
 empty  = Map.empty
 
-insert         :: Id -> a -> Table a -> Table a
-insert s v tab = Map.insert s v tab
+insert :: Id -> a -> Table a -> Table a
+insert  = Map.insert
 
-tabLookup      :: Id -> Table a -> Maybe a
-tabLookup s tab = Map.lookup s tab
+tabLookup :: Id -> Table a -> Maybe a
+tabLookup  = Map.lookup
 
 fromList :: [(Id, a)] -> Table a
-fromList = Map.fromList
+fromList  = Map.fromList
 
 escapeId :: Id -> Id
 escapeId "" = ""
-escapeId (c:cs) = case isAlphaNum c of
-  True  -> c : escapeId cs
-  False -> "_" ++ (show.ord) c ++ "_" ++ escapeId cs
+escapeId (c:cs) = if isAlphaNum c
+                  then c : escapeId cs
+                  else "_" ++ (show.ord) c ++ "_" ++ escapeId cs
