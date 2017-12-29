@@ -1,8 +1,8 @@
 module Core where
 
-import Symbol
-import Types
-import Typing (Qual(..))
+import           Symbol
+import           Types
+import           Typing (Qual (..))
 
 data Module = Module Id [Bind] {- [Axiom] -}
 
@@ -17,8 +17,7 @@ data Literal = LitInt  Integer  Type
              | LitStr  String   Type
              deriving (Show, Eq)
 
-data Dict = Dict Id
-          deriving (Show, Eq)
+newtype Dict = Dict Id deriving (Show, Eq)
 
 data Expr = Var Var
           | Lit Literal
@@ -30,9 +29,9 @@ data Expr = Var Var
           {- | Type Type -} -- unused
           deriving (Show, Eq)
 
-data Bind = {- NoRec Var Expr
-          | -} Rec [(Var, Expr)]
-          deriving (Show, Eq)
+newtype Bind = {- NoRec Var Expr
+             | -} Rec [(Var, Expr)]
+             deriving (Show, Eq)
 
 type Alt = (AltCon, [Var], Expr)
 
