@@ -4,6 +4,7 @@ import qualified PreDefined
 import           Symbol
 import qualified Typing
 
+-- TODO: arity and constructors should not be defined here.
 arity :: Typing.Assump -> Int
 arity (c Typing.:>: _) =
   case c of
@@ -36,7 +37,7 @@ data Expression = Case Variable [Clause]
 type Variable = Id
 
 data Clause = Clause Typing.Assump [Variable] Expression
-            | DefaultClause Variable Expression {- for temporary fix (#t001) -}
+            | DefaultClause Variable Expression -- TODO: temporary fix (#t001)
             deriving Show
 
 subst :: Expression -> Variable -> Variable -> Expression
@@ -45,18 +46,16 @@ subst expr vnew vold =
     subst_var v | v == vold = vnew
                 | otherwise = v
 
-    subst_vs vs = fmap (\v -> subst_var v) vs
-
-    subst_c (Clause c vs e) = Clause c (subst_vs vs) (subst e vnew vold)
-
-    subst_cs cs = fmap (\c -> subst_c c) cs
+    subst_c (Clause c vs e) = Clause c (fmap subst_var vs) (subst e vnew vold)
+    subst_c _               = error "substC: must not occur"
 
     subst_expr e = Typing.vsubst e vnew vold
   in
    case expr of
-     Case v cs         -> Case (subst_var v) (subst_cs cs)
+     Case v cs         -> Case (subst_var v) (fmap subst_c cs)
      Fatbar e1 e2      -> Fatbar (subst e1 vnew vold) (subst e2 vnew vold)
      OtherExpression e -> OtherExpression (subst_expr e)
+     _                 -> error "subst: must not occur"
 
 type Equation = ([Typing.Pat], Expression)
 
@@ -70,7 +69,7 @@ isCon _                      = False
 
 getCon :: Equation -> Typing.Assump
 getCon (Typing.PCon a _:_, _) = a
-getCon _                      = error $ "must not happen, getCon"
+getCon _                      = error "getCon: must not occur"
 
 -- Note: Starting with "_" guarantees that will be treated as a local variable
 mkVar :: String -> Int -> Variable
@@ -79,14 +78,15 @@ mkVar n k = "_" ++ n ++ ".U" ++ show k
 partition :: Eq b => (a -> b) -> [a] -> [[a]]
 partition _ [] = []
 partition _ [x] = [[x]]
-partition f (x:x':xs)
-  | f x == f x' = tack x (partition f (x':xs))
-  | otherwise   = [x] : partition f (x':xs)
+partition f (x:x':xs) | f x == f x' = tack x (partition f (x':xs))
+                      | otherwise   = [x] : partition f (x':xs)
   where
-    tack x xss = (x : head xss) : tail xss
+    tack y yss = (y : head yss) : tail yss
 
-match _ k [] qs def = foldr Fatbar def [e | ([], e) <- qs]
-match n k (u:us) qs def =
+match :: Id -> Int -> [Variable] -> [Equation] -> Expression -> Expression
+
+match _ _ [] qs def = foldr Fatbar def [e | ([], e) <- qs]
+match n k' xs qs' def' =
   let
     matchVarCon k us qs def
       | isVar (head qs) = matchVar k us qs def
@@ -95,24 +95,27 @@ match n k (u:us) qs def =
 
     matchVar k (u:us) qs def =
       match n k us [(ps, subst e u v) | (Typing.PVar v:ps, e) <- qs] def
+    matchVar _ _ _ _ = error "matchVar: must not occur"
 
     matchCon k (u:us) qs def =
       Case u [matchClause c k (u:us) (choose c qs) def | c <- cs]
         where cs = constructors (getCon (head qs))
+    matchCon _ _ _ _ = error "matchCon: must not occur"
 
-    matchClause c k (u:us) qs def =
+    matchClause c k (_:us) qs def =
       Clause c us' (match
                     n
                     (k + k)
                     (us' ++ us)
-                    [(ps' ++ ps, e) | (Typing.PCon c ps':ps, e) <- qs]
+                    [(ps' ++ ps, e) | (Typing.PCon _ ps':ps, e) <- qs]
                     def)
       where
-        k' = arity c
-        us' = [mkVar n (i+k)| i <- [1..k']]
+        j = arity c
+        us' = [mkVar n (i+k)| i <- [1..j]]
+    matchClause _ _ _ _ _ = error "matchClouse: must not occur"
 
-    choose c qs = [q | q <-qs, (getCon q) `cequal` c]
+    choose c qs = [q | q <-qs, getCon q `cequal` c]
       where
-        (n Typing.:>: _) `cequal` (n' Typing.:>: _) = n == n'
+        (i Typing.:>: _) `cequal` (n' Typing.:>: _) = i == n'
   in
-   foldr (matchVarCon k (u:us)) def (partition isVar qs)
+   foldr (matchVarCon k' xs) def' (partition isVar qs')
