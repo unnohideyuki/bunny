@@ -536,7 +536,7 @@ renPat (A.FunAppExp f f') = renPCon (A.FunAppExp f f') []
           return $ PCon a (pat':pats)
         renPCon _ _ = error "renPCon: unexpected"
 
-renPat e@(A.TupleExp [Just e1, Just e2]) = do
+renPat (A.TupleExp [Just e1, Just e2]) = do
   p1 <- renPat e1
   p2 <- renPat e2
   return $ PCon pairCfun [p1, p2]
@@ -589,8 +589,6 @@ renExp (A.VarExp name) = do
   qn <- qname (orig_name name)
   return (Var qn)
 
-renExp (A.LitExp (A.LitInteger i _)) = return (Lit (LitInt i))
-
 renExp (A.LetExp ds e) = do
   enterNewLevel
   (ds', _, _) <- collectNames ([], [], []) ds
@@ -632,12 +630,12 @@ renExp (A.ListCompExp e (A.BindStmt p l : stmts)) = renExp letexp
     letexp = A.LetExp [decl] body
 
 -- [e | let dictdefDecls, Q] = let dictdefDecls in [e | Q]
-renExp (A.ListCompExp e (A.LetStmt dictdefDecls : stmts)) = renExp letexp
+renExp (A.ListCompExp e (A.LetStmt ddecls : stmts)) = renExp letexp
   where
     body = case stmts of
       [] -> A.ListExp [e]
       _  -> A.ListCompExp e stmts
-    letexp = A.LetExp dictdefDecls body
+    letexp = A.LetExp ddecls body
 
 renExp (A.IfExp c t f) = renExp caseexp
   where
@@ -645,11 +643,11 @@ renExp (A.IfExp c t f) = renExp caseexp
     alt2 = A.Match aFalse (A.UnguardedRhs f [])
     caseexp = A.CaseExp c [alt1, alt2]
 
-renExp (A.CaseExp c alts) = renExp (A.LetExp dictdefDecls fc)
+renExp (A.CaseExp c alts) = renExp (A.LetExp ddecls fc)
   where f = Name "F" (0,0) False
         fc = A.FunAppExp (A.VarExp f) c
-        dictdefDecls = map (\(A.Match p rhs) ->
-                      A.ValDecl (A.FunAppExp (A.VarExp f) p) rhs) alts
+        ddecls = map (\(A.Match p rhs) ->
+                        A.ValDecl (A.FunAppExp (A.VarExp f) p) rhs) alts
 
 renExp (A.ListExp [e]) =
   renExp $ A.FunAppExp (A.FunAppExp aCons e) aNil
@@ -673,9 +671,9 @@ renExp (A.DoExp (A.BindStmt p e : stmts)) = renExp letexp
     body = A.FunAppExp (A.FunAppExp aBind e) (A.VarExp ok)
     letexp = A.LetExp [decl] body
 
-renExp (A.DoExp (A.LetStmt dictdefDecls : stmts)) = renExp letexp
+renExp (A.DoExp (A.LetStmt ddecls : stmts)) = renExp letexp
   where
-    letexp = A.LetExp dictdefDecls (A.DoExp stmts)
+    letexp = A.LetExp ddecls (A.DoExp stmts)
 
 renExp (A.LamExp args e) = renExp (A.LetExp [decl] f)
   where f = A.VarExp $ Name "F" (0,0) False
@@ -683,14 +681,11 @@ renExp (A.LamExp args e) = renExp (A.LetExp [decl] f)
         rhs = A.UnguardedRhs e []
         decl = A.ValDecl fexp rhs
 
-renExp (A.LitExp (A.LitString s _)) =
-  return $ Lit (LitStr s)
+renExp (A.LitExp (A.LitString s _)) = return $ Lit (LitStr s)
 
-renExp (A.LitExp (A.LitInteger i _)) =
-  return $ Lit (LitInt i)
+renExp (A.LitExp (A.LitInteger i _)) = return $ Lit (LitInt i)
 
-renExp (A.LitExp (A.LitChar c _)) =
-  return $ Lit (LitChar c)
+renExp (A.LitExp (A.LitChar c _)) = return $ Lit (LitChar c)
 
 renExp (A.ParExp e) = renExp e
 
@@ -763,7 +758,7 @@ toBg tbs = [toBg2 tbs]
 toBg2 :: [TempBind] -> BindGroup
 toBg2 tbs =
   let
-    (h, rh, idx) = vars tbs
+    (h, _, idx) = vars tbs
     deps = map tbDepend tbs
 
     -- Calculating SCC
@@ -778,7 +773,7 @@ toBg2 tbs =
    scc2bg sccs bm scdict
 
 vars :: [TempBind] -> (Map.Map Id Int, Map.Map Int Id, Int)
-vars tbs = vars' tbs (Map.empty, Map.empty) 0
+vars tbs' = vars' tbs' (Map.empty, Map.empty) 0
   where
     vars' [] (h, rh) i = (h, rh, i)
     vars' ((_,_,[]):tbs) (h, rh) i = vars' tbs (h, rh) i
@@ -837,7 +832,7 @@ tbDepend (n, _, alts) = (n, concatMap fv alts)
 d2es :: Map.Map Id Int -> (Id, [Id]) -> [G.Edge]
 d2es h (n, vs) =
   let
-    src = case Map.lookup n h of { Just i -> i }
+    src = fromMaybe (error "d2es.src* must not occur") (Map.lookup n h)
 
     f v = case Map.lookup v h of
       Just i  -> [i]
@@ -848,7 +843,7 @@ d2es h (n, vs) =
    zip (repeat src) dests
 
 collectTypes :: [TempBind] -> Map.Map Id Scheme
-collectTypes tbs = collty tbs Map.empty
+collectTypes tbs' = collty tbs' Map.empty
   where
     collty [] dict = dict
     collty ((name, Just qt, _):tbs) dict =
@@ -863,7 +858,7 @@ collectTypes tbs = collty tbs Map.empty
     collty ((_, Nothing, _):tbs) dict = collty tbs dict
 
 bindMap :: [TempBind] -> Map.Map Id Int -> Map.Map Int TempBind
-bindMap tbs rh = bmap tbs rh Map.empty
+bindMap tbs' rh = bmap tbs' rh Map.empty
   where
     bmap [] _ d = d
     bmap ((_, _, []):tbs) h d = bmap tbs h d
