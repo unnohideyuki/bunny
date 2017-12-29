@@ -13,14 +13,14 @@
 ----------------------------------------------------------------------------
 module Typing where
 
-import           Control.Monad              (msum)
+import           Control.Monad              (msum, zipWithM)
 import           Control.Monad.State.Strict (State, get, put, runState, state)
 import           Data.List                  (intersect, nub, partition, union,
                                              (\\))
-import           Debug.Trace
-
+import           Data.Maybe                 (fromMaybe)
 import           Symbol
 import           Types
+-- import           Debug.Trace
 
 class HasKind t where
   kind :: t -> Kind
@@ -31,7 +31,7 @@ instance HasKind Tycon where
 instance HasKind Type where
   kind (TCon tc) = kind tc
   kind (TVar u)  = kind u
-  kind (TAp t _) = case (kind t) of
+  kind (TAp t _) = case kind t of
     (Kfun _ k) -> k
     _          -> error "(kind t) must be Kfun."
   kind (TGen _)  = error "TGen must not occur here."
@@ -51,19 +51,16 @@ class Types t where
   tv    :: t -> [Tyvar]
 
 instance Types Type where
-  apply s (TVar u)  = case lookup u s of
-                        Just t  -> t
-                        Nothing -> TVar u
+  apply s (TVar u)  = fromMaybe (TVar u) (lookup u s)
   apply s (TAp l r) = TAp (apply s l) (apply s r)
   apply _ t         = t
-
   tv (TVar u)  = [u]
   tv (TAp l r) = tv l `union` tv r
   tv _         = []
 
 instance Types a => Types [a] where
   apply s = map (apply s)
-  tv      = nub.concat.map tv
+  tv      = nub.concatMap tv
 
 infixr 4 @@
 (@@)    :: Subst -> Subst -> Subst
@@ -103,11 +100,9 @@ match _ _                                      = fail "types do not match"
 
 -- Predicates
 
-data Qual t = [Pred] :=> t
-            deriving (Eq, Show)
+data Qual t = [Pred] :=> t deriving (Eq, Show)
 
-data Pred = IsIn Id Type
-          deriving (Eq, Show)
+data Pred = IsIn Id Type deriving (Eq, Show)
 
 instance Types t => Types (Qual t) where
   apply s (ps :=> t) = apply s ps :=> apply s t
@@ -132,12 +127,12 @@ type Inst  = Qual Pred
 
 -- Class Environment
 
-data ClassEnv = ClassEnv { ce_map   :: Table Class
+data ClassEnv = ClassEnv { ceMap    :: Table Class
                          , defaults :: [Type]}
                 deriving Show
 
 classes :: Monad m => ClassEnv -> Id -> m Class
-classes ce i = case tabLookup i (ce_map ce) of
+classes ce i = case tabLookup i (ceMap ce) of
                 Just c  -> return c
                 Nothing -> fail "class not defined"
 
@@ -156,10 +151,10 @@ defined (Just _) = True
 defined Nothing  = False
 
 modify       :: ClassEnv -> Id -> Class -> ClassEnv
-modify ce@ClassEnv{ce_map = m} i c = ce{ce_map = insert i c m}
+modify ce@ClassEnv{ceMap = m} i c = ce{ceMap = insert i c m}
 
 initialEnv :: ClassEnv
-initialEnv  = ClassEnv { ce_map   = empty
+initialEnv  = ClassEnv { ceMap    = empty
                        , defaults = [tInteger, tDouble]}
 
 type EnvTransformer = ClassEnv -> Maybe ClassEnv
@@ -437,14 +432,16 @@ tiExpr ce as (Let bg e)       = do (ps, as') <- tiBindGroup ce as bg
 -- lacking qualifiers, that are added by qualifyAs.
 -- It might be a temporary fix because i don't know the best way to do it.
 -}
-qualifyAs ps as = fmap (qualas ps) as
+qualifyAs :: [Pred] -> [Assump] -> [Assump]
+qualifyAs ps = fmap (qualas ps)
   where
     qualas [] a = a
-    qualas (p@(IsIn _ t1@(TVar v)):ps1) a@(n :>: (Forall ks (ps2 :=> t2))) =
-      if elem v (tv t2) then
-        qualas ps1 (n :>: (Forall (kind t1:ks) ((p:ps2) :=> t2)))
+    qualas (p@(IsIn _ t1@(TVar v)):ps1) a@(n :>: Forall ks (ps2 :=> t2)) =
+      if v `elem` tv t2 then
+        qualas ps1 (n :>: Forall (kind t1:ks) ((p:ps2) :=> t2))
       else
         qualas ps1 a
+    qualas _ _ = error "qualas:: unexpected"
 
 -- Substitution (for variable, not for type vars), used from Pattern.hs
 vsubst :: Expr -> Id -> Id -> Expr
@@ -462,14 +459,14 @@ vsubst (Let bg e) vnew vold
   | otherwise      = Let bg e
   where
     isFree (es, iss) n =
-      not $ elem n $ fmap (\(s,_,_) -> s) es ++ fmap fst (concat iss)
+      notElem n $ fmap (\(s,_,_) -> s) es ++ fmap fst (concat iss)
 
-    isFree_p (PVar s) n    = (s /= n)
+    isFree_p (PVar s) n    = s /= n
     isFree_p (PAs s pat) n = (s /= n) && isFree_p pat n
     isFree_p (PCon _ ps) n = isFree_ps ps n
     isFree_p _ _           = True
 
-    isFree_ps ps n = and $ fmap (\pat -> isFree_p pat n) ps
+    isFree_ps ps n = and $ fmap (`isFree_p` n) ps
 
     -- Caution: User must guaranntee that vnew is free in ps
     vsubst_alt alt@(ps, expr) vn vo
@@ -483,8 +480,7 @@ vsubst (Let bg e) vnew vold
       where
         es' = fmap (\(n, sc, alts) -> (n, sc, vsubst_alts alts vn vo)) es
         iss' = fmap
-               (\is ->
-                 fmap (\(n, alts) -> (n, vsubst_alts alts vn vo)) is)
+               (fmap (\(n, alts) -> (n, vsubst_alts alts vn vo)))
                iss
 
 -- Alternatives
@@ -498,8 +494,8 @@ tiAlt ce as (pats, e) = do (ps, as', ts) <- tiPats pats
 
 tiAlts             :: ClassEnv -> [Assump] -> [Alt] -> Type -> TI [Pred]
 tiAlts ce as alts t = do psts <- mapM (tiAlt ce as) alts
-                         mapM_ (unify t) (map snd psts)
-                         return (concat (map fst psts))
+                         mapM_ (unify t . snd) psts
+                         return (concatMap fst psts)
 
 -------------------------------------------------------------------------------
 
@@ -530,7 +526,7 @@ stdClasses  = [ "Prelude.Eq", "Prelude.Ord", "Prelude.Show"
 candidates           :: ClassEnv -> Ambiguity ->[Type]
 candidates ce (v, qs) = [t' | let is = [i | IsIn i _ <- qs]
                                   ts = [t | IsIn _ t <- qs],
-                              all ((TVar v)==) ts,
+                              all (TVar v ==) ts,
                               any (`elem` numClasses) is,
                               all (`elem` stdClasses) is,
                               t' <- defaults ce,
@@ -546,7 +542,7 @@ withDefaults f ce vs ps
         tss = map (candidates ce) vps
 
 defaultedPreds :: Monad m => ClassEnv -> [Tyvar] -> [Pred] -> m [Pred]
-defaultedPreds  = withDefaults (\vps _ -> concat (map snd vps))
+defaultedPreds  = withDefaults (\vps _ -> concatMap snd vps)
 
 defaultSubst :: Monad m => ClassEnv -> [Tyvar] -> [Pred] -> m Subst
 defaultSubst  = withDefaults (\vps ts -> zip (map fst vps) ts)
@@ -579,7 +575,7 @@ tiExpl ce as (_, sc, alts)
 type Impl = (Id, [Alt])
 
 restricted   :: [Impl] -> Bool
-restricted bs = any simple bs
+restricted = any simple
   where simple (_, alts) = any (null.fst) alts
 
 tiImpls         :: Infer [Impl] [Assump]
@@ -588,7 +584,7 @@ tiImpls ce as bs = do ts <- mapM (\_ -> newTVar Star) bs
                           scs   = map toScheme ts
                           as'   = zipWith (:>:) is scs ++ as
                           altss = map snd bs
-                      pss <- sequence (zipWith (tiAlts ce as') altss ts)
+                      pss <- zipWithM (tiAlts ce as') altss ts
                       s   <- getSubst
                       let ps' = apply s (concat pss)
                           ts' = apply s ts
@@ -626,19 +622,23 @@ tiSeq ti ce as (bs:bss) = do (ps, as')  <- ti ce as bs
 
 type Program = [BindGroup]
 
+tiProgram ::
+  ClassEnv -> [Assump] -> [BindGroup] -> (Subst, Int, [Assump]) -> [Assump]
 tiProgram ce as bgs cont = runTI cont $
                            do (ps, as') <- tiSeq tiBindGroup ce as bgs
                               s         <- getSubst
                               rs        <- reduce ce (apply s ps)
                               s'        <- defaultSubst ce [] rs
                               as''      <- getAssump
-                              st <- get
                               return (apply (s'@@s) as' ++ as'')
 
 initialTI :: (Subst, Int, [Assump])
 initialTI = (nullSubst, 0, [])
 
-tiImportedProgram ce as bgs st = runTI st $
-                                 do (_, as') <- tiSeq tiBindGroup ce as bgs
-                                    (s, n, as'') <- get
-                                    return (s, n, as++as')
+tiImportedProgram ::
+  ClassEnv -> [Assump] -> [BindGroup] -> (Subst, Int, [Assump])
+  -> (Subst, Int, [Assump])
+tiImportedProgram ce as bgs st =
+  runTI st $ do (_, as') <- tiSeq tiBindGroup ce as bgs
+                (s, n, _) <- get -- TODO: why not use [Assump] in the state
+                return (s, n, as++as')
