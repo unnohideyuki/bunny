@@ -1,18 +1,14 @@
 module Types where
 
-import Symbol
+import           Symbol
 
-data Kind = Star | Kfun Kind Kind
-          deriving (Eq, Show)
+data Kind = Star | Kfun Kind Kind deriving (Eq, Show)
 
 data Type = TVar Tyvar | TCon Tycon | TAp Type Type | TGen Int
           deriving (Eq, Show)
 
-data Tyvar = Tyvar Id Kind
-           deriving (Eq, Show)
-
-data Tycon = Tycon Id Kind
-           deriving (Eq, Show)
+data Tyvar = Tyvar Id Kind deriving (Eq, Show)
+data Tycon = Tycon Id Kind deriving (Eq, Show)
 
 tUnit    :: Type
 tUnit     = TCon (Tycon "()" Star)
@@ -45,7 +41,7 @@ fn :: Type -> Type -> Type
 a `fn` b = TAp (TAp tArrow a) b
 
 list :: Type -> Type
-list t = TAp tList t
+list = TAp tList
 
 pair :: Type -> Type -> Type
-pair a b = TAp (TAp tTuple2 a) b
+pair a = TAp (TAp tTuple2 a)
