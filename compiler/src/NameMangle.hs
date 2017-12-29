@@ -1,10 +1,10 @@
 module NameMangle where
 
-import Symbol
+import           Symbol
 
 {- modname: extracts Module name part from a varname -}
 modname :: Id -> Id
-modname s = takeWhile (/= '.') s -- todo: deeper module name
+modname = takeWhile (/= '.') -- todo: deeper module name
 
 {- basename: extracts basename (= strip module name) from a varname -}
 basename :: Id -> Id
