@@ -1,41 +1,37 @@
 module PreDefined where
-import Types
-import Typing
-import Symbol
+import           Symbol
+import           Types
+import           Typing
+
+import           Data.Maybe (fromMaybe)
 
 -- preludeClasses
-
 preludeClasses :: ClassEnv
-preludeClasses  = case exampleInsts initialEnv of
-  Just ce -> ce
+preludeClasses = fromMaybe (error "preludeClasses must not occur")
+                 (exampleInsts initialEnv)
 
 -- Primitive Constructors and Member Functions
-
 unitCfun :: Assump
-unitCfun  = "Prim.()" :>: (Forall [] ([] :=> tUnit))
+unitCfun  = "Prim.()" :>: Forall [] ([] :=> tUnit)
 
 nilCfun :: Assump
-nilCfun  = "Prim.[]" :>: (Forall [Star] ([] :=> (TAp tList (TGen 0))))
+nilCfun  = "Prim.[]" :>: Forall [Star] ([] :=> TAp tList (TGen 0))
 
 consCfun :: Assump
-consCfun  = "Prim.:" :>: (Forall [Star]
-                          ([] :=>
-                           (TGen 0 `fn`
-                            TAp tList (TGen 0) `fn`
-                            TAp tList (TGen 0))))
+consCfun  = "Prim.:" :>:
+  Forall [Star]
+  ([] :=> (TGen 0 `fn` TAp tList (TGen 0) `fn` TAp tList (TGen 0)))
 
 falseCfun :: Assump
-falseCfun  = "Prim.False" :>: (Forall [] ([] :=> tBool))
+falseCfun  = "Prim.False" :>: Forall [] ([] :=> tBool)
+
 trueCfun :: Assump
-trueCfun  = "Prim.True" :>: (Forall [] ([] :=> tBool))
+trueCfun  = "Prim.True" :>: Forall [] ([] :=> tBool)
 
 pairCfun :: Assump
-pairCfun =
-    let sc = Forall [Star, Star]
-           ([] :=>
-            (TGen 0 `fn` TGen 1 `fn`
-             pair (TGen 0) (TGen 1)))
-    in "Prim.(,)" :>: sc
+pairCfun = "Prim.(,)" :>:
+    Forall [Star, Star]
+    ([] :=> (TGen 0 `fn` TGen 1 `fn` pair (TGen 0) (TGen 1)))
 
 cShow :: String
 cShow  = "Prim.Show"
@@ -44,96 +40,91 @@ cOrd :: String
 cOrd  = "Prelude.Ord"
 
 leMfun :: Assump
-leMfun
-  = "Prim.<=" :>: (Forall [Star]
-                   ([IsIn cOrd (TGen 0)] :=>
-                    (TGen 0 `fn` TGen 0 `fn` tBool)))
+leMfun = "Prim.<=" :>:
+  Forall [Star]
+  ([IsIn cOrd (TGen 0)] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
 
 gtMfun :: Assump
-gtMfun
-  = "Prim.>" :>: (Forall [Star]
-                  ([IsIn cOrd (TGen 0)] :=>
-                   (TGen 0 `fn` TGen 0 `fn` tBool)))
+gtMfun = "Prim.>" :>:
+  Forall [Star]
+  ([IsIn cOrd (TGen 0)] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
 
 errorCfun :: Assump
-errorCfun
-  = "Prim.error" :>: (Forall [Star]
-                      ([] :=> (tString `fn` TGen 0)))
+errorCfun = "Prim.error" :>: Forall [Star] ([] :=> (tString `fn` TGen 0))
 
 tIO :: Type
-tIO = TCon (Tycon "Prelude.IO" (Kfun Star Star)) -- todo: Prim.IO
+tIO = TCon (Tycon "Prelude.IO" (Kfun Star Star)) -- TODO: Prim.IO
 
 primRetCfun :: Assump
-primRetCfun
-  = "Prim.retIO" :>: (Forall [Star]
-                          ([] :=> (TGen 0 `fn` TAp tIO (TGen 0))))
+primRetCfun = "Prim.retIO" :>:
+  Forall [Star] ([] :=> (TGen 0 `fn` TAp tIO (TGen 0)))
+
 primBindCfun :: Assump
-primBindCfun
-  = "Prim.bindIO" :>:
-    (Forall [Star, Star]
-     ([] :=>
-      (TAp tIO (TGen 0) `fn` (TGen 0 `fn` TAp tIO (TGen 1)) `fn` TAp tIO (TGen 1))))
+primBindCfun = "Prim.bindIO" :>:
+  Forall [Star, Star]
+  ([] :=>
+   (TAp tIO (TGen 0) `fn` (TGen 0 `fn` TAp tIO (TGen 1)) `fn` TAp tIO (TGen 1)))
 
 primFailCfun :: Assump
-primFailCfun
-  = "Prim.failIO" :>: (Forall [Star]
-                      ([] :=> (tString `fn` (TAp tIO (TGen 0)))))
+primFailCfun = "Prim.failIO" :>:
+  Forall [Star] ([] :=> (tString `fn` TAp tIO (TGen 0)))
 
-
-sc_charcharbool = (Forall [] ([] :=> (tChar `fn` tChar `fn` tBool)))
+scCharcharbool :: Scheme
+scCharcharbool = Forall [] ([] :=> (tChar `fn` tChar `fn` tBool))
 
 primCharLtCfun :: Assump
-primCharLtCfun = "Prim.charLt" :>: sc_charcharbool
+primCharLtCfun = "Prim.charLt" :>: scCharcharbool
 
 primCharLeCfun :: Assump
-primCharLeCfun = "Prim.charLe" :>: sc_charcharbool
+primCharLeCfun = "Prim.charLe" :>: scCharcharbool
 
 primCharGeCfun :: Assump
-primCharGeCfun = "Prim.charGe" :>: sc_charcharbool
+primCharGeCfun = "Prim.charGe" :>: scCharcharbool
 
 primCharGtCfun :: Assump
-primCharGtCfun = "Prim.charGt" :>: sc_charcharbool
+primCharGtCfun = "Prim.charGt" :>: scCharcharbool
 
 primCharEqCfun :: Assump
-primCharEqCfun = "Prim.charEq" :>: sc_charcharbool
+primCharEqCfun = "Prim.charEq" :>: scCharcharbool
 
-sc_integerintegerbool
-  = (Forall [] ([] :=> (tInteger `fn` tInteger `fn` tBool)))
+scIntegerintegerbool :: Scheme
+scIntegerintegerbool = Forall [] ([] :=> (tInteger `fn` tInteger `fn` tBool))
 
-sc_integerintegerinteger
-  = (Forall [] ([] :=> (tInteger `fn` tInteger `fn` tInteger)))
+scIntegerintegerinteger :: Scheme
+scIntegerintegerinteger =
+  Forall [] ([] :=> (tInteger `fn` tInteger `fn` tInteger))
 
 primIntegerLtCfun :: Assump
-primIntegerLtCfun = "Prim.integerLt" :>: sc_integerintegerbool
+primIntegerLtCfun = "Prim.integerLt" :>: scIntegerintegerbool
 
 primIntegerLeCfun :: Assump
-primIntegerLeCfun = "Prim.integerLe" :>: sc_integerintegerbool
+primIntegerLeCfun = "Prim.integerLe" :>: scIntegerintegerbool
 
 primIntegerGeCfun :: Assump
-primIntegerGeCfun = "Prim.integerGe" :>: sc_integerintegerbool
+primIntegerGeCfun = "Prim.integerGe" :>: scIntegerintegerbool
 
 primIntegerGtCfun :: Assump
-primIntegerGtCfun = "Prim.integerGt" :>: sc_integerintegerbool
+primIntegerGtCfun = "Prim.integerGt" :>: scIntegerintegerbool
 
 primIntegerEqCfun :: Assump
-primIntegerEqCfun = "Prim.integerEq" :>: sc_integerintegerbool
+primIntegerEqCfun = "Prim.integerEq" :>: scIntegerintegerbool
 
 primIntegerAddCfun :: Assump
-primIntegerAddCfun = "Prim.integerAdd" :>: sc_integerintegerinteger
+primIntegerAddCfun = "Prim.integerAdd" :>: scIntegerintegerinteger
 
 primCharShow :: Assump
-primCharShow = "Prim.charShow" :>: (Forall [] ([] :=> (tChar `fn` tString)))
+primCharShow = "Prim.charShow" :>: Forall [] ([] :=> (tChar `fn` tString))
 
 primIntegerShow :: Assump
 primIntegerShow =
-  "Prim.integerShow" :>: (Forall [] ([] :=> (tChar `fn` tString)))
+  "Prim.integerShow" :>: Forall [] ([] :=> (tChar `fn` tString))
 
-showCfun :: Assump 
-showCfun  = "Prim.show" :>: (Forall [Star] ([] :=> (TGen 0 `fn` tString)))
+showCfun :: Assump
+showCfun  = "Prim.show" :>: Forall [Star] ([] :=> (TGen 0 `fn` tString))
 
 overloadedCfun :: Assump
-overloadedCfun = "#overloaded#" :>: (Forall [Star, Star]
-                                     ([] :=> (TGen 0 `fn` tString `fn` TGen 1)))
+overloadedCfun = "#overloaded#" :>:
+  Forall [Star, Star] ([] :=> (TGen 0 `fn` tString `fn` TGen 1))
 
 primConsMems :: [Assump]
 primConsMems  = [ unitCfun, nilCfun, consCfun
@@ -150,10 +141,10 @@ primConsMems  = [ unitCfun, nilCfun, consCfun
                 , showCfun
                 , errorCfun
                 , "Prim.putStrLn" :>:
-                  (Forall []
-                   ([] :=> (TAp tList tChar `fn` TAp tIO tUnit)))
+                  Forall []
+                   ([] :=> (TAp tList tChar `fn` TAp tIO tUnit))
                 , overloadedCfun
-                , "Main.main" :>: (Forall [Star] ([] :=> TAp tIO (TGen 0)))
+                , "Main.main" :>: Forall [Star] ([] :=> TAp tIO (TGen 0))
                 ]
 
 primConsNames :: [(Id, Id)]
@@ -189,4 +180,3 @@ primNames :: Table Id
 primNames  = fromList (primConsNames ++
                        [ ("putStrLn", "Prim.putStrLn")
                        ])
-             
