@@ -1,9 +1,9 @@
 module DDumpAssump where
 
-import Typing
+import           Typing
 
-ddump_assump :: [Assump] -> IO ()
-ddump_assump as = do
+ddumpAssump :: [Assump] -> IO ()
+ddumpAssump as = do
   putStrLn "Debugging dump of assumptions (results of the type inference)."
   ddump_assump' as
   where ddump_assump' [] = return ()

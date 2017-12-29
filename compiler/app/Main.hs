@@ -76,7 +76,7 @@ doCompile st0 m dest cont opts = do
   let st = st0{rnstatModid = lvPrefix lv, rnstatLvs = lv : rnstatLvs st0}
       ((bgs, as, dicts, ctab), st') = runState (renProg m cont) st
 
-  when (opt_ddumpas opts) $ ddump_assump as
+  when (opt_ddumpas opts) $ ddumpAssump as
 
   let cmod = dsgModule (rnstatModid st') bgs (as ++ rnstatCms st) -- see memo#p-258
   let b = case cmod of
@@ -84,8 +84,8 @@ doCompile st0 m dest cont opts = do
         _            -> error "Must not occur, cmod must be a Module."
       b' = tcBind b
 
-  when (opt_ddumpcore opts) $ ddump_core b
-  when (opt_ddumpcore opts) $ ddump_core b'
+  when (opt_ddumpcore opts) $ ddumpCore b
+  when (opt_ddumpcore opts) $ ddumpCore b'
 
   let b'' = TR.trBind b'
       mname = case cmod of
