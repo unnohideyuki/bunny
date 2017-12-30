@@ -22,21 +22,21 @@ import           Control.Monad.State.Strict (runState)
 import           Options.Applicative
 import           System.IO
 
-initRnstate :: RnState
-initRnstate =
+initRnState :: RnState
+initRnState =
   let
     ifxenv = insert "Prim.:" (RightAssoc 5) Symbol.empty
   in
-   RnState { rnstatModid = ""
-           , rnstatLvs = []
-           , rnstatTenv = Symbol.empty
-           , rnstatIfxenv = ifxenv
-           , rnstatCe = initialEnv -- preludeClasses
-           , rnstatCms = primConsMems
-           , rnstatTbs = []
-           , rnstatTbsStack = []
-           , rnstatKdict = Symbol.empty
-           , rnstatCdicts = []
+   RnState { rnModid = ""
+           , rnLvs = []
+           , rnTenv = Symbol.empty
+           , rnIfxenv = ifxenv
+           , rnCe = initialEnv -- preludeClasses
+           , rnCms = primConsMems
+           , rnTbs = []
+           , rnTbsStack = []
+           , rnKdict = Symbol.empty
+           , rnCdicts = []
            }
 
 tiAs :: (a, b, c) -> c
@@ -58,13 +58,13 @@ implicitPrelude prelude_dir verbose_mode = do
   where
     doImplicitPrelude m =
       let
-        st0 = initRnstate
+        st0 = initRnState
         lv = (initialLevel $ Absyn.modid m){lvDict=primNames}
-        st = st0{rnstatModid = lvPrefix lv, rnstatLvs = [lv]}
+        st = st0{rnModid = lvPrefix lv, rnLvs = [lv]}
         (cont, rnstate) = runState (renPrelude m) st
-        as = rnstatCms rnstate
+        as = rnCms rnstate
         as' = tiAs cont
-      in (cont, rnstate{rnstatCms = as ++ as'})
+      in (cont, rnstate{rnCms = as ++ as'})
 
 doCompile :: RnState -> Absyn.Module -> String -> (Subst, Int, [Assump])
               -> Options -> IO ()
@@ -73,12 +73,12 @@ doCompile st0 m dest cont opts = do
   debugmes verbose_mode "doCompile ... "
   -- TODO: regular way to add primitive names.
   let lv = (initialLevel $ Absyn.modid m){lvDict=primNames}
-  let st = st0{rnstatModid = lvPrefix lv, rnstatLvs = lv : rnstatLvs st0}
+  let st = st0{rnModid = lvPrefix lv, rnLvs = lv : rnLvs st0}
       ((bgs, as, dicts, ctab), st') = runState (renProg m cont) st
 
   when (optDdumpas opts) $ ddumpAssump as
 
-  let cmod = dsgModule (rnstatModid st') bgs (as ++ rnstatCms st) -- see memo#p-258
+  let cmod = dsgModule (rnModid st') bgs (as ++ rnCms st) -- see memo#p-258
   let b = case cmod of
         Module _ [x] -> x
         _            -> error "Must not occur, cmod must be a Module."
@@ -99,8 +99,8 @@ main :: IO ()
 main = do
   opts <- customExecParser (prefs showHelpOnError) myParserInfo
   let verbose_mode = optVerbose opts
-  (cont, rnstate) <- if xnoImplicitPrelude opts
-                     then return (initialTI, initRnstate)
+  (cont, rne) <- if xnoImplicitPrelude opts
+                     then return (initialTI, initRnState)
                      else implicitPrelude (xlibPath opts) verbose_mode
   let src = head $ inputFiles opts
       dest = destDir opts
@@ -109,5 +109,5 @@ main = do
   let r = parse s
   case r of
     Left  mes -> putStrLn $ "Error: " ++ mes
-    Right m   -> doCompile rnstate m dest cont opts
+    Right m   -> doCompile rne m dest cont opts
 
