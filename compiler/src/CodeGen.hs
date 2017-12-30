@@ -6,8 +6,9 @@ import           STG
 import           Symbol
 
 import           Control.Monad.State.Strict
-import           Data.List                  (intersperse)
+import           Data.List                  (intercalate)
 import qualified Data.Map                   as Map
+import           Data.Maybe                 (fromMaybe)
 
 import           System.IO
 
@@ -195,7 +196,7 @@ genExpr (FunAppExpr f as) = do
   n3 <- nexti
   appendCode $
     "Expr[] t" ++ show n2 ++ " = {"
-    ++ (concat $ intersperse ", " (map (("t"++).show) ns)) ++ "};"
+    ++ intercalate ", " (map (("t"++).show) ns) ++ "};"
   appendCode $
     "Expr t" ++ show n3 ++
     " = " ++ "RTLib.mkApp(t" ++ show n1 ++ ", t" ++ show n2 ++ ");"
@@ -204,7 +205,7 @@ genExpr (FunAppExpr f as) = do
 genExpr e@(LetExpr _ _) = genExpr' e False
 
 genExpr e@(LamExpr _ _)
-  | fv e == [] = genLamExpr e
+  | null (fv e) = genLamExpr e
   | otherwise = lamConv e >>= genExpr
 
 genExpr (CaseExpr scrut alts') = do
@@ -218,11 +219,11 @@ genExpr (CaseExpr scrut alts') = do
     genalts [] ts = do
       i <- nexti
       let s0 = "Alt[] t" ++ show i ++ " = {"
-          s1 = concat $ intersperse "," (reverse ts)
+          s1 = intercalate "," (reverse ts)
           s2 = "};"
       appendCode $ s0 ++ s1 ++ s2
       return i
-    genalts ((CotrAlt name expr):alts) ts = do
+    genalts (CotrAlt name expr : alts) ts = do
       n <- genExpr expr
       i <- nexti
       let s0 = "Alt t" ++ show i ++ " = "
@@ -230,7 +231,7 @@ genExpr (CaseExpr scrut alts') = do
           ts' = ("t" ++ show i) : ts
       appendCode $ s0 ++ s1
       genalts alts ts'
-    genalts ((DefaultAlt expr):alts) ts = do
+    genalts (DefaultAlt expr : alts) ts = do
       n <- genExpr expr
       i <- nexti
       let s0 = "Alt t" ++ show i ++ " = "
@@ -244,19 +245,19 @@ genExpr' (LetExpr bs' e) delayed = do
   saveEnv
   rs <- genBs bs' []
   addLocalVars rs
-  sequence_ $ map (\(_, i, vs) -> setBoundVars i vs) rs
+  mapM_ (\(_, i, vs) -> setBoundVars i vs) rs
   (lamname, vs) <- genLambda e
   n <- nexti
   let s = "new LetExpr(null, new " ++ lamname ++ "())"
   appendCode $ "Expr t" ++ show n ++ " = " ++ s ++ ";"
-  when (not delayed) $ setBoundVars n vs
+  unless delayed $ setBoundVars n vs
   restoreEnv
   return n
   where
     genBs [] rs' = return rs'
-    genBs ((Bind (TermVar name) e'):bs) rs
-      | fv e' == [] = do i <- genExpr e'
-                         genBs bs ((name, i, []):rs)
+    genBs (Bind (TermVar name) e' : bs) rs
+      | null (fv e') = do i <- genExpr e'
+                          genBs bs ((name, i, []):rs)
       | otherwise = do i <- genExpr' (LetExpr [] e') True
                        genBs bs ((name, i, fv e'):rs)
     genBs _ _ = error "genBs: must not occur"
@@ -275,12 +276,11 @@ genExpr' (LetExpr bs' e) delayed = do
       st <- get
       let s0 = "Expr[] t" ++ show i ++ " = {"
           cenv = env st
-          n2v name = case Map.lookup name cenv of
-            Just v -> v
-            Nothing -> error $ "Variable not found: " ++ name
-                       ++ "\n, " ++ show cenv
-                       ++ "\n, " ++ show (estack st)
-          s1 = concat $ intersperse "," $ map n2v vs
+          n2v name = fromMaybe (error $ "Variable not found: " ++ name
+                                ++ "\n, " ++ show cenv
+                                ++ "\n, " ++ show (estack st))
+                     (Map.lookup name cenv)
+          s1 = intercalate "," $ map n2v vs
           s2 = "};"
       appendCode $ s0 ++ s1 ++ s2
       appendCode $ "((LetExpr)t" ++ show n ++ ").setEs(t" ++ show i ++ ");"
@@ -367,7 +367,7 @@ genFBody vs expr = do
 lamConv :: Expr -> GEN Expr
 lamConv e@(LamExpr vs expr) = do
   i <- nextgid
-  let fvars = map (\n -> (TermVar n)) $ fv e
+  let fvars = map TermVar $ fv e
       newv = TermVar $ "_X" ++ show i
       bs = [Bind newv (LamExpr (fvars ++ vs) expr)]
       v2e var = AtomExpr $ VarAtom var
@@ -382,9 +382,7 @@ genAtomExpr (AtomExpr (VarAtom (TermVar n)))
   | otherwise            = do
     st <- get
     let h = env st
-        v = case Map.lookup n h of
-          Just s  -> s
-          Nothing -> refTopLevel n
+        v = fromMaybe (refTopLevel n) (Map.lookup n h)
     emit v
   where
     emit s = do
@@ -423,7 +421,7 @@ refTopLevel n =
     m = modnameM  n
     n' = basenameM n
   in
-   if (not $ elem '.' n') -- ?? : todo clarify!
+   if '.' `notElem` n' -- ?? : todo clarify!
    then m ++ ".mk" ++ n' ++ "()"
    else error $ "Unbound variable " ++ n
 
@@ -436,7 +434,7 @@ emitDicts dest (dict:ds) = do
   emitPreamble h
   hPutStrLn h $
     "public abstract class " ++ dname ++ " extends Dictionary {"
-  sequence_ $ map
+  mapM_
     (\s -> hPutStrLn h $ "    abstract public Expr mk" ++ s ++ "();")
     msM
   hPutStrLn h "}"
@@ -457,12 +455,12 @@ emitInsts dest dicts ((qin, qcn):ctab) = do
   h <- openFile (dest ++ "/" ++ dname ++ ".java") WriteMode
   emitPreamble h
   hPutStrLn h $ "public class " ++ dname ++ " extends " ++ pdname ++ "{"
-  sequence_ $ map
+  mapM_
     (\s -> do hPutStrLn h $ "    public Expr mk" ++ s ++ "(){"
               hPutStr h $ "      return " ++ mangle mname ++ "."
               hPutStr h $ "mk" ++ mangle ("I%" ++ basename qin ++ ".")
               hPutStrLn h $ s ++ "();"
-              hPutStrLn h $ "    }")
+              hPutStrLn h "    }")
     msM
   hPutStrLn h "}"
   hClose h
