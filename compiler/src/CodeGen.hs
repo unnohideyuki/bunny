@@ -1,27 +1,28 @@
 module CodeGen where
 
-import STG
-import Symbol
-import NameMangle
-import Semant (DictDef(..))
+import           NameMangle
+import           Semant                     (DictDef (..))
+import           STG
+import           Symbol
 
-import Control.Monad.State.Strict
-import qualified Data.Map as Map
-import Data.List (intersperse)
+import           Control.Monad.State.Strict
+import           Data.List                  (intersperse)
+import qualified Data.Map                   as Map
 
-import System.IO
+import           System.IO
 
+emitPreamble :: Handle -> IO ()
 emitPreamble h =
   let
      preamble = [ "import jp.ne.sakura.uhideyuki.brt.brtsyn.*;"
                 , "import jp.ne.sakura.uhideyuki.brt.runtime.*;"
                 , ""
                 ]
-     ploop [] = return ()
+     ploop []     = return ()
      ploop (s:ss) = do {hPutStrLn h s; ploop ss}
   in
    ploop preamble
-   
+
 emitProgram :: Program -> String -> String -> IO ()
 emitProgram prog dest mname = do
   h <- openFile (dest ++ "/" ++ mname ++ ".java") WriteMode
@@ -31,31 +32,37 @@ emitProgram prog dest mname = do
   emitFooter h
   hClose h
 
-emitBinds [] h _ = return ()
+emitBinds :: [Bind] -> Handle -> Int -> IO ()
+emitBinds [] _ _ = return ()
 emitBinds (b:bs) h n = do
   n' <- emitBind b h n
   emitBinds bs h n'
 
+emitHeader :: Id -> Handle -> IO ()
 emitHeader m h = hPutStrLn h $ "public class " ++ m ++ " {"
 
+emitFooter :: Handle -> IO ()
 emitFooter h = hPutStrLn h "}"
 
+emitBind :: Bind -> Handle -> Int -> IO Int
 emitBind b h n = do
   hPutStrLn h $ result st
   return n'
   where (n', st) = runState (genBind b) (initGenSt n)
 
+genBind :: Bind -> GEN Int
 genBind (Bind (TermVar n) e) = do
   enterBind n
-  genBody e
+  _ <- genBody e
   exitBind
   st <- get
   return $ gid st + 1
+genBind _ = error "genBind: must not occur"
 
-data GenSt = GenSt { str :: String
-                   , idx :: Int
-                   , env :: Map.Map Id Id
-                   , gid :: Int
+data GenSt = GenSt { str    :: String
+                   , idx    :: Int
+                   , env    :: Map.Map Id Id
+                   , gid    :: Int
                    , sstack :: [String]
                    , istack :: [Int]
                    , estack :: [Map.Map Id Id]
@@ -155,12 +162,10 @@ genExpr e@(AtomExpr _) = genAtomExpr e
 -- Special case: overloaded function.
 genExpr (FunAppExpr (FunAppExpr (AtomExpr (VarAtom (TermVar "#overloaded#"))) [e1]) [e2]) = do
   n <- nexti
-  let m = case e1 of
-        (AtomExpr (VarAtom (TermVar name))) -> name
+  let (AtomExpr (VarAtom (TermVar m))) = e1
       bn = basenameM m
       lamname = "OL" ++ bn
-      clsname = case e2 of
-        (AtomExpr (LitAtom (LitStr name))) -> name
+      (AtomExpr (LitAtom (LitStr clsname))) = e2
   genOLlam lamname bn clsname
   appendCode $ "Expr t" ++ show n ++ " = RTLib.mkFun(new " ++ lamname ++ "());"
   return n
@@ -202,9 +207,9 @@ genExpr e@(LamExpr _ _)
   | fv e == [] = genLamExpr e
   | otherwise = lamConv e >>= genExpr
 
-genExpr (CaseExpr scrut alts) = do
+genExpr (CaseExpr scrut alts') = do
   ns <- genExpr scrut
-  na <- genalts alts []
+  na <- genalts alts' []
   n <- nexti
   let s = "new CaseExpr(t" ++ show ns ++ ", t" ++ show na ++ ")"
   appendCode $ "Expr t" ++ show n ++ " = " ++ s ++ ";"
@@ -234,30 +239,30 @@ genExpr (CaseExpr scrut alts) = do
       appendCode $ s0 ++ s1
       genalts alts ts'
 
-genExpr e = error $ "Non-exaustive pattern in genExpr: " ++ show e
-
-genExpr' (LetExpr bs e) delayed = do
+genExpr' :: Expr -> Bool -> GEN Int
+genExpr' (LetExpr bs' e) delayed = do
   saveEnv
-  rs <- genBs bs []
+  rs <- genBs bs' []
   addLocalVars rs
   sequence_ $ map (\(_, i, vs) -> setBoundVars i vs) rs
   (lamname, vs) <- genLambda e
   n <- nexti
   let s = "new LetExpr(null, new " ++ lamname ++ "())"
   appendCode $ "Expr t" ++ show n ++ " = " ++ s ++ ";"
-  when (not delayed) $ setBoundVars n vs 
+  when (not delayed) $ setBoundVars n vs
   restoreEnv
   return n
   where
-    genBs [] rs = return rs
-    genBs ((Bind (TermVar name) e):bs) rs
-      | fv e == [] = do i <- genExpr e
-                        genBs bs ((name, i, []):rs)
-      | otherwise = do i <- genExpr' (LetExpr [] e) True
-                       genBs bs ((name, i, fv e):rs)
+    genBs [] rs' = return rs'
+    genBs ((Bind (TermVar name) e'):bs) rs
+      | fv e' == [] = do i <- genExpr e'
+                         genBs bs ((name, i, []):rs)
+      | otherwise = do i <- genExpr' (LetExpr [] e') True
+                       genBs bs ((name, i, fv e'):rs)
+    genBs _ _ = error "genBs: must not occur"
 
     addLocalVars [] = return ()
-    addLocalVars ((name, i, vs):rs) = do
+    addLocalVars ((name, i, _):rs) = do
       st <- get
       let cenv = env st
           cenv' = Map.insert name ("t" ++ show i) cenv
@@ -280,11 +285,14 @@ genExpr' (LetExpr bs e) delayed = do
       appendCode $ s0 ++ s1 ++ s2
       appendCode $ "((LetExpr)t" ++ show n ++ ").setEs(t" ++ show i ++ ");"
 
+genExpr' _ _ = error "genExpr':: must not occur"
+
+genLambda :: Expr -> GEN (Id, [Id])
 genLambda expr = do
   i <- nextgid
   let lamname = "LAM" ++ show i
       vs = fv expr
-      ns = map (\i -> "args[" ++ show i ++ "]") [0..]
+      ns = map (\j -> "args[" ++ show j ++ "]") [(0::Int)..]
       nenv = fromList $ zip vs ns
       aty = length vs
   enterLambda aty lamname nenv
@@ -292,6 +300,7 @@ genLambda expr = do
   exitLambda n
   return (lamname, vs)
 
+enterLambda :: Int -> Id -> Map.Map Id Id -> GEN ()
 enterLambda arty name nenv = do
   st <- get
   let s = str st
@@ -313,6 +322,7 @@ enterLambda arty name nenv = do
               }
   put st'
 
+exitLambda :: Int -> GEN ()
 exitLambda n = do
   appendCode $ "return t" ++ show n ++ ";"
   st <- get
@@ -332,18 +342,21 @@ exitLambda n = do
   put st'
 
 {- fv expr must be [] here -}
+genLamExpr :: Expr -> GEN Int
 genLamExpr (LamExpr vs e) = do
   n <- nexti
   lamname <- genFBody vs e
   appendCode $
     "Expr t" ++ show n ++ " = RTLib.mkFun(new " ++ lamname ++ "());"
   return n
+genLamExpr _ = error "genLamExpr: must not occur"
 
+genFBody :: [Var] -> Expr -> GEN Id
 genFBody vs expr = do
   i <- nextgid
   let lamname = "LAM" ++ show i
       vs' = map (\(TermVar n) -> n) vs
-      ns = map (\j -> "args[" ++ show j ++ "]") [0..]
+      ns = map (\j -> "args[" ++ show j ++ "]") [(0::Int)..]
       nenv = fromList $ zip vs' ns
       aty = length vs
   enterLambda aty lamname nenv
@@ -351,6 +364,7 @@ genFBody vs expr = do
   exitLambda n
   return lamname
 
+lamConv :: Expr -> GEN Expr
 lamConv e@(LamExpr vs expr) = do
   i <- nextgid
   let fvars = map (\n -> (TermVar n)) $ fv e
@@ -359,7 +373,9 @@ lamConv e@(LamExpr vs expr) = do
       v2e var = AtomExpr $ VarAtom var
       bd = FunAppExpr (v2e newv) $ map v2e fvars
   return $ LetExpr bs bd
+lamConv _ = error "lamConv:: must not occur"
 
+genAtomExpr :: Expr -> GEN Int
 genAtomExpr (AtomExpr (VarAtom (TermVar n)))
   | n == "Prim.:"        = emit "RTLib.cons"
   | n == "Prim.[]"       = emit "RTLib.nil"
@@ -367,14 +383,14 @@ genAtomExpr (AtomExpr (VarAtom (TermVar n)))
     st <- get
     let h = env st
         v = case Map.lookup n h of
-          Just s -> s
+          Just s  -> s
           Nothing -> refTopLevel n
     emit v
   where
     emit s = do
-      n <- nexti
-      appendCode $ "Expr t" ++ show n ++ " = " ++ s ++ ";"
-      return n
+      i <- nexti
+      appendCode $ "Expr t" ++ show i ++ " = " ++ s ++ ";"
+      return i
 
 genAtomExpr (AtomExpr (VarAtom (DictVar n1 n2))) = do
   let s = cls2dictNameM $ n1 ++ "@" ++ n2
@@ -400,18 +416,19 @@ genAtomExpr (AtomExpr (LitAtom (LitInt i))) = do
   return n
 
 genAtomExpr e = error $ "Non-exhaustive pattern in genAtomExpr: " ++ show e
-  
+
+refTopLevel :: Id -> Id
 refTopLevel n =
   let
     m = modnameM  n
     n' = basenameM n
   in
-   if (not $ elem '.' n') -- ?? : todo clarify! 
+   if (not $ elem '.' n') -- ?? : todo clarify!
    then m ++ ".mk" ++ n' ++ "()"
    else error $ "Unbound variable " ++ n
 
 emitDicts :: String -> [DictDef] -> IO ()
-emitDicts _ [] = return ()  
+emitDicts _ [] = return ()
 emitDicts dest (dict:ds) = do
   let dname = cls2dictNameM $ dictdefQclsname dict
       msM = map mangle $ dictdefMethods dict
@@ -432,7 +449,7 @@ emitInsts dest dicts ((qin, qcn):ctab) = do
   let dicts' = dropWhile ((/= qcn).dictdefQclsname) dicts
       ms = case dicts' of
         [] -> error $ "Class name not found: " ++ qcn
-        _ -> dictdefMethods $ head dicts'
+        _  -> dictdefMethods $ head dicts'
       msM = map mangle ms
       pdname = cls2dictNameM qcn
       dname = cls2dictNameM $ qin ++ "@" ++ qcn
@@ -450,5 +467,5 @@ emitInsts dest dicts ((qin, qcn):ctab) = do
   hPutStrLn h "}"
   hClose h
   emitInsts dest dicts ctab
-  
-  
+
+
