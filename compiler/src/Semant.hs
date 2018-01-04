@@ -15,6 +15,7 @@ import           Data.List                  (concatMap, foldl', notElem, (\\))
 import qualified Data.Map                   as Map
 import           Data.Maybe                 (fromMaybe)
 import qualified Data.Tree                  as T
+-- import           Debug.Trace
 
 import qualified Absyn                      as A
 import           PreDefined
@@ -43,11 +44,6 @@ aCons  = A.VarExp $ Name ":" (0,0) True
 aBind :: A.Exp
 aBind  = A.VarExp $ Name ">>=" (0,0) False
 
-data FixtyInfo = LeftAssoc  Int
-               | RightAssoc Int
-               | NoAssoc    Int
-                 deriving (Show, Eq)
-
 data Level = Level { lvPrefix :: !Id
                    , lvDict   :: !(Table Id)
                    , lvNum    :: !Int
@@ -62,6 +58,19 @@ initialLevel modid = Level { lvPrefix = case modid of
                            , lvNum    = 0
                            }
 
+type TempBind = (Id, Maybe (Qual Type), [Alt])
+
+data DictDef = DictDef{ dictdefQclsname :: Id
+                      , dictdefMethods  :: [Id]
+                      , dictdefDecls    :: [A.Decl]
+                      }
+              deriving Show
+
+data FixtyInfo = LeftAssoc  Int
+               | RightAssoc Int
+               | NoAssoc    Int
+                 deriving (Show, Eq)
+
 -- Renaming Monad
 
 data RnState = RnState { rnModid    :: !Id
@@ -73,73 +82,88 @@ data RnState = RnState { rnModid    :: !Id
                        , rnTbs      :: ![TempBind]
                        , rnTbsStack :: ![[TempBind]]
                        , rnKdict    :: !(Table Kind)
-                       , rnCdicts   :: ![DictDef]
+                       , rnCdicts   :: ![(Id, DictDef)]
                        }
                deriving Show
 
 type RN a = State RnState a
 
-putCDicts :: [DictDef] -> RN()
-putCDicts dicts= do
-  st <- get
-  put st{rnCdicts = dicts}
-
-getCDicts :: RN [DictDef]
+getCDicts :: RN [(Id, DictDef)]
 getCDicts = do
   st <- get
   return $ rnCdicts st
 
+putCDicts :: [DictDef] -> RN()
+putCDicts dicts= do
+  st <- get
+  put st{rnCdicts = [(dictdefQclsname d, d) | d <-dicts]}
 
 lookupCDicts :: Id -> RN DictDef
-lookupCDicts qcname = do
+lookupCDicts n = do
   dicts <- getCDicts
-  let dicts' = dropWhile (\d -> dictdefQclsname d /= qcname) dicts
-  case dicts' of
-    [] -> error $ "lookupCDicts: class not found: " ++ show (qcname, dicts')
-    _  -> return $ head dicts'
+  case lookup n dicts of
+    Nothing   -> fail $ "lookupCDicts: class not found: " ++ show (n, dicts)
+    Just dict -> return dict
+
+popTbs :: RN ()
+popTbs = do
+  st <- get
+  let tbss = rnTbsStack st
+  if null tbss
+    then fail "popTbs from empty stack."
+    else put st{rnTbs = head tbss, rnTbsStack = tail tbss}
 
 pushTbs :: RN ()
 pushTbs = do
   st <- get
   let tbs = rnTbs st
       tbstack = rnTbsStack st
-  put st{rnTbs=[], rnTbsStack= tbs:tbstack}
+  put st{rnTbs = [], rnTbsStack = tbs : tbstack}
 
-popTbs :: RN ()
-popTbs = do
+getLvs :: RN [Level]
+getLvs = do
   st <- get
-  let (tbs', tbstack') = case rnTbsStack st of
-        (x:xs) -> (x, xs)
-        []     -> error "popTbs from empty stack."
-  put st{rnTbs=tbs', rnTbsStack=tbstack'}
+  return $ rnLvs st
+
+putLvs :: [Level] -> RN ()
+putLvs lvs = do
+  st <-get
+  put st{rnLvs=lvs}
+
+getIfxenv :: RN (Table FixtyInfo)
+getIfxenv = do
+  st <- get
+  return $ rnIfxenv st
+
+putIfxenv :: Table FixtyInfo -> RN ()
+putIfxenv ifxenv = do
+  st <- get
+  put st{rnIfxenv=ifxenv}
 
 renameVar :: Name -> RN Id
-renameVar name = state $ \st@RnState{rnLvs=(lv:lvs)} ->
-  let
-    prefix = lvPrefix lv
-    n  = origName name
-    n' = prefix ++ "." ++ n
-    dict' = insert n n' (lvDict lv)
-    lv' = lv{lvDict=dict'}
-  in
-   (n', st{rnLvs= lv':lvs})
+renameVar name = do
+  lv:lvs <- getLvs
+  let n = origName name
+      n' = lvPrefix lv ++ "." ++ n
+      dict' = insert n n' (lvDict lv)
+      lv' = lv{lvDict=dict'}
+  putLvs (lv':lvs)
+  return n'
 
 regFixity :: A.Fixity -> Int -> [Name] -> RN ()
 regFixity _ _ [] = return ()
-regFixity fixity i (n:ns) = do reg (f i) n; regFixity fixity i ns
-  where f = case fixity of
-          A.Infixl -> LeftAssoc
-          A.Infixr -> RightAssoc
-          A.Infix  -> NoAssoc
-        reg finfo name = state $ \st@RnState{rnLvs=(lv:_), rnIfxenv=ifxenv} ->
-          let
-            qn = lvPrefix lv ++ "." ++ origName name
-            ifxenv' = insert qn finfo ifxenv
-          in
-           if defined (tabLookup qn ifxenv) then
-             error $ "duplicate fixity declaration:" ++ qn
-           else
-             ((), st{rnIfxenv=ifxenv'})
+regFixity f i (n:ns) = do reg (trFixity f i) n; regFixity f i ns
+  where trFixity A.Infixl = LeftAssoc
+        trFixity A.Infixr = RightAssoc
+        trFixity A.Infix  = NoAssoc
+        reg finfo name = do
+          (lv:_) <- getLvs
+          ifxenv <- getIfxenv
+          let qn = lvPrefix lv ++ "." ++ origName name
+              ifxenv' = insert qn finfo ifxenv
+          if defined (tabLookup qn ifxenv)
+            then fail $ "duplicate fixity declaration:" ++ qn
+            else putIfxenv ifxenv'
 
 extrName :: A.Exp -> Name
 extrName (A.VarExp name)       = name
@@ -147,48 +171,36 @@ extrName (A.FunAppExp f _)     = extrName f
 extrName (A.InfixExp _ name _) = name
 extrName e                     = error $ "unexpected exp:" ++ show e
 
-collectNames :: ([A.Decl], [A.Decl], [A.Decl]) -> [A.Decl]
-                -> RN ([A.Decl], [A.Decl], [A.Decl])
-collectNames x [] = return x
-collectNames (ds, cds, ids) (dcl:dcls) = do
-  (ds', cds', ids') <- collname dcl
-  collectNames (ds', cds', ids') dcls
+collectNames :: [A.Decl] -> RN ([A.Decl], [A.Decl], [A.Decl])
+collectNames = collectNames' ([], [], [])
   where
+    collectNames' r [] = return r
+    collectNames' (ds, cds, ids) (dcl:dcls) = do
+      (ds', cds', ids') <- collname dcl
+      collectNames' (ds ++ ds', cds ++ cds', ids ++ ids') dcls
+
     collname d@(A.ValDecl e _) = do _ <- renameVar (extrName e)
-                                    return (ds ++ [d], cds, ids)
+                                    return ([d], [], [])
     collname (A.FixSigDecl fixity i ns) = do regFixity fixity i ns
-                                             return (ds, cds, ids)
-
-    collname d@(A.TypeSigDecl _ _)      = return (ds ++ [d], cds, ids)
-
-    collname (A.DefaultDecl _)          = error "not yet: DefaultDecl"
-    collname (A.ForeignDecl _)          = error "not yet: ForeignDecl"
-    collname (A.SynonymDecl _ _)        = error "not yet: SynonymDecl"
-
+                                             return ([], [], [])
+    collname d@(A.TypeSigDecl _ _) = return ([d], [], [])
+    collname (A.DefaultDecl _) = error "not yet: DefaultDecl"
+    collname (A.ForeignDecl _) = error "not yet: ForeignDecl"
+    collname (A.SynonymDecl _ _) = error "not yet: SynonymDecl"
 
     collname d@(A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds') = do
       _ <- renameVar n
       mapM_ colname' ds'
-      return (ds, cds ++ [d], ids)
+      return ([], [d], [])
       where colname' (A.ValDecl e _) = do _ <- renameVar (extrName e)
                                           return ()
             colname' _ = return ()
 
-
-    collname d@A.InstDecl{} = return (ds, cds, ids ++ [d])
+    collname d@A.InstDecl{} = return ([], [], [d])
 
     collname A.DataDecl{}         = error "not yet: DataDecl"
     collname A.NewtypeDecl{}      = error "not yet: NewtypeDecl"
-
     collname _ = error "Sement.collectNames.collname"
-
-type TempBind = (Id, Maybe (Qual Type), [Alt])
-
-data DictDef = DictDef{ dictdefQclsname :: Id
-                      , dictdefMethods  :: [Id]
-                      , dictdefDecls    :: [A.Decl]
-                      }
-              deriving Show
 
 cdecl2dict :: Id -> A.Decl -> DictDef
 cdecl2dict modid (A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds) =
@@ -196,18 +208,18 @@ cdecl2dict modid (A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds) =
     name = modid ++ "." ++ origName n
 
     extrMName (A.TypeSigDecl ns _) = map origName ns
-    extrMName _                    = []
+    extrMName _                    = [] -- TODO: can ignore?
 
     ms = concatMap extrMName ds
 
     extrValDecl d@(A.ValDecl _ _) = [d]
-    extrValDecl _                 = []
+    extrValDecl _                 = [] -- TODO: can ignore?
 
     vdcls = concatMap extrValDecl ds
-  in
-   DictDef{dictdefQclsname = name, dictdefMethods = ms, dictdefDecls = vdcls}
+ in
+   DictDef{dictdefQclsname=name, dictdefMethods=ms, dictdefDecls=vdcls}
 
-cdecl2dict _ _ = error "Semant.cdecl2dict"
+cdecl2dict _ _ = error "cdecl2dict: must not occur"
 
 renProgCommon ::
   A.Module
@@ -217,7 +229,7 @@ renProgCommon m = do
       modid = case A.modid m of
         Just Name{origName=s} -> s
         Nothing               -> "Main"
-  (ds, cds, ids) <- collectNames ([], [], []) body
+  (ds, cds, ids) <- collectNames body
   ctbs <- renCDictdefDecls cds []
   let bgs' = toBg ctbs
       as2 = map (\(n, scm, _) -> n :>: scm) $ fst $ head bgs'
@@ -328,7 +340,7 @@ renIDictdefDecls (A.InstDecl ctx t ds : ids) = do
   let defds = dictdefDecls dict
       ds' = mergeDs ds defds
   enterNewLevelWith $ "I%" ++ origName i -- see STG/isLocal
-  (ds'', _, _) <- collectNames ([], [], []) ds'
+  (ds'', _, _) <- collectNames ds'
   tbs <- renDictdefDecls ds''
   exitLevel
 
@@ -588,7 +600,7 @@ renExp (A.VarExp name) = do
 
 renExp (A.LetExp ds e) = do
   enterNewLevel
-  (ds', _, _) <- collectNames ([], [], []) ds
+  (ds', _, _) <- collectNames ds
   pushTbs
   tbs <- renDictdefDecls ds'
   popTbs

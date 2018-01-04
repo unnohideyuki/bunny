@@ -80,24 +80,6 @@ aBind  = A.VarExp $ Name ">>=" (0,0) False
 
 一か所でしか用いられていない。
 
-## 結合性の表現
-
-### FixtyInfo
-
-````Haskell
-data FixtyInfo = LeftAssoc  Int
-               | RightAssoc Int
-               | NoAssoc    Int
-                 deriving (Show, Eq)
-````
-
-結合性宣言の情報を保持するためのデータ型。左結合、右結合、無結合の別と、結合の強さ（優先順位）
-からなる。優先順位は 1 から 9 の整数。
-
-懸念点：
-
-* 「結合性」は、Fixity ではないか？
-
 ## α 変換のためのレベル管理
 
 ### Level
@@ -135,6 +117,46 @@ initialLevel modid = Level { lvPrefix = case modid of
 
 初期化された Level を返す。
 
+## プログラム中で宣言、定義された情報を保持するデータ型
+
+### TempBind
+
+````Haskell
+type TempBind = (Id, Maybe (Qual Type), [Alt])
+````
+
+変数束縛を保持するデータ型。型推論に渡すときには、明示型付き束縛 (Expl) 
+と暗黙型付き束縛 (Impl) に変換する必要があるのだが、その変換前の中間データ型であるため、
+このような名前になっている。
+
+### DictDef
+
+````Haskell
+data DictDef = DictDef{ dictdefQclsname :: Id
+                      , dictdefMethods  :: [Id]
+                      , dictdefDecls    :: [A.Decl]
+                      }
+              deriving Show
+````
+
+### FixtyInfo: 結合性
+
+````Haskell
+data FixtyInfo = LeftAssoc  Int
+               | RightAssoc Int
+               | NoAssoc    Int
+                 deriving (Show, Eq)
+````
+
+結合性宣言の情報を保持するためのデータ型。左結合、右結合、無結合の別と、結合の強さ（優先順位）
+からなる。優先順位は 1 から 9 の整数。
+
+懸念点：
+
+* 「結合性」は、Fixity ではないか？
+
+
+
 ## Renaming Monad
 
 ### RnState, RN a
@@ -168,12 +190,6 @@ type RN a = State RnState a
 - rnTbsStack: 
 - rnKdict: 
 - rnCdicts: 
-
-
-
-
-
-
 
 
 
