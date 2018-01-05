@@ -380,10 +380,9 @@ renDictdefDecls decls = do tbss <- mapM renDecl decls
     renDecl (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) = do
       ns' <- mapM renameVar ns
       let kdict = kiExpr sigdoc []
-      kdict `seq` return ()
       ps <- renSigvar maybe_sigvar kdict
       t <- renSigdoc sigdoc kdict
-      t `seq` return [(n, Just (ps :=> t), []) | n <- ns']
+      return [(n, Just (ps :=> t), []) | n <- ns']
 
     renDecl _ = return [("", Nothing, [])]
 
