@@ -221,7 +221,7 @@ renProgCommon m = do
       as2 = map (\(n, scm, _) -> n :>: scm) $ fst $ head bgs'
   let dicts = map (cdecl2dict modid) cds
   putCDicts dicts
-  (itbs, ctab) <- renIDictdefDecls ids
+  (itbs, ctab) <- renInstDecls ids
   tbs <- renDecls ds
   -- NOTE#1: followings are not clear! see the note page 233.
   let bgs = toBg $ tbs ++ itbs
@@ -302,67 +302,66 @@ suppDs ds clsname =
   in
    cds ++ ds'
 
-renIDictdefDecls :: [A.Decl] -> RN ([TempBind], [(Id, Id)])
-renIDictdefDecls [] = return ([], [])
-renIDictdefDecls (A.InstDecl ctx t ds : ids) = do
-  (qcn, qin, i, a) <- case t of
-    (A.AppTy (A.Tycon n1) (A.Tycon n2)) -> do qcn <- qname $ origName n1
-                                              qin <- renameVar n2
-                                              return (qcn, qin, n2, "")
-    (A.AppTy (A.Tycon n1) (A.ListTy (A.Tyvar n2))) -> do
-      qcn <- qname $ origName n1
-      qin <- renameVar nNil
-      return (qcn, qin, nNil, origName n2)
-
-    _ -> error $ "Non-exhaustive pattern in case: " ++ show t
-
-  k <- lookupKdict qcn
-  let p = case origName i of
-        "[]" -> IsIn qcn (TAp (TCon (Tycon qin k)) (TVar (Tyvar a Star)))
-        _    -> IsIn qcn (TCon (Tycon qin k))
-
-  ps <- tops ctx
-  instAdd ps p
-
-  dict <- lookupCDicts qcn
-  let defds = dictdefDecls dict
-      ds' = mergeDs ds defds
-  enterNewLevelWith $ "I%" ++ origName i -- see STG/isLocal
-  (ds'', _, _) <- collectNames ds'
-  tbs <- renDecls ds''
-  exitLevel
-
-  (tbs', ctab') <- renIDictdefDecls ids
-  return (tbs ++ tbs', (qin, qcn):ctab')
-  where instAdd ps p = do
-          st <- get
-          let ce = rnCe st
-              ce' = fromMaybe (error $ "addInst failed: " ++ show (p, ce))
-                      (addInst ps p ce)
-          put $ st{rnCe=ce'}
-
-        extrId' (A.ValDecl e _) = origName $ extrName e
-        extrId' _               = error "extrId': unexpected"
-
-        mergeDs dcls defdictdefDecls =
-          let
-            names = map extrId' dcls
-            ds2 = filter (\d -> extrId' d `notElem` names) defdictdefDecls
-          in
-           dcls ++ ds2
-
-        tops Nothing  = return []
-        tops (Just x) = tops' x
-
-        tops' (A.ParTy x) = tops' x
-        tops' (A.AppTy (A.Tycon n1) (A.Tyvar n2)) = do
+renInstDecls :: [A.Decl] -> RN ([TempBind], [(Id, Id)])
+renInstDecls dcls = do
+  r <- mapM renInstDecl dcls
+  let (tbss, ctabs) = unzip r
+  return (concat tbss, ctabs)
+  where
+    renInstDecl (A.InstDecl ctx t ds) = do
+      (qcn, qin, i, a) <- case t of
+        (A.AppTy (A.Tycon n1) (A.Tycon n2)) -> do qcn <- qname $ origName n1
+                                                  qin <- renameVar n2
+                                                  return (qcn, qin, n2, "")
+        (A.AppTy (A.Tycon n1) (A.ListTy (A.Tyvar n2))) -> do
           qcn <- qname $ origName n1
-          let x = TVar $ Tyvar (origName n2) Star -- TODO: always works?
-          return [IsIn qcn x]
-        tops' _ = error "tops': unexpected"
+          qin <- renameVar nNil
+          return (qcn, qin, nNil, origName n2)
+        _ -> error $ "Non-exhaustive pattern in case: " ++ show t
 
+      k <- lookupKdict qcn
+      let p = case origName i of
+            "[]" -> IsIn qcn (TAp (TCon (Tycon qin k)) (TVar (Tyvar a Star)))
+            _    -> IsIn qcn (TCon (Tycon qin k))
+      ps <- tops ctx
+      instAdd ps p
+      dict <- lookupCDicts qcn
+      let defds = dictdefDecls dict
+          ds' = mergeDs ds defds
+      enterNewLevelWith $ "I%" ++ origName i -- see STG/isLocal
+      (ds'', _, _) <- collectNames ds'
+      tbs <- renDecls ds''
+      exitLevel
+      return (tbs, (qin, qcn))
 
-renIDictdefDecls _ = error "renIdictdefDecls: must not occur"
+    instAdd ps p = do
+      st <- get
+      let ce = rnCe st
+          ce' = fromMaybe (error $ "addInst failed: " ++ show (p, ce))
+                (addInst ps p ce)
+      put $ st{rnCe=ce'}
+
+    extrId' (A.ValDecl e _) = origName $ extrName e
+    extrId' _               = error "extrId': unexpected"
+
+    mergeDs dcls defdictdefDecls =
+      let
+        names = map extrId' dcls
+        ds2 = filter (\d -> extrId' d `notElem` names) defdictdefDecls
+      in
+        dcls ++ ds2
+
+    tops Nothing  = return []
+    tops (Just x) = tops' x
+
+    tops' (A.ParTy x) = tops' x
+
+    tops' (A.AppTy (A.Tycon n1) (A.Tyvar n2)) = do
+      qcn <- qname $ origName n1
+      let x = TVar $ Tyvar (origName n2) Star -- TODO: always works?
+      return [IsIn qcn x]
+
+    tops' _ = error "tops': unexpected"
 
 lookupKdict :: Id -> RN Kind
 lookupKdict n = do
