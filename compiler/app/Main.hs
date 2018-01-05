@@ -33,8 +33,6 @@ initRnState =
            , rnIfxenv = ifxenv
            , rnCe = initialEnv -- preludeClasses
            , rnCms = primConsMems
-           , rnTbs = []
-           , rnTbsStack = []
            , rnKdict = Symbol.empty
            , rnCdicts = []
            }
@@ -110,4 +108,3 @@ main = do
   case r of
     Left  mes -> putStrLn $ "Error: " ++ mes
     Right m   -> doCompile rne m dest cont opts
-

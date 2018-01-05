@@ -73,16 +73,14 @@ data FixtyInfo = LeftAssoc  Int
 
 -- Renaming Monad
 
-data RnState = RnState { rnModid    :: !Id
-                       , rnLvs      :: ![Level]
-                       , rnTenv     :: !(Table Id)
-                       , rnIfxenv   :: !(Table FixtyInfo)
-                       , rnCe       :: !ClassEnv
-                       , rnCms      :: ![Assump]
-                       , rnTbs      :: ![TempBind]
-                       , rnTbsStack :: ![[TempBind]]
-                       , rnKdict    :: !(Table Kind)
-                       , rnCdicts   :: ![(Id, DictDef)]
+data RnState = RnState { rnModid  :: !Id
+                       , rnLvs    :: ![Level]
+                       , rnTenv   :: !(Table Id)
+                       , rnIfxenv :: !(Table FixtyInfo)
+                       , rnCe     :: !ClassEnv
+                       , rnCms    :: ![Assump]
+                       , rnKdict  :: !(Table Kind)
+                       , rnCdicts :: ![(Id, DictDef)]
                        }
                deriving Show
 
@@ -104,21 +102,6 @@ lookupCDicts n = do
   case lookup n dicts of
     Nothing   -> fail $ "lookupCDicts: class not found: " ++ show (n, dicts)
     Just dict -> return dict
-
-popTbs :: RN ()
-popTbs = do
-  st <- get
-  let tbss = rnTbsStack st
-  if null tbss
-    then fail "popTbs from empty stack."
-    else put st{rnTbs = head tbss, rnTbsStack = tail tbss}
-
-pushTbs :: RN ()
-pushTbs = do
-  st <- get
-  let tbs = rnTbs st
-      tbstack = rnTbsStack st
-  put st{rnTbs = [], rnTbsStack = tbs : tbstack}
 
 getLvs :: RN [Level]
 getLvs = do
@@ -384,17 +367,13 @@ lookupKdict n = do
     Nothing -> error $ "kind not found: " ++ n
 
 renDictdefDecls :: [A.Decl] -> RN [TempBind]
-renDictdefDecls [] = do
-  st <- get
-  put st{rnTbs=[]}
-  return $ rnTbs st
-renDictdefDecls (d:ds) = do
-  ntbs <- renDecl d
-  st <- get
-  let tbs = rnTbs st
-      tbs' = tbs++ntbs
-  put st{rnTbs=tbs'}
-  renDictdefDecls ds
+renDictdefDecls dcls = f dcls []
+  where
+    f [] tbs = do
+      return tbs
+    f (d:ds) tbs = do
+      tbs' <- renDecl d
+      f ds (tbs ++ tbs')
 
 renDecl :: A.Decl -> RN [TempBind]
 renDecl (A.ValDecl expr rhs) = do
@@ -601,9 +580,7 @@ renExp (A.VarExp name) = do
 renExp (A.LetExp ds e) = do
   enterNewLevel
   (ds', _, _) <- collectNames ds
-  pushTbs
   tbs <- renDictdefDecls ds'
-  popTbs
   e' <- renExp e
   exitLevel
   let bgs = toBg tbs

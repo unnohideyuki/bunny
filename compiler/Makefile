@@ -9,7 +9,6 @@ objs = src/Lexer.o src/Parser.o \
        src/CompilerOpts.o src/DDumpAssump.o src/DDumpCore.o
 all: $(execs)
 
-
 OPTIONS = -Wall -XFlexibleContexts
 
 src/Lexer.hs:	src/Lexer.x
@@ -23,7 +22,7 @@ src/Parser.hs:	src/Parser.y
 
 %.o:	%.hs
 	mkdir -p log
-	ghc $(OPTIONS) -isrc $< |& tee log/$(notdir $(basename $<)).log
+	ghc $(OPTIONS) -isrc $< 2>&1 | tee log/$(notdir $(basename $<)).log
 
 bin/bunnyc:	app/Main.hs $(objs)
 	mkdir -p bin
