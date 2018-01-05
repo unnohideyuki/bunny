@@ -216,13 +216,13 @@ renProgCommon m = do
   let body = snd (A.body m)
       modid = fromModname $ A.modname m
   (ds, cds, ids) <- collectNames body
-  ctbs <- renCDictdefDecls cds []
+  ctbs <- renClassDecls cds
   let bgs' = toBg ctbs
       as2 = map (\(n, scm, _) -> n :>: scm) $ fst $ head bgs'
   let dicts = map (cdecl2dict modid) cds
   putCDicts dicts
   (itbs, ctab) <- renIDictdefDecls ids
-  tbs <- renDictdefDecls ds
+  tbs <- renDecls ds
   -- NOTE#1: followings are not clear! see the note page 233.
   let bgs = toBg $ tbs ++ itbs
       bgs'' = toBg $ ctbs ++ tbs ++ itbs
@@ -246,30 +246,32 @@ renPrelude m = do
       as = rnCms st
   return $ tiImportedProgram ce (as ++ as2) bgs initialTI
 
-renCDictdefDecls :: [A.Decl] -> [TempBind] -> RN [TempBind]
-renCDictdefDecls [] tbs = return tbs
-renCDictdefDecls (A.ClassDecl cls ds : cds) tbs = do
-  cname <- clsadd cls
-  let ds' = suppDs ds cname
-  tbs' <- renDictdefDecls $ addvar cls ds'
-  renCDictdefDecls cds (tbs ++ tbs')
-  where clsadd (_, A.AppTy (A.Tycon n) _) = do
-          cname <- qname $ origName n
-          st <- get
-          let ce = rnCe st
-              ce' = -- todo: super class
-                fromMaybe (error $ "addClass failed: " ++ show (cname, ce))
-                  (addClass cname [] ce)
-          put $ st{rnCe=ce'}
-          return cname
-        clsadd _ = error "Semant.renCDictdefDecls.clsadd"
-        addvar c ds' = let (_, sigvar) = c
-                           f (A.TypeSigDecl ns (_, sigdoc)) =
-                             A.TypeSigDecl ns (Just sigvar, sigdoc)
-                           f d = d
-                        in map f ds'
+renClassDecls :: [A.Decl] -> RN [TempBind]
+renClassDecls dcls = do
+  tbss <- mapM
+          (\(A.ClassDecl cls ds) -> do
+              cname <- clsadd cls
+              renDecls $ addvar cls $ suppDs ds cname)
+          dcls
+  return $ concat tbss
+  where
+    clsadd (_, A.AppTy (A.Tycon n) _) = do
+      cname <- qname $ origName n
+      st <- get
+      let ce = rnCe st
+          ce' = -- todo: super class
+            fromMaybe (error $ "addClass failed: " ++ show (cname, ce))
+            (addClass cname [] ce)
+      put $ st{rnCe=ce'}
+      return cname
 
-renCDictdefDecls _ _ = error "Sement.renCDictdefDecls"
+    clsadd _ = error "Semant.renCDictdefDecls.clsadd"
+
+    addvar c ds' = let (_, sigvar) = c
+                       f (A.TypeSigDecl ns (_, sigdoc)) =
+                         A.TypeSigDecl ns (Just sigvar, sigdoc)
+                       f d = d
+                   in map f ds'
 
 {- suppDs -- Exstract TypeSigDictdefDecls and supplement ValDictdefDecls that defines
              overloaded functions.
@@ -327,7 +329,7 @@ renIDictdefDecls (A.InstDecl ctx t ds : ids) = do
       ds' = mergeDs ds defds
   enterNewLevelWith $ "I%" ++ origName i -- see STG/isLocal
   (ds'', _, _) <- collectNames ds'
-  tbs <- renDictdefDecls ds''
+  tbs <- renDecls ds''
   exitLevel
 
   (tbs', ctab') <- renIDictdefDecls ids
@@ -369,9 +371,9 @@ lookupKdict n = do
     Just k  -> return k
     Nothing -> error $ "kind not found: " ++ n
 
-renDictdefDecls :: [A.Decl] -> RN [TempBind]
-renDictdefDecls decls = do tbss <- mapM renDecl decls
-                           return $ concat tbss
+renDecls :: [A.Decl] -> RN [TempBind]
+renDecls decls = do tbss <- mapM renDecl decls
+                    return $ concat tbss
   where
     renDecl (A.ValDecl expr rhs) = do
       enterNewLevel
@@ -576,7 +578,7 @@ renExp (A.VarExp name) = do
 renExp (A.LetExp ds e) = do
   enterNewLevel
   (ds', _, _) <- collectNames ds
-  tbs <- renDictdefDecls ds'
+  tbs <- renDecls ds'
   e' <- renExp e
   exitLevel
   let bgs = toBg tbs
