@@ -51,13 +51,16 @@ data Level = Level { lvPrefix :: !Id
                    }
              deriving Show
 
+fromModname :: Maybe Name -> Id
+fromModname mn = case mn of
+  Just n  -> origName n
+  Nothing -> "Main"
+
 initialLevel      :: Maybe Name -> Level
-initialLevel modid = Level { lvPrefix = case modid of
-                                Just s  -> origName s
-                                Nothing -> "Main"
-                           , lvDict   = empty
-                           , lvNum    = 0
-                           }
+initialLevel n = Level { lvPrefix = fromModname n
+                       , lvDict   = empty
+                       , lvNum    = 0
+                       }
 
 type TempBind = (Id, Maybe (Qual Type), [Alt])
 
@@ -211,9 +214,7 @@ renProgCommon ::
   -> RN ([BindGroup], [BindGroup], [Assump], [DictDef] ,[(Id, Id)])
 renProgCommon m = do
   let body = snd (A.body m)
-      modid = case A.modid m of
-        Just Name{origName=s} -> s
-        Nothing               -> "Main"
+      modid = fromModname $ A.modname m
   (ds, cds, ids) <- collectNames body
   ctbs <- renCDictdefDecls cds []
   let bgs' = toBg ctbs

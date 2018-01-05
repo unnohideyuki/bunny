@@ -2,7 +2,7 @@ module Absyn where
 import           Lexer
 import           Symbol
 
-data Module = Module { modid   :: Maybe Name
+data Module = Module { modname :: Maybe Name
                      , exports :: Maybe [IE]
                      , body    :: ([ImportDecl], [Decl])
                      }
