@@ -1,5 +1,6 @@
 module Semant (
-    FixtyInfo(..)
+  Fixity(..)
+  , Assoc(..)
   , DictDef(..)
   , RnState(..)
   , Level(..)
@@ -66,17 +67,18 @@ data DictDef = DictDef{ dictdefQclsname :: Id
                       }
               deriving Show
 
-data FixtyInfo = LeftAssoc  Int
-               | RightAssoc Int
-               | NoAssoc    Int
-                 deriving (Show, Eq)
+data Fixity = Fixity Assoc Int
+            deriving (Show, Eq)
+
+data Assoc = LeftAssoc | RightAssoc | NoAssoc
+           deriving (Show, Eq)
 
 -- Renaming Monad
 
 data RnState = RnState { rnModid  :: !Id
                        , rnLvs    :: ![Level]
                        , rnTenv   :: !(Table Id)
-                       , rnIfxenv :: !(Table FixtyInfo)
+                       , rnIfxenv :: !(Table Fixity)
                        , rnCe     :: !ClassEnv
                        , rnCms    :: ![Assump]
                        , rnKdict  :: !(Table Kind)
@@ -113,12 +115,12 @@ putLvs lvs = do
   st <-get
   put st{rnLvs=lvs}
 
-getIfxenv :: RN (Table FixtyInfo)
+getIfxenv :: RN (Table Fixity)
 getIfxenv = do
   st <- get
   return $ rnIfxenv st
 
-putIfxenv :: Table FixtyInfo -> RN ()
+putIfxenv :: Table Fixity -> RN ()
 putIfxenv ifxenv = do
   st <- get
   put st{rnIfxenv=ifxenv}
@@ -136,9 +138,9 @@ renameVar name = do
 regFixity :: A.Fixity -> Int -> [Name] -> RN ()
 regFixity _ _ [] = return ()
 regFixity f i (n:ns) = do reg (trFixity f i) n; regFixity f i ns
-  where trFixity A.Infixl = LeftAssoc
-        trFixity A.Infixr = RightAssoc
-        trFixity A.Infix  = NoAssoc
+  where trFixity A.Infixl = Fixity LeftAssoc
+        trFixity A.Infixr = Fixity RightAssoc
+        trFixity A.Infix  = Fixity NoAssoc
         reg finfo name = do
           (lv:_) <- getLvs
           ifxenv <- getIfxenv
@@ -682,10 +684,10 @@ lookupInfixOp op = do
   op_qname <- qname (origName op)
   st <- get
   case tabLookup op_qname (rnIfxenv st) of
-    Just (LeftAssoc  x) -> return (x, A.Infixl)
-    Just (RightAssoc x) -> return (x, A.Infixr)
-    Just (NoAssoc    x) -> return (x, A.Infix)
-    Nothing             -> return (9, A.Infixl)
+    Just (Fixity LeftAssoc  x) -> return (x, A.Infixl)
+    Just (Fixity RightAssoc x) -> return (x, A.Infixr)
+    Just (Fixity NoAssoc    x) -> return (x, A.Infix)
+    Nothing                    -> return (9, A.Infixl)
 
 qname   :: Id -> RN Id
 qname name = state $ \st@RnState{rnLvs=lvs} ->

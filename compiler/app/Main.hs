@@ -25,7 +25,7 @@ import           System.IO
 initRnState :: RnState
 initRnState =
   let
-    ifxenv = insert "Prim.:" (RightAssoc 5) Symbol.empty
+    ifxenv = insert "Prim.:" (Fixity RightAssoc 5) Symbol.empty
   in
    RnState { rnModid = ""
            , rnLvs = []
