@@ -367,31 +367,25 @@ lookupKdict n = do
     Nothing -> error $ "kind not found: " ++ n
 
 renDictdefDecls :: [A.Decl] -> RN [TempBind]
-renDictdefDecls dcls = f dcls []
+renDictdefDecls decls = do tbss <- mapM renDecl decls
+                           return $ concat tbss
   where
-    f [] tbs = do
-      return tbs
-    f (d:ds) tbs = do
-      tbs' <- renDecl d
-      f ds (tbs ++ tbs')
+    renDecl (A.ValDecl expr rhs) = do
+      enterNewLevel
+      (n, pats) <- renFExp expr
+      rexp      <- renRhs  rhs
+      exitLevel
+      return [(n, Nothing, [(pats, rexp)])]
 
-renDecl :: A.Decl -> RN [TempBind]
-renDecl (A.ValDecl expr rhs) = do
-  enterNewLevel
-  (n, pats) <- renFExp expr
-  rexp      <- renRhs  rhs
-  exitLevel
-  return [(n, Nothing, [(pats, rexp)])]
+    renDecl (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) = do
+      ns' <- mapM renameVar ns
+      let kdict = kiExpr sigdoc []
+      kdict `seq` return ()
+      ps <- renSigvar maybe_sigvar kdict
+      t <- renSigdoc sigdoc kdict
+      t `seq` return [(n, Just (ps :=> t), []) | n <- ns']
 
-renDecl (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) = do
-  ns' <- mapM renameVar ns
-  let kdict = kiExpr sigdoc []
-  kdict `seq` return ()
-  ps <- renSigvar maybe_sigvar kdict
-  t <- renSigdoc sigdoc kdict
-  t `seq` return [(n, Just (ps :=> t), []) | n <- ns']
-
-renDecl _ = return [("", Nothing, [])]
+    renDecl _ = return [("", Nothing, [])]
 
 kiExpr :: A.Type -> [(Id, Kind)] -> [(Id, Kind)]
 kiExpr (A.FunTy t1 t2) dict =
