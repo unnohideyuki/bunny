@@ -133,10 +133,10 @@ newNum = do
 qname   :: Id -> RN Id
 qname name = do
   lvs <- getLvs
-  return $ findQName lvs name
-  where findQName [] n = error $ "qname not found: " ++ n
-        findQName (lv:lvs) n =
-          fromMaybe (findQName lvs n) (tabLookup n (lvDict lv))
+  return $ findQName name lvs
+  where findQName n [] = error $ "qname not found: " ++ n
+        findQName n (lv:lvs) =
+          fromMaybe (findQName n lvs) (tabLookup n (lvDict lv))
 
 getIfxenv :: RN (Table Fixity)
 getIfxenv = do
