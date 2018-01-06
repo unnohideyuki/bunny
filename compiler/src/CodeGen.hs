@@ -428,8 +428,8 @@ refTopLevel n =
 emitDicts :: String -> [DictDef] -> IO ()
 emitDicts _ [] = return ()
 emitDicts dest (dict:ds) = do
-  let dname = cls2dictNameM $ dictdefQclsname dict
-      msM = map mangle $ dictdefMethods dict
+  let dname = cls2dictNameM $ ddId dict
+      msM = map mangle $ ddMethods dict
   h <- openFile (dest ++ "/" ++ dname ++ ".java") WriteMode
   emitPreamble h
   hPutStrLn h $
@@ -444,10 +444,10 @@ emitDicts dest (dict:ds) = do
 emitInsts :: String -> [DictDef] -> [(Id, Id)] -> IO ()
 emitInsts _ _ [] = return ()
 emitInsts dest dicts ((qin, qcn):ctab) = do
-  let dicts' = dropWhile ((/= qcn).dictdefQclsname) dicts
+  let dicts' = dropWhile ((/= qcn).ddId) dicts
       ms = case dicts' of
         [] -> error $ "Class name not found: " ++ qcn
-        _  -> dictdefMethods $ head dicts'
+        _  -> ddMethods $ head dicts'
       msM = map mangle ms
       pdname = cls2dictNameM qcn
       dname = cls2dictNameM $ qin ++ "@" ++ qcn

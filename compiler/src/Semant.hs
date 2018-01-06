@@ -9,6 +9,12 @@ module Semant (
   , renPrelude
   ) where
 
+import qualified Absyn                      as A
+import           PreDefined
+import           Symbol
+import           Types
+import           Typing
+
 import           Control.Monad              (when)
 import           Control.Monad.State.Strict (State, get, put)
 import qualified Data.Graph                 as G
@@ -16,13 +22,6 @@ import           Data.List                  (concatMap, foldl', notElem, (\\))
 import qualified Data.Map                   as Map
 import           Data.Maybe                 (fromMaybe)
 import qualified Data.Tree                  as T
--- import           Debug.Trace
-
-import qualified Absyn                      as A
-import           PreDefined
-import           Symbol
-import           Types
-import           Typing
 
 aTrue :: A.Exp
 aTrue  = A.VarExp $ Name "True" (0,0) True
@@ -52,7 +51,7 @@ data Level = Level { lvPrefix :: !Id
              deriving Show
 
 fromModname :: Maybe Name -> Id
-fromModname mn = case mn of
+fromModname name = case name of
   Just n  -> origName n
   Nothing -> "Main"
 
@@ -64,9 +63,9 @@ initialLevel n = Level { lvPrefix = fromModname n
 
 type TempBind = (Id, Maybe (Qual Type), [Alt])
 
-data DictDef = DictDef{ dictdefQclsname :: Id
-                      , dictdefMethods  :: [Id]
-                      , dictdefDecls    :: [A.Decl]
+data DictDef = DictDef{ ddId      :: Id
+                      , ddMethods :: [Id]
+                      , ddDecls   :: [A.Decl]
                       }
               deriving Show
 
@@ -99,7 +98,7 @@ getCDicts = do
 putCDicts :: [DictDef] -> RN()
 putCDicts dicts= do
   st <- get
-  put st{rnCdicts = [(dictdefQclsname d, d) | d <-dicts]}
+  put st{rnCdicts = [(ddId d, d) | d <-dicts]}
 
 lookupCDicts :: Id -> RN DictDef
 lookupCDicts n = do
@@ -109,31 +108,26 @@ lookupCDicts n = do
     Just dict -> return dict
 
 getLvs :: RN [Level]
-getLvs = do
-  st <- get
-  return $ rnLvs st
+getLvs = do st <- get
+            return $ rnLvs st
 
 putLvs :: [Level] -> RN ()
-putLvs lvs = do
-  st <-get
-  put st{rnLvs=lvs}
+putLvs lvs = do st <-get
+                put st{rnLvs=lvs}
 
 pushLv :: Level -> RN ()
-pushLv lv = do
-  lvs <- getLvs
-  putLvs (lv:lvs)
+pushLv lv = do lvs <- getLvs
+               putLvs (lv:lvs)
 
 getPrefix :: RN Id
-getPrefix = do
-  lv:_ <- getLvs
-  return $ lvPrefix lv
+getPrefix = do lv:_ <- getLvs
+               return $ lvPrefix lv
 
 newNum :: RN Int
 newNum = do
   lv:lvs <- getLvs
-  let n   = lvNum lv
-      lv' = lv{lvNum=n+1}
-  putLvs (lv':lvs)
+  let n = lvNum lv
+  putLvs (lv{lvNum = n + 1} : lvs)
   return n
 
 qname   :: Id -> RN Id
@@ -186,13 +180,11 @@ extrName (A.InfixExp _ name _) = name
 extrName e                     = error $ "unexpected exp:" ++ show e
 
 collectNames :: [A.Decl] -> RN ([A.Decl], [A.Decl], [A.Decl])
-collectNames = collectNames' ([], [], [])
+collectNames ds = do
+  r <- mapM collname ds
+  let (dss, cdss, idss) = unzip3 r
+  return (concat dss, concat cdss, concat idss)
   where
-    collectNames' r [] = return r
-    collectNames' (ds, cds, ids) (dcl:dcls) = do
-      (ds', cds', ids') <- collname dcl
-      collectNames' (ds ++ ds', cds ++ cds', ids ++ ids') dcls
-
     collname d@(A.ValDecl e _) = do _ <- renameVar (extrName e)
                                     return ([d], [], [])
     collname (A.FixSigDecl fixity i ns) = do regFixity fixity i ns
@@ -231,7 +223,7 @@ cdecl2dict modid (A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds) =
 
     vdcls = concatMap extrValDecl ds
  in
-   DictDef{dictdefQclsname=name, dictdefMethods=ms, dictdefDecls=vdcls}
+   DictDef{ddId=name, ddMethods=ms, ddDecls=vdcls}
 
 cdecl2dict _ _ = error "cdecl2dict: must not occur"
 
@@ -352,7 +344,7 @@ renInstDecls dcls' = do
       ps <- tops ctx
       instAdd ps p
       dict <- lookupCDicts qcn
-      let defds = dictdefDecls dict
+      let defds = ddDecls dict
           ds' = mergeDs ds defds
       enterNewLevelWith $ "I%" ++ origName i -- see STG/isLocal
       (ds'', _, _) <- collectNames ds'
@@ -372,12 +364,12 @@ renInstDecls dcls' = do
     extrId' (A.ValDecl e _) = origName $ extrName e
     extrId' _               = error "extrId': unexpected"
 
-    mergeDs dcls defdictdefDecls =
+    mergeDs ds1 ds2 =
       let
-        names = map extrId' dcls
-        ds2 = filter (\d -> extrId' d `notElem` names) defdictdefDecls
+        names = map extrId' ds1
+        ds2' = filter (\d -> extrId' d `notElem` names) ds2
       in
-        dcls ++ ds2
+        ds1 ++ ds2'
 
     tops Nothing  = return []
     tops (Just x) = tops' x
@@ -419,17 +411,22 @@ renDecls decls = do tbss <- mapM renDecl decls
     renDecl _ = return [("", Nothing, [])]
 
 kiExpr :: A.Type -> [(Id, Kind)] -> [(Id, Kind)]
-kiExpr (A.FunTy t1 t2) dict =
-  let dict' = kiExpr t1 dict
-  in kiExpr t2 dict'
+
+kiExpr (A.FunTy t1 t2) dict = kiExpr t2 $ kiExpr t1 dict
+
 kiExpr (A.AppTy t1 t2) dict = dict ++ [(extrid t1, Kfun Star Star)
                                       ,(extrid t2, Star)]
   where extrid (A.Tyvar n) = origName n
         extrid _           = "extrid: unexpected"
+
 kiExpr (A.Tyvar n) dict = dict ++ [(origName n, Star)]
+
 kiExpr (A.ParTy e) dict = kiExpr e dict
+
 kiExpr (A.Tycon _) dict = dict
+
 kiExpr (A.ListTy e) dict = kiExpr e dict
+
 kiExpr t dict = error $ "kiExpr: " ++ show (t, dict)
 
 insertKdict :: Id -> Kind -> RN ()
