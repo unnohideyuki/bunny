@@ -10,7 +10,7 @@ module Semant (
   ) where
 
 import           Control.Monad              (when)
-import           Control.Monad.State.Strict (State, get, put, state)
+import           Control.Monad.State.Strict (State, get, put)
 import qualified Data.Graph                 as G
 import           Data.List                  (concatMap, foldl', notElem, (\\))
 import qualified Data.Map                   as Map
@@ -117,6 +117,32 @@ putLvs :: [Level] -> RN ()
 putLvs lvs = do
   st <-get
   put st{rnLvs=lvs}
+
+pushLv :: Level -> RN ()
+pushLv lv = do
+  lvs <- getLvs
+  putLvs (lv:lvs)
+
+getPrefix :: RN Id
+getPrefix = do
+  lv:_ <- getLvs
+  return $ lvPrefix lv
+
+newNum :: RN Int
+newNum = do
+  lv:lvs <- getLvs
+  let n   = lvNum lv
+      lv' = lv{lvNum=n+1}
+  putLvs (lv':lvs)
+  return n
+
+qname   :: Id -> RN Id
+qname name = do
+  lvs <- getLvs
+  return $ findQName lvs name
+  where findQName [] n = error $ "qname not found: " ++ n
+        findQName (lv:lvs) n =
+          fromMaybe (findQName lvs n) (tabLookup n (lvDict lv))
 
 getIfxenv :: RN (Table Fixity)
 getIfxenv = do
@@ -689,31 +715,13 @@ lookupInfixOp op = do
     Just (Fixity NoAssoc    x) -> return (x, A.Infix)
     Nothing                    -> return (9, A.Infixl)
 
-qname   :: Id -> RN Id
-qname name = state $ \st@RnState{rnLvs=lvs} ->
-  let {qn = findQName lvs name} in {-trace ("qn:" ++ show(name, qn))-} (qn, st)
-  where findQName [] n = error $ "qname not found: " ++ n
-        findQName (lv:lvs) n =
-          fromMaybe (findQName lvs n) (tabLookup n (lvDict lv))
-
 findCMs   :: Id -> RN (Maybe Assump)
-findCMs qn = state $ \st@RnState{rnCms=as} -> (find' as qn, st)
+findCMs qn = do
+  st <- get
+  return $ find' (rnCms st) qn
   where find' [] _ = Nothing
         find' (a@(n :>: _):as') qn' | n == qn'  = Just a
                                     | otherwise = find' as' qn'
-
-pushLv :: Level -> RN ()
-pushLv lv = state $ \st@RnState{rnLvs=lvs} ->
-  ((), st{rnLvs = lv:lvs})
-
-getPrefix :: RN Id
-getPrefix = state $ \st@RnState{rnLvs=(lv:_)} -> (lvPrefix lv, st)
-
-newNum :: RN Int
-newNum = state $ \st@RnState{rnLvs=(lv:lvs)} ->
-  let n   = lvNum lv
-      lv' = lv{lvNum=n+1}
-  in (n, st{rnLvs = lv':lvs})
 
 enterNewLevelWith :: Id -> RN ()
 enterNewLevelWith n = do
