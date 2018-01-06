@@ -6,7 +6,7 @@ thints=0
 
 sp32=`echo -e -n "\t\t\t\t" | expand`
 
-for f in src/*.hs; do
+for f in src/*.hs app/Main.hs; do
     if [ $f != src/Lexer.hs -a $f != src/Parser.hs -a $f != src/unicateg.hs ]; then
 	bn=`basename $f`
 	# file name

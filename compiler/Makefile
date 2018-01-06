@@ -26,7 +26,7 @@ src/Parser.hs:	src/Parser.y
 
 bin/bunnyc:	app/Main.hs $(objs)
 	mkdir -p bin
-	ghc $(OPTIONS) -o $@ -isrc $<
+	ghc $(OPTIONS) -o $@ -isrc $< 2>&1 | tee log/Main.log
 
 clean:	
 	rm -f src/*.hi src/*.o $(temps) $(objs) $(execs)
