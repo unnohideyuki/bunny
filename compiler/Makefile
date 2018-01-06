@@ -22,11 +22,11 @@ src/Parser.hs:	src/Parser.y
 
 %.o:	%.hs
 	mkdir -p log
-	ghc $(OPTIONS) -isrc $< 2>&1 | tee log/$(notdir $(basename $<)).log
+	set -o pipefail; ghc $(OPTIONS) -isrc $< 2>&1 | tee log/$(notdir $(basename $<)).log
 
 bin/bunnyc:	app/Main.hs $(objs)
 	mkdir -p bin
-	ghc $(OPTIONS) -o $@ -isrc $< 2>&1 | tee log/Main.log
+	set -o pipefail; ghc $(OPTIONS) -o $@ -isrc $< 2>&1 | tee log/Main.log
 
 clean:	
 	rm -f src/*.hi src/*.o $(temps) $(objs) $(execs)
