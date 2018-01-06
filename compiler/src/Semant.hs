@@ -303,8 +303,8 @@ suppDs ds clsname =
    cds ++ ds'
 
 renInstDecls :: [A.Decl] -> RN ([TempBind], [(Id, Id)])
-renInstDecls dcls = do
-  r <- mapM renInstDecl dcls
+renInstDecls dcls' = do
+  r <- mapM renInstDecl dcls'
   let (tbss, ctabs) = unzip r
   return (concat tbss, ctabs)
   where
@@ -333,6 +333,8 @@ renInstDecls dcls = do
       tbs <- renDecls ds''
       exitLevel
       return (tbs, (qin, qcn))
+
+    renInstDecl _ = error "renInstDecl: must not occur"
 
     instAdd ps p = do
       st <- get
@@ -495,17 +497,8 @@ renPat (A.VarExp n) | isConName n = do qn <- qname (origName n)
 
 renPat (A.ParExp e) = renPat e
 
--- TODO: DRY! renExp and renPats have
-renPat(A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
-  (prec1, fix1) <- lookupInfixOp op1
-  (prec2, fix2) <- lookupInfixOp op2
-  if prec1 == prec2 && (fix1 /= fix2 || fix1 == A.Infix)
-    then fail "fixty resolution error."
-    else if prec1 > prec2 || (prec1 == prec2 && fix1 == A.Infixr)
-         then renPat (A.InfixExp rest op2 (opAppExp op1 e2 e1))
-         else renPat (opAppExp op1 (A.InfixExp rest op2 e2) e1)
-  where
-    opAppExp op e = A.FunAppExp (A.FunAppExp (A.VarExp op) e)
+renPat(A.InfixExp (A.InfixExp rest op2 e2) op1 e1) =
+  resolveFixity rest op2 e2 op1 e1 >>= renPat
 
 renPat (A.InfixExp e2 op e1) =
   renPat (A.FunAppExp (A.FunAppExp (A.VarExp op) e2) e1)
@@ -549,18 +542,23 @@ renRhs rhs = do
   st <- get
   error $ "renRhs not yet implemented. " ++ show (st, rhs)
 
-renExp :: A.Exp -> RN Expr
-
-renExp (A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
+resolveFixity :: A.Exp -> Name -> A.Exp -> Name -> A.Exp -> RN A.Exp
+resolveFixity rest op2 e2 op1 e1 = do
   (prec1, fix1) <- lookupInfixOp op1
   (prec2, fix2) <- lookupInfixOp op2
   if prec1 == prec2 && (fix1 /= fix2 || fix1 == A.Infix)
     then fail "fixty resolution error."
     else if prec1 > prec2 || (prec1 == prec2 && fix1 == A.Infixr)
-         then renExp (A.InfixExp rest op2 (opAppExp op1 e2 e1))
-         else renExp (opAppExp op1 (A.InfixExp rest op2 e2) e1)
+         then return (A.InfixExp rest op2 (opAppExp op1 e2 e1))
+         else return (opAppExp op1 (A.InfixExp rest op2 e2) e1)
   where
     opAppExp op e = A.FunAppExp (A.FunAppExp (A.VarExp op) e)
+
+
+renExp :: A.Exp -> RN Expr
+
+renExp (A.InfixExp (A.InfixExp rest op2 e2) op1 e1) =
+  resolveFixity rest op2 e2 op1 e1 >>= renExp
 
 renExp (A.InfixExp e2 op e1) =
   renExp (A.FunAppExp (A.FunAppExp (A.VarExp op) e2) e1)
