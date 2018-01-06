@@ -59,7 +59,7 @@ implicitPrelude prelude_dir verbose_mode = do
         st0 = initRnState
         lv = (initialLevel $ Absyn.modname m){lvDict=primNames}
         st = st0{rnModid = lvPrefix lv, rnLvs = [lv]}
-        (cont, rnstate) = runState (renPrelude m) st
+        (cont, rnstate) = runState (semPrelude m) st
         as = rnCms rnstate
         as' = tiAs cont
       in (cont, rnstate{rnCms = as ++ as'})
@@ -72,7 +72,7 @@ doCompile st0 m dest cont opts = do
   -- TODO: regular way to add primitive names.
   let lv = (initialLevel $ Absyn.modname m){lvDict=primNames}
   let st = st0{rnModid = lvPrefix lv, rnLvs = lv : rnLvs st0}
-      ((bgs, as, dicts, ctab), st') = runState (renProg m cont) st
+      ((bgs, as, dicts, ctab), st') = runState (semProgram m cont) st
 
   when (optDdumpas opts) $ ddumpAssump as
 

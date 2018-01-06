@@ -1,9 +1,9 @@
 execs = bin/bunnyc
 
 temps = src/Lexer.x src/Lexer.hs src/Parser.hs
-objs = src/Lexer.o src/Parser.o \
-       src/Absyn.o src/Symbol.o src/Types.o \
-       src/Typing.o src/Semant.o src/PreDefined.o \
+objs = src/Lexer.o src/Parser.o src/PreDefined.o \
+       src/Absyn.o src/Symbol.o src/Types.o src/Typing.o \
+       src/Semant.o src/Rename.o src/RenUtil.o src/BindGrouping.o \
        src/Core.o src/Desugar.o src/TrCore.o src/STG.o src/TrSTG.o \
        src/CodeGen.o src/DictPass.o \
        src/CompilerOpts.o src/DDumpAssump.o src/DDumpCore.o
