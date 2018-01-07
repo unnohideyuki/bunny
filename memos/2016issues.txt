@@ -6,6 +6,14 @@ testcases/test8c.hs fails with "cannot resolve ambiguity."
 - When an explicit type signature, Main::IO (), specified,
   it should be type checked and override the initial assumption.
 
+````test8c.hs
+f x y = x > y
+
+main = do
+  return (f 100 10)
+  return (f 'b' 'a')
+````
+
 ----
 Issue#2016Nov002: (todo) the order of concatenation of Assumps.
 
@@ -47,7 +55,7 @@ it doesn't type-check the scrutinee and alts.
 (see note p.264)
 
 ----
-Issue#2016Nov007:  quantify all types in the core language
+Issue#2016Nov007:  (obsolete) quantify all types in the core language
 
 Some types are found unqualified in the core language and caused
 error in type-checking.
@@ -55,3 +63,6 @@ error in type-checking.
 I put some "quantify" temporary, that should be refactored.
 (see note p.264)
 
+2018-01-07: This issue was described in the wrong understanding.
+Type instances should be used in type checking in the DictPass.
+I have already rewrite the module to do so.
