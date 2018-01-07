@@ -49,19 +49,16 @@ data TcState = TcState { tcName  :: Id
 type TC a = State TcState a
 
 getSubst :: TC Subst
-getSubst = do
-  st <- get
-  return $ tcSubst st
+getSubst = do st <- get
+              return $ tcSubst st
 
 putSubst :: Subst -> TC ()
-putSubst s = do
-  st <- get
-  put st{tcSubst = s}
+putSubst s = do st <- get
+                put st{tcSubst = s}
 
 extSubst :: Subst -> TC ()
-extSubst s' = do
-  s <- getSubst
-  putSubst (s'@@s)
+extSubst s' = do s <- getSubst
+                 putSubst (s'@@s)
 
 -- it is equivalent to Typing.unify
 unify' :: Type -> Type -> TC ()
@@ -70,14 +67,12 @@ unify' t1 t2 = do s <- getSubst
                   extSubst u
 
 getName :: TC Id
-getName = do
-  st <- get
-  return $ tcName st
+getName = do st <- get
+             return $ tcName st
 
 getPs :: TC [Pred]
-getPs = do
-  st <- get
-  return $ tcPs st
+getPs = do st <- get
+           return $ tcPs st
 
 getTy :: Expr -> TC (Qual Type)
 -- TODO: quantify here is ok?
