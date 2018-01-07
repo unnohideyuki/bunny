@@ -139,7 +139,7 @@ lookupDictArg (c, x) = do
       (TVar y) = apply s (TVar x)
       ret = case lookup (c, TVar y) d of
         Nothing -> Nothing
-        Just j -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen (-2))
+        Just j  -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen (-2))
   return ret
 
 mkTcState :: Id -> [Pred] -> TcState
@@ -172,7 +172,7 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) (_ :=> t)
         notFunTy (TAp (TAp (TCon (Tycon "(->)" _)) _) _) = False
         notFunTy _                                       = True
         isArg ('_':_) = True
-        isArg _ = False
+        isArg _       = False
 
 tcExpr e@(Lit _) _ = return e
 
@@ -205,13 +205,11 @@ tcExpr e@(Case scrut v as) (ps :=> t) = do
   unify' t te
   s <- getSubst
   let
-    t' = apply s te
-    tcAs [] _ = return []
-    tcAs ((ac, vs, x):as'') qt = do
+    qt' = normQTy ((ps++qe) :=> apply s te)
+    tcAs qt (ac, vs, x) = do
       e' <- tcExpr x qt
-      as' <- tcAs as'' qt
-      return $ (ac, vs, e') : as'
-  as' <- tcAs as (normQTy ((ps++qe) :=> t'))
+      return (ac, vs, e')
+  as' <- mapM (tcAs qt') as
   return $ Case scrut v as'
 
 tcExpr e _ =
