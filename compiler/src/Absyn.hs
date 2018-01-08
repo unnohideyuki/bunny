@@ -19,17 +19,20 @@ data IE
 data ImportDecl = ImportDecl Bool Name (Maybe Name) (Maybe (Bool, [IE]))
                 deriving Show
 
-data Decl = ValDecl     Exp Rhs
-          | TypeSigDecl [Name] (Maybe Type, Type)
+data Decl = VDecl       ValueDecl
+          | CDecl       ClassDecl
           | FixSigDecl  Fixity Int [Name]
           | DefaultDecl [Type]
           | ForeignDecl FDecl
-          | CDecl       ClassDecl
           | SynonymDecl Type Type
           | DataDecl    (Maybe Type, Type) [Constr] (Maybe [Type])
           | NewtypeDecl (Maybe Type, Type) [Constr] (Maybe [Type])
-          | InstDecl    (Maybe Type) Type [Decl]
+          | InstDecl    (Maybe Type) Type [ValueDecl]
           deriving Show
+
+data ValueDecl = ValDecl     Exp Rhs
+               | TypeSigDecl [Name] (Maybe Type, Type)
+               deriving Show
 
 data ClassDecl = ClassDecl (Maybe Type, Type) [Decl]
                deriving Show

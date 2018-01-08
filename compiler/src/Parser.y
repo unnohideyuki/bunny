@@ -291,7 +291,7 @@ deriving: 'deriving' qtycon                     { Just [Tycon $2] }
 
 -- Value definitions ----------------------------------------------------------
 decl: sigdecl                                   { $1 }
-    | infixexp rhs                              { ValDecl $1 $2 }
+    | infixexp rhs                              { VDecl (ValDecl $1 $2) }
 
 rhs: '=' exp wherebinds                         { UnguardedRhs $2 $3 }
    | gdrhs   wherebinds                         { GuardedRhs $1 $2 }
@@ -302,7 +302,7 @@ gdrhs: gdrhs gdrh                               { $1 ++ [$2] }
 gdrh: '|' guardquals '=' exp                    { ($2, $4) }
 
 sigdecl
-  : sig_vars '::' sigtypedoc                    { TypeSigDecl $1 $3 }
+  : sig_vars '::' sigtypedoc                    { VDecl (TypeSigDecl $1 $3) }
   | fixity prec ops                             { FixSigDecl $1 $2 $3 }
 
 -- Expressions ----------------------------------------------------------------

@@ -48,7 +48,7 @@ initialLevel n = Level { lvPrefix = fromModname n
 
 data DictDef = DictDef{ ddId      :: Id
                       , ddMethods :: [Id]
-                      , ddDecls   :: [A.Decl]
+                      , ddDecls   :: [A.ValueDecl]
                       }
               deriving Show
 

@@ -19,19 +19,19 @@ import           Control.Monad.State.Strict (get, put)
 import           Data.List                  (concatMap, foldl', notElem)
 import           Data.Maybe                 (fromMaybe)
 
-collectNames :: [A.Decl] -> RN ([A.Decl], [A.ClassDecl], [A.Decl])
+collectNames :: [A.Decl] -> RN ([A.ValueDecl], [A.ClassDecl], [A.Decl])
 collectNames ds = do
   r <- mapM collname ds
   let (dss, cdss, idss) = unzip3 r
   return (concat dss, concat cdss, concat idss)
   where
-    collname d@(A.ValDecl e _) = do _ <- renameVar (extrName e)
-                                    return ([d], [], [])
+    collname (A.VDecl d@(A.ValDecl e _)) = do _ <- renameVar (extrName e)
+                                              return ([d], [], [])
+
+    collname (A.VDecl d@(A.TypeSigDecl _ _)) = return ([d], [], [])
 
     collname (A.FixSigDecl fixity i ns) = do regFixity fixity i ns
                                              return ([], [], [])
-
-    collname d@(A.TypeSigDecl _ _) = return ([d], [], [])
 
     collname (A.DefaultDecl _) = error "not yet: DefaultDecl"
     collname (A.ForeignDecl _) = error "not yet: ForeignDecl"
@@ -41,8 +41,8 @@ collectNames ds = do
       _ <- renameVar n
       mapM_ colname' ds'
       return ([], [d], [])
-      where colname' (A.ValDecl e _) = do _ <- renameVar (extrName e)
-                                          return ()
+      where colname' (A.VDecl (A.ValDecl e _)) = do _ <- renameVar (extrName e)
+                                                    return ()
             colname' _ = return ()
 
     collname d@A.InstDecl{} = return ([], [], [d])
@@ -57,13 +57,13 @@ cdecl2dict modid (A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds) =
   let
     name = modid ++ "." ++ origName n
 
-    extrMName (A.TypeSigDecl ns _) = map origName ns
-    extrMName _                    = [] -- TODO: can ignore?
+    extrMName (A.VDecl (A.TypeSigDecl ns _)) = map origName ns
+    extrMName _                              = [] -- TODO: can ignore?
 
     ms = concatMap extrMName ds
 
-    extrValDecl d@(A.ValDecl _ _) = [d]
-    extrValDecl _                 = [] -- TODO: can ignore?
+    extrValDecl (A.VDecl d@(A.ValDecl _ _)) = [d]
+    extrValDecl _                           = [] -- TODO: can ignore?
 
     vdcls = concatMap extrValDecl ds
  in
@@ -101,15 +101,15 @@ renClassDecls dcls = do
 {- suppDs -- Exstract TypeSigDictdefDecls and supplement ValDictdefDecls that defines
              overloaded functions.
 -}
-suppDs :: [A.Decl] -> String -> [A.Decl]
+suppDs :: [A.Decl] -> Id -> [A.ValueDecl]
 suppDs ds clsname =
   let
     ubNames [] cns cds' = (cns, cds')
 
-    ubNames (cd@(A.TypeSigDecl ns _):ds'') cns cds' =
+    ubNames (A.VDecl cd@(A.TypeSigDecl ns _):ds'') cns cds' =
        ubNames ds'' (cns ++ map origName ns) (cd : cds')
 
-    ubNames (A.ValDecl _ _ : ds'') cns cds' = ubNames ds'' cns cds'
+    ubNames (A.VDecl (A.ValDecl _ _) : ds'') cns cds' = ubNames ds'' cns cds'
 
     ubNames _ _ _ = error "Sement.suppDs.ubNames"
 
@@ -152,7 +152,7 @@ renInstDecls dcls' = do
       instAdd ps p
       dict <- lookupCDicts qcn
       let defds = ddDecls dict
-          ds' = mergeDs ds defds
+          ds' = mergeDs ds (map A.VDecl defds)
       enterNewLevelWith $ "I%" ++ origName i -- see STG/isLocal
       (ds'', _, _) <- collectNames ds'
       tbs <- renDecls ds''
@@ -168,8 +168,8 @@ renInstDecls dcls' = do
                 (addInst ps p ce)
       put $ st{rnCe=ce'}
 
-    extrId' (A.ValDecl e _) = origName $ extrName e
-    extrId' _               = error "extrId': unexpected"
+    extrId' (A.VDecl (A.ValDecl e _)) = origName $ extrName e
+    extrId' _                         = error "extrId': unexpected"
 
     mergeDs ds1 ds2 =
       let
@@ -190,7 +190,7 @@ renInstDecls dcls' = do
 
     tops' _ = error "tops': unexpected"
 
-renDecls :: [A.Decl] -> RN [TempBind]
+renDecls :: [A.ValueDecl] -> RN [TempBind]
 renDecls decls = do tbss <- mapM renDecl decls
                     return $ concat tbss
   where
@@ -207,8 +207,6 @@ renDecls decls = do tbss <- mapM renDecl decls
       ps <- renSigvar maybe_sigvar kdict
       t <- renSigdoc sigdoc kdict
       return [(n, Just (ps :=> t), []) | n <- ns']
-
-    renDecl _ = return [("", Nothing, [])]
 
 kiExpr :: A.Type -> [(Id, Kind)] -> [(Id, Kind)]
 
@@ -420,7 +418,7 @@ renExp (A.ListCompExp e (A.BindStmt p l : stmts)) = renExp letexp
     rhs = case stmts of
       [] -> A.UnguardedRhs (A.ListExp [e]) []
       _  -> A.UnguardedRhs (A.ListCompExp e stmts) []
-    decl = A.ValDecl okp rhs
+    decl = A.VDecl $ A.ValDecl okp rhs
     body = A.FunAppExp (A.FunAppExp (A.VarExp $ Name "concatMap" (0,0) False)
                                     (A.VarExp ok))
                        l
@@ -443,8 +441,9 @@ renExp (A.IfExp c t f) = renExp caseexp
 renExp (A.CaseExp c alts) = renExp (A.LetExp ddecls fc)
   where f = Name "F" (0,0) False
         fc = A.FunAppExp (A.VarExp f) c
-        ddecls = map (\(A.Match p rhs) ->
-                        A.ValDecl (A.FunAppExp (A.VarExp f) p) rhs) alts
+        ddecls = map
+                 (\(A.Match p rhs) ->
+                    A.VDecl $ A.ValDecl (A.FunAppExp (A.VarExp f) p) rhs) alts
 
 renExp (A.ListExp [e]) =
   renExp $ A.FunAppExp (A.FunAppExp aCons e) aNil
@@ -464,7 +463,7 @@ renExp (A.DoExp (A.BindStmt p e : stmts)) = renExp letexp
     ok = Name "OK" (0,0) False
     okp = A.FunAppExp (A.VarExp ok) p
     rhs = A.UnguardedRhs (A.DoExp stmts) []
-    decl = A.ValDecl okp rhs
+    decl = A.VDecl $ A.ValDecl okp rhs
     body = A.FunAppExp (A.FunAppExp aBind e) (A.VarExp ok)
     letexp = A.LetExp [decl] body
 
@@ -476,7 +475,7 @@ renExp (A.LamExp args e) = renExp (A.LetExp [decl] f)
   where f = A.VarExp $ Name "F" (0,0) False
         fexp = foldl' A.FunAppExp f args
         rhs = A.UnguardedRhs e []
-        decl = A.ValDecl fexp rhs
+        decl = A.VDecl $ A.ValDecl fexp rhs
 
 renExp (A.LitExp (A.LitString s _)) = return $ Lit (LitStr s)
 
