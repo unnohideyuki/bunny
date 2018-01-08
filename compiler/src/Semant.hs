@@ -17,11 +17,11 @@ renProg ::
 renProg m = do
   let body = snd (A.body m)
       modid = fromModname $ A.modname m
-  (ds, cds, ids) <- collectNames body
+  (ds, cds, ids) <- scanDecls body
   ctbs <- renClassDecls cds
   let bgs' = toBg ctbs
       as2 = map (\(n, scm, _) -> n :>: scm) $ fst $ head bgs'
-  let dicts = map (cdecl2dict modid) cds
+  let dicts = map (trCdecl modid) cds
   putCDicts dicts
   (itbs, ctab) <- renInstDecls ids
   tbs <- renDecls ds

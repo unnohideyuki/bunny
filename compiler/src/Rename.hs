@@ -1,6 +1,6 @@
 module Rename ( module RenUtil
-              , collectNames
-              , cdecl2dict
+              , scanDecls
+              , trCdecl
               , renClassDecls
               , renInstDecls
               , renDecls
@@ -19,25 +19,18 @@ import           Control.Monad.State.Strict (get, put)
 import           Data.List                  (concatMap, foldl', notElem)
 import           Data.Maybe                 (fromMaybe)
 
-collectNames :: [A.Decl] -> RN ([A.ValueDecl], [A.ClassDecl], [A.InstDecl])
-collectNames ds = do
-  r <- mapM collname ds
+scanDecls :: [A.Decl] -> RN ([A.ValueDecl], [A.ClassDecl], [A.InstDecl])
+scanDecls ds = do
+  r <- mapM scandecl ds
   let (dss, cdss, idss) = unzip3 r
   return (concat dss, concat cdss, concat idss)
   where
-    collname (A.VDecl d@(A.ValDecl e _)) = do _ <- renameVar (extrName e)
+    scandecl (A.VDecl d@(A.ValDecl e _)) = do _ <- renameVar (extrName e)
                                               return ([d], [], [])
 
-    collname (A.VDecl d@(A.TypeSigDecl _ _)) = return ([d], [], [])
+    scandecl (A.VDecl d@(A.TypeSigDecl _ _)) = return ([d], [], [])
 
-    collname (A.FixSigDecl fixity i ns) = do regFixity fixity i ns
-                                             return ([], [], [])
-
-    collname (A.DefaultDecl _) = error "not yet: DefaultDecl"
-    collname (A.ForeignDecl _) = error "not yet: ForeignDecl"
-    collname (A.SynonymDecl _ _) = error "not yet: SynonymDecl"
-
-    collname (A.CDecl d@(A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds')) = do
+    scandecl (A.CDecl d@(A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds')) = do
       _ <- renameVar n
       mapM_ colname' ds'
       return ([], [d], [])
@@ -45,15 +38,27 @@ collectNames ds = do
                                                     return ()
             colname' _ = return ()
 
-    collname (A.IDecl d) = return ([], [], [d])
+    {- TODO: consider followin patterns.
+            (A.CDecl (A.ClassDecl (_, A.Tyvar _) _))
+            (A.CDecl (A.ClassDecl (_, A.Tycon _) _))
+            (A.CDecl (A.ClassDecl (_, A.FunTy _ _) _))
+            (A.CDecl (A.ClassDecl (_, A.AppTy (A.Tyvar _) _) _))
+    -}
+    scandecl (A.CDecl (A.ClassDecl (_, _) _)) = error "scandecl: unexpected."
 
-    collname A.DataDecl{}         = error "not yet: DataDecl"
-    collname A.NewtypeDecl{}      = error "not yet: NewtypeDecl"
+    scandecl (A.IDecl d) = return ([], [], [d])
 
-    collname _ = error "Sement.collectNames.collname"
+    scandecl (A.FixSigDecl fixity i ns) = do regFixity fixity i ns
+                                             return ([], [], [])
 
-cdecl2dict :: Id -> A.ClassDecl -> DictDef
-cdecl2dict modid (A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds) =
+    scandecl (A.DefaultDecl _)   = error "not yet: DefaultDecl"
+    scandecl (A.ForeignDecl _)   = error "not yet: ForeignDecl"
+    scandecl (A.SynonymDecl _ _) = error "not yet: SynonymDecl"
+    scandecl A.DataDecl{}        = error "not yet: DataDecl"
+    scandecl A.NewtypeDecl{}     = error "not yet: NewtypeDecl"
+
+trCdecl :: Id -> A.ClassDecl -> DictDef
+trCdecl modid (A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds) =
   let
     name = modid ++ "." ++ origName n
 
@@ -69,7 +74,13 @@ cdecl2dict modid (A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds) =
  in
    DictDef{ddId=name, ddMethods=ms, ddDecls=vdcls}
 
-cdecl2dict _ _ = error "cdecl2dict: must not occur"
+{- TODO: consider following patterns:
+            _ (A.ClassDecl (_, A.Tyvar _) _)
+            _ (A.ClassDecl (_, A.Tycon _) _)
+            _ (A.ClassDecl (_, A.FunTy _ _) _)
+            _ (A.ClassDecl (_, A.AppTy (A.Tyvar _) _) _)
+-}
+trCdecl _ (A.ClassDecl (_, _) _) = error "trCDecl: unexpected"
 
 renClassDecls :: [A.ClassDecl] -> RN [TempBind]
 renClassDecls dcls = do
@@ -154,7 +165,7 @@ renInstDecls dcls' = do
       let defds = ddDecls dict
           ds' = mergeDs ds (map A.VDecl defds)
       enterNewLevelWith $ "I%" ++ origName i -- see STG/isLocal
-      (ds'', _, _) <- collectNames ds'
+      (ds'', _, _) <- scanDecls ds'
       tbs <- renDecls ds''
       exitLevel
       return (tbs, (qin, qcn))
@@ -386,7 +397,7 @@ renExp (A.VarExp name) = do
 
 renExp (A.LetExp ds e) = do
   enterNewLevel
-  (ds', _, _) <- collectNames ds
+  (ds', _, _) <- scanDecls ds
   tbs <- renDecls ds'
   e' <- renExp e
   exitLevel
