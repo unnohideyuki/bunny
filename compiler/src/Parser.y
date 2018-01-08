@@ -151,9 +151,10 @@ topdecls: topdecls ';' topdecl                  { $1 ++ [$3] }
 
 topdecl: cl_decl                                { $1 }
        | ty_decl                                { $1 }
-       | 'instance' inst_type where_inst        { InstDecl Nothing $2 $3 }
+       | 'instance' inst_type where_inst
+                                             { IDecl (InstDecl Nothing $2 $3) }
        | 'instance' context '=>' inst_type where_inst        
-                                                { InstDecl (Just $2) $4 $5}
+                                             { IDecl (InstDecl (Just $2) $4 $5)}
        | 'default' '(' comma_types0 ')'         { DefaultDecl $3 }
        | 'foreign' fdecl                        { ForeignDecl $2 }
        | decl                                   { $1 }

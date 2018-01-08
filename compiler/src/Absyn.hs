@@ -22,13 +22,13 @@ data ImportDecl = ImportDecl Bool Name (Maybe Name) (Maybe (Bool, [IE]))
 
 data Decl = VDecl       ValueDecl
           | CDecl       ClassDecl
+          | IDecl       InstDecl
           | FixSigDecl  Fixity Int [Name]
           | DefaultDecl [Type]
           | ForeignDecl FDecl
           | SynonymDecl Type Type
           | DataDecl    (Maybe Type, Type) [Constr] (Maybe [Type])
           | NewtypeDecl (Maybe Type, Type) [Constr] (Maybe [Type])
-          | InstDecl    (Maybe Type) Type [Decl]
           deriving Show
 
 data ValueDecl = ValDecl     Exp Rhs
@@ -37,6 +37,9 @@ data ValueDecl = ValDecl     Exp Rhs
 
 data ClassDecl = ClassDecl (Maybe Type, Type) [Decl]
                deriving Show
+
+data InstDecl = InstDecl    (Maybe Type) Type [Decl]
+              deriving Show
 
 data FDecl = FImDecl Name (Maybe Safety) FSpec
            deriving Show

@@ -19,7 +19,7 @@ import           Control.Monad.State.Strict (get, put)
 import           Data.List                  (concatMap, foldl', notElem)
 import           Data.Maybe                 (fromMaybe)
 
-collectNames :: [A.Decl] -> RN ([A.ValueDecl], [A.ClassDecl], [A.Decl])
+collectNames :: [A.Decl] -> RN ([A.ValueDecl], [A.ClassDecl], [A.InstDecl])
 collectNames ds = do
   r <- mapM collname ds
   let (dss, cdss, idss) = unzip3 r
@@ -45,7 +45,7 @@ collectNames ds = do
                                                     return ()
             colname' _ = return ()
 
-    collname d@A.InstDecl{} = return ([], [], [d])
+    collname (A.IDecl d) = return ([], [], [d])
 
     collname A.DataDecl{}         = error "not yet: DataDecl"
     collname A.NewtypeDecl{}      = error "not yet: NewtypeDecl"
@@ -127,7 +127,7 @@ suppDs ds clsname =
   in
    cds ++ ds'
 
-renInstDecls :: [A.Decl] -> RN ([TempBind], [(Id, Id)])
+renInstDecls :: [A.InstDecl] -> RN ([TempBind], [(Id, Id)])
 renInstDecls dcls' = do
   r <- mapM renInstDecl dcls'
   let (tbss, ctabs) = unzip r
@@ -158,8 +158,6 @@ renInstDecls dcls' = do
       tbs <- renDecls ds''
       exitLevel
       return (tbs, (qin, qcn))
-
-    renInstDecl _ = error "renInstDecl: must not occur"
 
     instAdd ps p = do
       st <- get
