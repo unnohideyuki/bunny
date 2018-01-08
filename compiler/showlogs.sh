@@ -24,7 +24,7 @@ for f in src/*.hs app/Main.hs; do
 	twarns=`expr $twarns \+ $w`
 
 	# hints
-	h=`hlint $f | tail -1 | cut -d " " -f 1 | sed s/No/0/`
+	h=`hlint -XHaskell2010 $f | tail -1 | cut -d " " -f 1 | sed s/No/0/`
 	thints=`expr $thints \+ $h`
 	if [ $h -gt 1 ];then
 	    echo "$h hints"
