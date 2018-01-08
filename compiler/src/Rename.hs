@@ -170,6 +170,7 @@ renInstDecls dcls' = do
       exitLevel
       return (tbs, (qin, qcn))
 
+    instAdd :: [Pred] -> Pred -> RN ()
     instAdd ps p = do
       st <- get
       let ce = rnCe st

@@ -262,6 +262,7 @@ genExpr' (LetExpr bs' e) delayed = do
                        genBs bs ((name, i, fv e'):rs)
     genBs _ _ = error "genBs: must not occur"
 
+    addLocalVars :: [(Id, Int, [Id])] -> GEN ()
     addLocalVars [] = return ()
     addLocalVars ((name, i, _):rs) = do
       st <- get

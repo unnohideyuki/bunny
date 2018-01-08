@@ -9,7 +9,7 @@ objs = src/Lexer.o src/Parser.o src/PreDefined.o \
        src/CompilerOpts.o src/DDumpAssump.o src/DDumpCore.o
 all: $(execs)
 
-OPTIONS = -Wall -XFlexibleContexts
+OPTIONS = -Wall
 
 src/Lexer.hs:	src/Lexer.x
 	alex src/Lexer.x
