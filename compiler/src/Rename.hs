@@ -19,7 +19,7 @@ import           Control.Monad.State.Strict (get, put)
 import           Data.List                  (concatMap, foldl', notElem)
 import           Data.Maybe                 (fromMaybe)
 
-collectNames :: [A.Decl] -> RN ([A.Decl], [A.Decl], [A.Decl])
+collectNames :: [A.Decl] -> RN ([A.Decl], [A.ClassDecl], [A.Decl])
 collectNames ds = do
   r <- mapM collname ds
   let (dss, cdss, idss) = unzip3 r
@@ -37,7 +37,7 @@ collectNames ds = do
     collname (A.ForeignDecl _) = error "not yet: ForeignDecl"
     collname (A.SynonymDecl _ _) = error "not yet: SynonymDecl"
 
-    collname d@(A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds') = do
+    collname (A.CDecl d@(A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds')) = do
       _ <- renameVar n
       mapM_ colname' ds'
       return ([], [d], [])
@@ -52,7 +52,7 @@ collectNames ds = do
 
     collname _ = error "Sement.collectNames.collname"
 
-cdecl2dict :: Id -> A.Decl -> DictDef
+cdecl2dict :: Id -> A.ClassDecl -> DictDef
 cdecl2dict modid (A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds) =
   let
     name = modid ++ "." ++ origName n
@@ -71,7 +71,7 @@ cdecl2dict modid (A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds) =
 
 cdecl2dict _ _ = error "cdecl2dict: must not occur"
 
-renClassDecls :: [A.Decl] -> RN [TempBind]
+renClassDecls :: [A.ClassDecl] -> RN [TempBind]
 renClassDecls dcls = do
   tbss <- mapM
           (\(A.ClassDecl cls ds) -> do

@@ -24,12 +24,15 @@ data Decl = ValDecl     Exp Rhs
           | FixSigDecl  Fixity Int [Name]
           | DefaultDecl [Type]
           | ForeignDecl FDecl
-          | ClassDecl   (Maybe Type, Type) [Decl]
+          | CDecl       ClassDecl
           | SynonymDecl Type Type
           | DataDecl    (Maybe Type, Type) [Constr] (Maybe [Type])
           | NewtypeDecl (Maybe Type, Type) [Constr] (Maybe [Type])
           | InstDecl    (Maybe Type) Type [Decl]
           deriving Show
+
+data ClassDecl = ClassDecl (Maybe Type, Type) [Decl]
+               deriving Show
 
 data FDecl = FImDecl Name (Maybe Safety) FSpec
            deriving Show

@@ -158,7 +158,7 @@ topdecl: cl_decl                                { $1 }
        | 'foreign' fdecl                        { ForeignDecl $2 }
        | decl                                   { $1 }
 
-cl_decl: 'class' tycl_hdr where_cls             { ClassDecl $2 $3 }
+cl_decl: 'class' tycl_hdr where_cls             { CDecl (ClassDecl $2 $3) }
 
 ty_decl: 'type' type '=' type                   { SynonymDecl $2 $4 }
        | data_or_newtype tycl_hdr constrs deriving  { $1 $2 $3 $4 }
