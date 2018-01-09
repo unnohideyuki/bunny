@@ -1,6 +1,7 @@
 module DictPass where
 
 import           Core
+import           PpType
 import           Symbol
 import           Types
 import           Typing                     (Pred (..), Qual (..), Subst, apply,
@@ -43,10 +44,18 @@ mkVs n ps = [TermVar (n ++ ".DARG" ++ show i) ([] :=> TGen (-2))
 data TcState = TcState { tcName  :: Id
                        , tcPs    :: [Pred]
                        , tcSubst :: Subst
+                       , tcNum   :: Int
                        }
                deriving Show
 
 type TC a = State TcState a
+
+newNum :: TC Int
+newNum = do
+  st <- get
+  let n = tcNum st
+  put st{tcNum = n + 1}
+  return n
 
 getSubst :: TC Subst
 getSubst = do st <- get
@@ -83,9 +92,10 @@ getTy (Lit (LitFrac _ t)) = return ([] :=> t)
 getTy (Lit (LitStr _ t)) = return ([] :=> t)
 
 getTy (App f e) = do
-  (qe :=> te) <- getTy e
   (qf :=> tf) <- getTy f
-  return $ normQTy ((qe++qf) :=> tyapp tf te)
+  (qe :=> te) <- getTy e
+  t <- tyapp tf te
+  return $ normQTy ((qe++qf) :=> t)
 
 getTy (Lam vs e) = do
   (qe :=> te) <-  getTy e
@@ -106,15 +116,17 @@ getTy (Let _ e) = getTy e
 
 getTy e = fail $ "Non-Exaustive Patterns in getTy: " ++ show e
 
-tyapp :: Type -> Type -> Type
-tyapp ta tb =
-  let
-    a = TVar (Tyvar "a" Star)
-    tf = tb `fn` a
-    s = fromMaybe (error "do not unified in tyapp")
-        (mgu ta tf)
-  in
-   apply s a
+tyapp :: Type -> Type -> TC Type
+tyapp ta tb = do
+  n <- newNum
+  let a = TVar (Tyvar ("a" ++ show n) Star)
+      tf = tb `fn` a
+      s = fromMaybe
+          (error $ "do not unified in tyapp:\n\t" ++ ppType ta ++
+           "\n\t" ++ ppType tf
+          )
+          (mgu ta tf)
+  return $ apply s a
 
 unifyTs :: Monad m => [Type] -> m Type
 unifyTs [t] = return t
@@ -138,7 +150,7 @@ lookupDictArg (c, x) = do
   return ret
 
 mkTcState :: Id -> [Pred] -> TcState
-mkTcState n ps = TcState{tcName=n, tcPs=ps, tcSubst=nullSubst}
+mkTcState n ps = TcState{tcName=n, tcPs=ps, tcSubst=nullSubst, tcNum=0}
 
 tcExpr :: Expr -> Qual Type -> TC Expr
 
