@@ -11,4 +11,8 @@ ppType (TAp (TCon (Tycon "[]" (Kfun Star Star))) t) = "[" ++ ppType t ++ "]"
 
 ppType (TVar (Tyvar n Star)) = n
 
+ppType (TCon (Tycon n _)) = n
+
+ppType (TGen n) = "g" ++ show n
+
 ppType t = show t
