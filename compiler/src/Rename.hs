@@ -309,6 +309,10 @@ renFExp (A.InfixExp le op re) = do
 
 renFExp e = error $ "renFExp" ++ show e
 
+expandList :: [A.Exp] -> A.Exp
+expandList []     = aNil
+expandList (e:es) = A.FunAppExp (A.FunAppExp aCons e) (expandList es)
+
 renPat :: A.Exp -> RN Pat
 renPat (A.VarExp n) | isConName n = do qn <- qname (origName n)
                                        x <- findCMs qn
@@ -342,6 +346,8 @@ renPat (A.TupleExp [Just e1, Just e2]) = do
   p1 <- renPat e1
   p2 <- renPat e2
   return $ PCon pairCfun [p1, p2]
+
+renPat (A.ListExp es) = renPat $ expandList es
 
 renPat A.WildcardPat = return PWildcard
 
@@ -455,11 +461,8 @@ renExp (A.CaseExp c alts) = renExp (A.LetExp ddecls fc)
                  (\(A.Match p rhs) ->
                     A.VDecl $ A.ValDecl (A.FunAppExp (A.VarExp f) p) rhs) alts
 
-renExp (A.ListExp [e]) =
-  renExp $ A.FunAppExp (A.FunAppExp aCons e) aNil
-
-renExp (A.ListExp (e:es)) =
-  renExp $ A.FunAppExp (A.FunAppExp aCons e) (A.ListExp es)
+renExp (A.ListExp es) =
+  renExp $ expandList es
 
 renExp (A.DoExp [stmt]) = case stmt of
   A.ExpStmt e -> renExp e
