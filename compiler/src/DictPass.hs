@@ -149,6 +149,7 @@ tyapp ta tb = do
            "\n\t" ++ show tf
           )
           (mgu ta tf)
+  extSubst s
   return $ apply s a
 
 unifyTs :: [Type] -> TC Type
