@@ -166,7 +166,8 @@ transExpr (Pat.Case n cs) = do
     {- for temporary fix (#t001) -}
     trClauses (Pat.DefaultClause i expr : cs') alts = do
       expr' <- transExpr expr
-      let v = TermVar i undefined -- with dummy type
+      a <- newTVar' Star
+      let v = TermVar i ([] :=> a)
           alt = (DEFAULT, [v], expr')
       trClauses cs' (alt:alts)
 
@@ -183,7 +184,8 @@ transExpr (Pat.Fatbar e (Pat.Case n cs)) = transExpr $ Pat.Case n cs'
           _         -> addDefAlt cls (cl:ncs)
         addDefAlt _ _ = error "addDefAlt: not expected to reach here."
 
-transExpr Pat.Error = return $ Var (TermVar "Prim.neErr" undefined)
+transExpr Pat.Error = do a <- newTVar' Star
+                         return $ Var (TermVar "Prim.neErr" ([] :=> a))
 
 transExpr e = error $ "Non-exaustive Patterns in transExpr: " ++ show e
 
