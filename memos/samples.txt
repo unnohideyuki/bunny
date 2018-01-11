@@ -35,5 +35,7 @@ sample118 (test13x) : show True/False
 sample119 (test13b) : addComp :: (Eq a, Num a) => a -> a -> Bool
 sample112 (test13c) : addComp in a where clause.
 
+sample125 (dictpass-err1) : tcExpr of Case
+
 
 

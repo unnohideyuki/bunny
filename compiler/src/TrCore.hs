@@ -159,6 +159,7 @@ transExpr (Pat.Case n cs) = do
       appendAs as'
       expr' <- transExpr expr
       putAs as
+      -- TODO: qt is the type of the constructor. Should it be the type of lhs?
       let alt = (DataAlt (DataCon i vs qt), [], expr')
       trClauses cs' (alt:alts)
 

@@ -105,7 +105,6 @@ getTy (Lam vs e) = do
   return $ normQTy ((qe++qv) :=> foldr fn te ts)
 
 getTy (Case scrut _ as) = do
-  _ <- tyScrut scrut as
   qts <- mapM (getTy.(\(_,_,e) -> e)) as
   let
     qs = concatMap (\(q :=> _) -> q) qts
@@ -118,23 +117,24 @@ getTy (Let _ e) = getTy e
 getTy e = fail $ "Non-Exaustive Patterns in getTy: " ++ show e
 
 tyScrut s as = do
-  _ :=> t <- getTy s
+  qt' :=> t <- getTy s
   ts <- mapM altty as
-  unifyTs (t:ts)
+  t' <- unifyTs (t:ts)
+  return $ qt' :=> t'
   where altty (DataAlt (DataCon n vs qt), _, _) = do
           let c = Var (TermVar n qt)
               es = map Var vs
-              f x [] = x
+              f x []     = x
               f x (y:ys) = f (App x y) ys
           _ :=> t <- getTy (f c es)
           return t
 
         altty (LitAlt l, _, _) = return $
                                  case l of
-                                   LitInt _ t -> t
+                                   LitInt _ t  -> t
                                    LitChar _ t -> t
                                    LitFrac _ t -> t
-                                   LitStr _ t -> t
+                                   LitStr _ t  -> t
 
         altty _ = do n <- newNum
                      return $ TVar (Tyvar ("a" ++ show n) Star)
@@ -151,11 +151,12 @@ tyapp ta tb = do
           (mgu ta tf)
   return $ apply s a
 
-unifyTs :: Monad m => [Type] -> m Type
+unifyTs :: [Type] -> TC Type
 unifyTs [t] = return t
 unifyTs (t:ts) = do
   t' <- unifyTs ts
-  s <- mgu t t'
+  unify' t t'
+  s <- getSubst
   return $ apply s t
 unifyTs [] = fail "Non-exhaustive patterns in uniftyTs."
 
@@ -215,23 +216,22 @@ tcExpr (App e f) (ps :=> t) = do
   e2 <- tcExpr f (normQTy ((ps++qe++qf) :=> apply s tf))
   return $ App e1 e2
 
-tcExpr (Lam vs e) (qs :=> t) = do
-  (qe :=> te) <- getTy e
-  let
-    ts = map (\(TermVar _ qt) -> case qt of {_ :=> x -> x})  vs
-    t' = foldr fn te ts
-  unify' t t'
-  e' <- tcExpr e (normQTy ((qs++qe) :=> te))
-  return (Lam vs e')
+tcExpr e@(Lam vs ebody) (qs :=> t) = do
+  _ :=> t' <- getTy e
+  unify' t' t
+  qt <- getTy ebody
+  s <- getSubst
+  ebody' <- tcExpr ebody (apply s qt)
+  return $ Lam vs ebody'
 
 tcExpr (Let bs e) qt = do
   let bs' = tcBind bs
   e' <- tcExpr e qt
   return $ Let bs' e'
 
--- TODO: type-check scrut
 tcExpr e@(Case scrut v as) (ps :=> t) = do
-  (qe :=> te) <- getTy e
+  _ <- tyScrut scrut as
+  qe :=> te <- getTy e
   unify' t te
   s <- getSubst
   let
