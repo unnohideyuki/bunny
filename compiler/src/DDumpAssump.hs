@@ -1,6 +1,6 @@
 module DDumpAssump where
 
-import           PpType
+import           PPTypes
 import           Typing
 
 ddumpAssump :: [Assump] -> IO ()
@@ -13,8 +13,4 @@ ddumpAssump as = do
           putStrLn $ passump x
           ddump_assump' xs
 
-        passump (n :>: sc) = n ++ " :: " ++ pshow sc
-
-pshow :: Scheme -> String
-pshow (Forall ks (ps :=> t)) =
-  "Forall " ++ show ks ++ " (" ++ show ps ++ " :=> " ++ ppType t ++ ")"
+        passump (n :>: sc) = n ++ " :: " ++ showScheme sc

@@ -37,7 +37,7 @@ data TrcState = TrcState { trcAs     :: [Assump]
 type TRC a = State TrcState a
 
 enumId' :: Int -> Id
-enumId' n = ".t" ++ show n
+enumId' n = "t" ++ show n
 
 newTVar' :: Kind -> TRC Type
 newTVar' k = do st <- get

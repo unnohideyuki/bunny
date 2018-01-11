@@ -1,7 +1,7 @@
 module DictPass where
 
 import           Core
-import           PpType
+import           PPCore
 import           Symbol
 import           Types
 import           Typing                     (Pred (..), Qual (..), Subst, apply,
@@ -38,7 +38,7 @@ isOVExpr (App (App (Var (TermVar "#overloaded#" _)) _) _) = True
 isOVExpr _                                                = False
 
 mkVs :: Id -> [Pred] -> [Var]
-mkVs n ps = [TermVar (n ++ ".DARG" ++ show i) ([] :=> TGen (-2))
+mkVs n ps = [TermVar (n ++ ".DARG" ++ show i) ([] :=> TGen 99)
             | (i, _) <- zip [(0::Int)..] ps]
 
 data TcState = TcState { tcName  :: Id
@@ -122,8 +122,8 @@ tyapp ta tb = do
   let a = TVar (Tyvar ("a" ++ show n) Star)
       tf = tb `fn` a
       s = fromMaybe
-          (error $ "do not unified in tyapp:\n\t" ++ ppType ta ++
-           "\n\t" ++ ppType tf
+          (error $ "do not unified in tyapp:\n\t" ++ show ta ++
+           "\n\t" ++ show tf
           )
           (mgu ta tf)
   return $ apply s a
@@ -146,7 +146,7 @@ lookupDictArg (c, x) = do
       (TVar y) = apply s (TVar x)
       ret = case lookup (c, TVar y) d of
         Nothing -> Nothing
-        Just j  -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen (-2))
+        Just j  -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen 100)
   return ret
 
 mkTcState :: Id -> [Pred] -> TcState

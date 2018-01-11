@@ -45,3 +45,4 @@ list = TAp tList
 
 pair :: Type -> Type -> Type
 pair a = TAp (TAp tTuple2 a)
+

@@ -13,13 +13,14 @@
 ----------------------------------------------------------------------------
 module Typing where
 
+import           Symbol
+import           Types
+
 import           Control.Monad              (msum, zipWithM)
 import           Control.Monad.State.Strict (State, get, put, runState, state)
 import           Data.List                  (intersect, nub, partition, union,
                                              (\\))
 import           Data.Maybe                 (fromMaybe)
-import           Symbol
-import           Types
 -- import           Debug.Trace
 
 class HasKind t where
@@ -309,7 +310,7 @@ extSubst   :: Subst -> TI ()
 extSubst s' = state $ \(s, n, as) -> ((), (s'@@s, n, as))
 
 enumId :: Int -> Id
-enumId n = ".v" ++ show n
+enumId n = "v" ++ show n
 
 newTVar :: Kind -> TI Type
 newTVar k = state $ \(s, n, as) -> let v = Tyvar (enumId n) k
@@ -642,3 +643,4 @@ tiImportedProgram ce as bgs st =
   runTI st $ do (_, as') <- tiSeq tiBindGroup ce as bgs
                 (s, n, _) <- get -- TODO: why not use [Assump] in the state
                 return (s, n, as++as')
+

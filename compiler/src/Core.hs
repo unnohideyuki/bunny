@@ -2,7 +2,9 @@ module Core where
 
 import           Symbol
 import           Types
-import           Typing (Qual (..))
+import           Typing    (Qual (..))
+
+import           Data.List (intercalate)
 
 data Module = Module Id [Bind] {- [Axiom] -}
 
@@ -42,3 +44,58 @@ data AltCon = DataAlt DataCon
 
 data DataCon = DataCon Id [Var] (Qual Type)
              deriving (Show, Eq)
+
+{-
+-- Pretty Print
+
+-- Var
+
+ppVar :: Var -> String
+ppVar (TermVar n qt) = "(" ++ n ++ "::" ++ pp qt ++ ")"
+ppVar (DictVar x y) = "${" ++ x ++ " " ++ y ++ "}"
+
+-- Literal
+
+ppLit :: Literal -> String
+
+ppLit (LitInt n t) = "(" ++ show n ++ "::" ++ show t ++ ")"
+
+ppLit (LitChar c _) = show c
+
+ppLit (LitStr s _) = show s
+
+ppLit l = show l
+
+-- Expr
+ppExpr :: Expr -> String
+
+ppExpr (Var v) = pp v
+
+ppExpr (Lit l) = pp l
+
+ppExpr (App e1 e2) = "(" ++ pp e1 ++ " " ++ pp e2 ++ ")"
+
+ppExpr (Lam vs e) = "(\\" ++ pp vs ++ " -> " ++ pp e ++ ")"
+
+ppExpr (Let b e) = "(let " ++ pp b ++ " in " ++ pp e ++ ")"
+
+ppExpr (Case e v as) = "(case " ++ pp e ++ " " ++ pp v ++ " " ++
+                       ppAlts as ++ ")"
+
+ppAlt :: Alt -> String
+ppAlt (ac, vs, e) = "(" ++ pp ac ++ "," ++ pp vs ++ "," ++ pp e ++ ")"
+
+ppAlts :: [Alt] -> String
+ppAlts as = "[" ++ intercalate ", " (map ppAlt as) ++ "]"
+
+ppAltCon :: AltCon -> String
+ppAltCon (DataAlt (DataCon n vs qt)) = n ++ " " ++ s ++ " :: " ++ pp qt
+  where s = intercalate " " (map pp vs)
+
+ppAltCon x = show x
+
+ppBind :: Bind -> String
+ppBind (Rec bs) = "[" ++ intercalate ", " (map ppbind bs) ++ "]"
+  where ppbind (v, e) = "(" ++ pp v ++ "," ++ pp e ++ ")"
+
+-}

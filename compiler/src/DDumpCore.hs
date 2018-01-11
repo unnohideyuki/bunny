@@ -1,15 +1,9 @@
 module DDumpCore where
 
 import           Core
+import           PPCore
 
 ddumpCore :: Bind -> IO ()
-ddumpCore (Rec bs) = ddump_core' bs
-  where ddump_core' [] = return ()
-
-        ddump_core' ((v, e):bs') = do
-          putStrLn "----------------------------------------"
-          putStr $ show v
-          putStrLn " = \n\n"
-          print e
-
-          ddump_core' bs'
+ddumpCore b = do
+  putStrLn "\n---- ddumpCore ----"
+  putStrLn $ show $ ppBind b

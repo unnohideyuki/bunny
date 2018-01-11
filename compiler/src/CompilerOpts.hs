@@ -15,6 +15,7 @@ data Options = Options
                , optVerbose         :: Bool
                , optDdumpas         :: Bool
                , optDdumpcore       :: Bool
+               , optDdumpcore0      :: Bool
                , inputFiles         :: [FilePath]
                } deriving Show
 
@@ -68,6 +69,12 @@ ddumpcoreP = switch $ mconcat
            , help "Debugging dump of Core"
            ]
 
+ddumpcore0P :: Parser Bool
+ddumpcore0P = switch $ mconcat
+              [ long "ddump-core0"
+              , help "Debugging dump of Core just after Semant"
+              ]
+
 sourceFilesP :: Parser [FilePath]
 sourceFilesP = some sourceFileP
 
@@ -80,6 +87,7 @@ optionsP = (<*>) helper $
            <*> verboseP
            <*> ddumpasP
            <*> ddumpcoreP
+           <*> ddumpcore0P
            <*> sourceFilesP
 
 myParserInfo :: ParserInfo Options
