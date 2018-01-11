@@ -1,7 +1,7 @@
 module DictPass where
 
 import           Core
-import           PPCore
+import           PPTypes
 import           Symbol
 import           Types
 import           Typing                     (Pred (..), Qual (..), Subst, apply,
@@ -104,7 +104,8 @@ getTy (Lam vs e) = do
     ts = map (\(TermVar _ (_ :=> t')) -> t')  vs
   return $ normQTy ((qe++qv) :=> foldr fn te ts)
 
-getTy (Case _ _ as) = do
+getTy (Case scrut _ as) = do
+  _ <- tyScrut scrut as
   qts <- mapM (getTy.(\(_,_,e) -> e)) as
   let
     qs = concatMap (\(q :=> _) -> q) qts
@@ -115,6 +116,28 @@ getTy (Case _ _ as) = do
 getTy (Let _ e) = getTy e
 
 getTy e = fail $ "Non-Exaustive Patterns in getTy: " ++ show e
+
+tyScrut s as = do
+  _ :=> t <- getTy s
+  ts <- mapM altty as
+  unifyTs (t:ts)
+  where altty (DataAlt (DataCon n vs qt), _, _) = do
+          let c = Var (TermVar n qt)
+              es = map Var vs
+              f x [] = x
+              f x (y:ys) = f (App x y) ys
+          _ :=> t <- getTy (f c es)
+          return t
+
+        altty (LitAlt l, _, _) = return $
+                                 case l of
+                                   LitInt _ t -> t
+                                   LitChar _ t -> t
+                                   LitFrac _ t -> t
+                                   LitStr _ t -> t
+
+        altty _ = do n <- newNum
+                     return $ TVar (Tyvar ("a" ++ show n) Star)
 
 tyapp :: Type -> Type -> TC Type
 tyapp ta tb = do
