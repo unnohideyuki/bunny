@@ -2,11 +2,11 @@ module Pattern where
 
 import qualified PreDefined
 import           Symbol
-import qualified Typing
+import           Typing     (Assump (..), Expr (..), Pat (..), vsubst)
 
 -- TODO: arity and constructors should not be defined here.
-arity :: Typing.Assump -> Int
-arity (c Typing.:>: _) =
+arity :: Assump -> Int
+arity (c :>: _) =
   case c of
     "Prim.()"    -> 0
     "Prim.[]"    -> 0
@@ -16,8 +16,8 @@ arity (c Typing.:>: _) =
     "Prim.(,)"   -> 2
     _            -> error $ "unknown arity: " ++ c
 
-constructors :: Typing.Assump -> [Typing.Assump]
-constructors (c Typing.:>: _) =
+constructors :: Assump -> [Assump]
+constructors (c :>: _) =
   case c of
     "Prim.()"    -> [PreDefined.unitCfun]
     "Prim.[]"    -> [PreDefined.nilCfun, PreDefined.consCfun]
@@ -36,7 +36,7 @@ data Expression = Case Variable [Clause]
 
 type Variable = Id
 
-data Clause = Clause Typing.Assump [Variable] Expression
+data Clause = Clause Assump [Variable] Expression
             | DefaultClause Variable Expression -- TODO: temporary fix (#t001)
             deriving Show
 
@@ -49,7 +49,7 @@ subst expr vnew vold =
     subst_c (Clause c vs e) = Clause c (fmap subst_var vs) (subst e vnew vold)
     subst_c _               = error "substC: must not occur"
 
-    subst_expr e = Typing.vsubst e vnew vold
+    subst_expr e = vsubst e vnew vold
   in
    case expr of
      Case v cs         -> Case (subst_var v) (fmap subst_c cs)
@@ -57,19 +57,19 @@ subst expr vnew vold =
      OtherExpression e -> OtherExpression (subst_expr e)
      _                 -> error "subst: must not occur"
 
-type Equation = ([Typing.Pat], Expression)
+type Equation = ([Pat], Expression)
 
 isVar :: Equation -> Bool
-isVar (Typing.PVar _:_, _) = True
-isVar _                    = False
+isVar (PVar _:_, _) = True
+isVar _             = False
 
 isCon :: Equation -> Bool
-isCon (Typing.PCon _ _:_, _) = True
-isCon _                      = False
+isCon (PCon _ _:_, _) = True
+isCon _               = False
 
-getCon :: Equation -> Typing.Assump
-getCon (Typing.PCon a _:_, _) = a
-getCon _                      = error "getCon: must not occur"
+getCon :: Equation -> Assump
+getCon (PCon a _:_, _) = a
+getCon _               = error "getCon: must not occur"
 
 -- Note: Starting with "_" guarantees that will be treated as a local variable
 mkVar :: String -> Int -> Variable
@@ -94,7 +94,7 @@ match n k' xs qs' def' =
       | otherwise       = error $ "matchVarCon error: " ++ show (head qs)
 
     matchVar k (u:us) qs def =
-      match n k us [(ps, subst e u v) | (Typing.PVar v:ps, e) <- qs] def
+      match n k us [(ps, subst e u v) | (PVar v:ps, e) <- qs] def
     matchVar _ _ _ _ = error "matchVar: must not occur"
 
     matchCon k (u:us) qs def =
@@ -107,7 +107,7 @@ match n k' xs qs' def' =
                     n
                     (k + k)
                     (us' ++ us)
-                    [(ps' ++ ps, e) | (Typing.PCon _ ps':ps, e) <- qs]
+                    [(ps' ++ ps, e) | (PCon _ ps':ps, e) <- qs]
                     def)
       where
         j = arity c
@@ -116,6 +116,6 @@ match n k' xs qs' def' =
 
     choose c qs = [q | q <-qs, getCon q `cequal` c]
       where
-        (i Typing.:>: _) `cequal` (n' Typing.:>: _) = i == n'
+        (i :>: _) `cequal` (n' :>: _) = i == n'
   in
    foldr (matchVarCon k' xs) def' (partition isVar qs')
