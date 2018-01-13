@@ -60,39 +60,55 @@ partition f (x:x':xs) | f x == f x' = tack x (partition f (x':xs))
   where
     tack y yss = (y : head yss) : tail yss
 
-match :: Id -> Int -> [Variable] -> [Equation] -> Expression -> Expression
+reduceMatch ::
+  ConstructorInfo -> Id -> Int -> [Variable] -> [Equation] -> Expression
+  -> Expression
 
-match _ _ [] qs def = foldr Fatbar def [e | ([], e) <- qs]
-match n k' xs qs' def' =
+reduceMatch ci n0 k0 vs0 qs0 def0 =
   let
-    matchVarCon k us qs def
-      | isVar (head qs) = matchVar k us qs def
-      | isCon (head qs) = matchCon k us qs def
-      | otherwise       = error $ "matchVarCon error: " ++ show (head qs)
+    arity' = arity ci
 
-    matchVar k (u:us) qs def =
-      match n k us [(ps, subst e u v) | (PVar v:ps, e) <- qs] def
-    matchVar _ _ _ _ = error "matchVar: must not occur"
+    constructors' = constructors ci
 
-    matchCon k (u:us) qs def =
-      Case u [matchClause c k (u:us) (choose c qs) def | c <- cs]
-        where cs = constructors (getCon (head qs))
-    matchCon _ _ _ _ = error "matchCon: must not occur"
+    match :: Id -> Int -> [Variable] -> [Equation] -> Expression -> Expression
 
-    matchClause c k (_:us) qs def =
-      Clause c us' (match
-                    n
-                    (k + k)
-                    (us' ++ us)
-                    [(ps' ++ ps, e) | (PCon _ ps':ps, e) <- qs]
-                    def)
-      where
-        j = arity c
-        us' = [mkVar n (i+k)| i <- [1..j]]
-    matchClause _ _ _ _ _ = error "matchClouse: must not occur"
+    match _ _ [] qs def = foldr Fatbar def [e | ([], e) <- qs]
 
-    choose c qs = [q | q <-qs, getCon q `cequal` c]
-      where
-        (i :>: _) `cequal` (n' :>: _) = i == n'
+    match n k' xs qs' def' =
+      let
+        matchVarCon k us qs def
+          | isVar (head qs) = matchVar k us qs def
+          | isCon (head qs) = matchCon k us qs def
+          | otherwise       = error $ "matchVarCon error: " ++ show (head qs)
+
+        matchVar k (u:us) qs def =
+          match n k us [(ps, subst e u v) | (PVar v:ps, e) <- qs] def
+
+        matchVar _ _ _ _ = error "matchVar: must not occur"
+
+        matchCon k (u:us) qs def =
+          Case u [matchClause c k (u:us) (choose c qs) def | c <- cs]
+          where cs = constructors' (getCon (head qs))
+
+        matchCon _ _ _ _ = error "matchCon: must not occur"
+
+        matchClause c k (_:us) qs def =
+          Clause c us' (match
+                        n
+                        (k + k)
+                        (us' ++ us)
+                        [(ps' ++ ps, e) | (PCon _ ps':ps, e) <- qs]
+                        def)
+          where
+            j = arity' c
+            us' = [mkVar n (i+k)| i <- [1..j]]
+
+        matchClause _ _ _ _ _ = error "matchClouse: must not occur"
+
+        choose c qs = [q | q <-qs, getCon q `cequal` c]
+          where (i :>: _) `cequal` (n' :>: _) = i == n'
+      in
+        foldr (matchVarCon k' xs) def' (partition isVar qs')
   in
-   foldr (matchVarCon k' xs) def' (partition isVar qs')
+    match n0 k0 vs0 qs0 def0
+

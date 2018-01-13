@@ -2,6 +2,7 @@ module TrCore where -- Translate from Pattern.Expr to Core.
 
 import           Core
 import qualified Pattern                    as Pat
+import           PreDefined                 (initialConsts)
 import           Symbol
 import           Types
 import           Typing                     (Assump (..), Qual (..),
@@ -250,7 +251,8 @@ dsgAlts n alts@((pats,_):_) =
       rmWild als' (([Ty.PVar "_"], e'):as)
     rmWild (alt:als') as = rmWild als' (alt:as)
 
-    e = Pat.match n k us alts' Pat.Error
+    ci = initialConsts
+    e = Pat.reduceMatch ci n k us alts' Pat.Error
   in
    Pat.Lambda us e
 

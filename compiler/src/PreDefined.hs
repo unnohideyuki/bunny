@@ -183,24 +183,37 @@ primNames  = fromList (primConsNames ++
 
 -- arity and constructors for pattern-matching
 
-arity :: Assump -> Int
-arity (c :>: _) =
-  case c of
-    "Prim.()"    -> 0
-    "Prim.[]"    -> 0
-    "Prim.:"     -> 2
-    "Prim.True"  -> 0
-    "Prim.False" -> 0
-    "Prim.(,)"   -> 2
-    _            -> error $ "unknown arity: " ++ c
+data ConstructorInfo = ConstructorInfo { dArity  :: [(Id, Int)]
+                                       , dConsts :: [(Id, [Assump])]
+                                       }
 
-constructors :: Assump -> [Assump]
-constructors (c :>: _) =
-  case c of
-    "Prim.()"    -> [unitCfun]
-    "Prim.[]"    -> [nilCfun, consCfun]
-    "Prim.:"     -> [nilCfun, consCfun]
-    "Prim.True"  -> [falseCfun, trueCfun]
-    "Prim.False" -> [falseCfun, trueCfun]
-    "Prim.(,)"   -> [pairCfun]
-    _            -> error $ "unknown constructors: " ++ c
+initialConsts :: ConstructorInfo
+initialConsts = ConstructorInfo da dc
+  where   da = [ ("Prim.()", 0)
+               , ("Prim.[]", 0)
+               , ("Prim.:", 2)
+               , ("Prim.True" , 0)
+               , ("Prim.False", 0)
+               , ("Prim.(,)", 2)
+               ]
+
+          dc = [ ("Prim.()", [unitCfun])
+               , ("Prim.[]", [nilCfun, consCfun])
+               , ("Prim.:", [nilCfun, consCfun])
+               , ("Prim.True", [falseCfun, trueCfun])
+               , ("Prim.False", [falseCfun, trueCfun])
+               , ("Prim.(,)", [pairCfun])
+               ]
+
+arity :: ConstructorInfo -> Assump -> Int
+arity ci (c :>: _) =
+  fromMaybe (error $ "unknown arity: " ++ c) (lookup c (dArity ci))
+
+constructors :: ConstructorInfo -> Assump -> [Assump]
+constructors ci (c :>: _) =
+    fromMaybe (error $ "unknown constructors: " ++ c) (lookup c (dConsts ci))
+
+
+
+
+
