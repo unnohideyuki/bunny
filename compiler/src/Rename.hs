@@ -18,6 +18,7 @@ import           Control.Monad              (when)
 import           Control.Monad.State.Strict (get, put)
 import           Data.List                  (concatMap, foldl', notElem)
 import           Data.Maybe                 (fromMaybe)
+import           Debug.Trace
 
 scanDecls :: [A.Decl] -> RN ([A.ValueDecl], [A.ClassDecl], [A.InstDecl])
 scanDecls ds = do
@@ -51,10 +52,30 @@ scanDecls ds = do
     scandecl (A.FixSigDecl fixity i ns) = do regFixity fixity i ns
                                              return ([], [], [])
 
+    scandecl d@(A.DataDecl (maybe_context, ty) consts maybe_dtys) = do
+      let (tn, tvs) = parseTy ty
+      qtn <- renameVar tn
+      let k = foldr Kfun Star (replicate (length tvs) Star)
+          t = TCon (Tycon qtn k)
+
+      -- for debug ...
+      trace ("A.DataDecl: " ++ show d) $ return ()
+      trace (show t) $ return ()
+      fail "A.DataDecl: not yet."
+
+      where
+        parseTy (A.Tycon n) = (n, [])
+        parseTy t = parsety' [] t
+          where
+            parsety' tvs (A.AppTy (A.Tycon cn) (A.Tyvar vn)) =
+              (cn, origName vn : tvs)
+
+            parsety' tvs (A.AppTy t (A.Tyvar vn)) =
+              parsety' (origName vn : tvs) t
+
     scandecl (A.DefaultDecl _)   = error "not yet: DefaultDecl"
     scandecl (A.ForeignDecl _)   = error "not yet: ForeignDecl"
     scandecl (A.SynonymDecl _ _) = error "not yet: SynonymDecl"
-    scandecl A.DataDecl{}        = error "not yet: DataDecl"
     scandecl A.NewtypeDecl{}     = error "not yet: NewtypeDecl"
 
 trCdecl :: Id -> A.ClassDecl -> DictDef
