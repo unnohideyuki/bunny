@@ -1,31 +1,8 @@
 module Pattern where
 
-import qualified PreDefined
+import           PreDefined
 import           Symbol
 import           Typing     (Assump (..), Expr (..), Pat (..), vsubst)
-
--- TODO: arity and constructors should not be defined here.
-arity :: Assump -> Int
-arity (c :>: _) =
-  case c of
-    "Prim.()"    -> 0
-    "Prim.[]"    -> 0
-    "Prim.:"     -> 2
-    "Prim.True"  -> 0
-    "Prim.False" -> 0
-    "Prim.(,)"   -> 2
-    _            -> error $ "unknown arity: " ++ c
-
-constructors :: Assump -> [Assump]
-constructors (c :>: _) =
-  case c of
-    "Prim.()"    -> [PreDefined.unitCfun]
-    "Prim.[]"    -> [PreDefined.nilCfun, PreDefined.consCfun]
-    "Prim.:"     -> [PreDefined.nilCfun, PreDefined.consCfun]
-    "Prim.True"  -> [PreDefined.falseCfun, PreDefined.trueCfun]
-    "Prim.False" -> [PreDefined.falseCfun, PreDefined.trueCfun]
-    "Prim.(,)"   -> [PreDefined.pairCfun]
-    _            -> error $ "unknown constructors: " ++ c
 
 data Expression = Case Variable [Clause]
                 | Fatbar Expression Expression

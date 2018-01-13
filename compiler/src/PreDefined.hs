@@ -180,3 +180,27 @@ primNames :: Table Id
 primNames  = fromList (primConsNames ++
                        [ ("putStrLn", "Prim.putStrLn")
                        ])
+
+-- arity and constructors for pattern-matching
+
+arity :: Assump -> Int
+arity (c :>: _) =
+  case c of
+    "Prim.()"    -> 0
+    "Prim.[]"    -> 0
+    "Prim.:"     -> 2
+    "Prim.True"  -> 0
+    "Prim.False" -> 0
+    "Prim.(,)"   -> 2
+    _            -> error $ "unknown arity: " ++ c
+
+constructors :: Assump -> [Assump]
+constructors (c :>: _) =
+  case c of
+    "Prim.()"    -> [unitCfun]
+    "Prim.[]"    -> [nilCfun, consCfun]
+    "Prim.:"     -> [nilCfun, consCfun]
+    "Prim.True"  -> [falseCfun, trueCfun]
+    "Prim.False" -> [falseCfun, trueCfun]
+    "Prim.(,)"   -> [pairCfun]
+    _            -> error $ "unknown constructors: " ++ c
