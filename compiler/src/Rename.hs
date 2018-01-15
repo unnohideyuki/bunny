@@ -8,6 +8,7 @@ module Rename ( module RenUtil
 
 import qualified Absyn                      as A
 import           BindGrouping
+import           PPTypes
 import           PreDefined
 import           RenUtil
 import           Symbol
@@ -56,13 +57,17 @@ scanDecls ds = do
       let (tn, tvs) = parseTy ty
       qtn <- renameVar tn
       let k = foldr Kfun Star (replicate (length tvs) Star)
-          t = TCon (Tycon qtn k)
+          t = foldl TAp (TCon (Tycon qtn k)) tvs
 
       let cs = map (\(A.Con t) -> parseTy t) consts
+          cs' = map (\(n, ts) -> let i = origName n
+                                     t' = foldr fn t ts
+                                 in i ++ "::" ++ (show $ ppType t')
+                    ) cs
 
       -- for debug ...
       trace ("A.DataDecl: " ++ show d) $ return ()
-      trace (show (t, tvs, cs)) $ return ()
+      trace (show (t, cs')) $ return ()
       fail "A.DataDecl: not yet."
 
       where
@@ -79,7 +84,7 @@ scanDecls ds = do
         renTy (A.Tyvar i) = TVar (Tyvar (origName i) Star)
 
         renTy (A.Tycon i) = case origName i of  -- TODO:
-          "Int" -> tInt
+          "Int"  -> tInt
           "Char" -> tChar
 
         renTy (A.ListTy t) = list (renTy t)
