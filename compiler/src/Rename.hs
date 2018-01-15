@@ -58,20 +58,31 @@ scanDecls ds = do
       let k = foldr Kfun Star (replicate (length tvs) Star)
           t = TCon (Tycon qtn k)
 
+      let cs = map (\(A.Con t) -> parseTy t) consts
+
       -- for debug ...
       trace ("A.DataDecl: " ++ show d) $ return ()
-      trace (show t) $ return ()
+      trace (show (t, tvs, cs)) $ return ()
       fail "A.DataDecl: not yet."
 
       where
         parseTy (A.Tycon n) = (n, [])
         parseTy t = parsety' [] t
           where
-            parsety' tvs (A.AppTy (A.Tycon cn) (A.Tyvar vn)) =
-              (cn, origName vn : tvs)
+            parsety' tvs (A.AppTy (A.Tycon cn) t2) =
+              (cn, renTy t2 : tvs)
 
-            parsety' tvs (A.AppTy t (A.Tyvar vn)) =
-              parsety' (origName vn : tvs) t
+            parsety' tvs (A.AppTy t t2) =
+              parsety' (renTy t2 : tvs) t
+
+
+        renTy (A.Tyvar i) = TVar (Tyvar (origName i) Star)
+
+        renTy (A.Tycon i) = case origName i of  -- TODO:
+          "Int" -> tInt
+          "Char" -> tChar
+
+        renTy (A.ListTy t) = list (renTy t)
 
     scandecl (A.DefaultDecl _)   = error "not yet: DefaultDecl"
     scandecl (A.ForeignDecl _)   = error "not yet: ForeignDecl"
