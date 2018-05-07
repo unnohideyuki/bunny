@@ -1,4 +1,4 @@
--- ADT: Algbraic Data Type
+-- ADT: Algebraic Data Type
 
 data Direction = Right | Left | Up | Down
                -- deriving Show
