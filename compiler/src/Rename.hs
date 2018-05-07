@@ -65,10 +65,13 @@ scanDecls ds = do
                                  in i ++ "::" ++ (show $ ppType t')
                     ) cs
 
+      mapM (\(n, _) -> renameVar n) cs
+
       -- for debug ...
       trace ("A.DataDecl: " ++ show d) $ return ()
       trace (show (t, cs')) $ return ()
-      fail "A.DataDecl: not yet."
+      -- fail "A.DataDecl: not yet."
+      return ([], [], [])
 
       where
         parseTy (A.Tycon n) = (n, [])
@@ -354,7 +357,7 @@ renPat :: A.Exp -> RN Pat
 renPat (A.VarExp n) | isConName n = do qn <- qname (origName n)
                                        x <- findCMs qn
                                        let a = fromMaybe
-                                               (error $  "renPat error: " ++ qn)
+                                               (error $  "renPat(A.VarExp n) error: " ++ show n)
                                                x
                                        return $ PCon a []
                     | otherwise   = do qn <- renameVar n
