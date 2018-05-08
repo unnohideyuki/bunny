@@ -186,6 +186,7 @@ primNames  = fromList (primConsNames ++
 data ConstructorInfo = ConstructorInfo { dArity  :: [(Id, Int)]
                                        , dConsts :: [(Id, [Assump])]
                                        }
+                       deriving Show
 
 initialConsts :: ConstructorInfo
 initialConsts = ConstructorInfo da dc
@@ -213,7 +214,7 @@ constructors :: ConstructorInfo -> Assump -> [Assump]
 constructors ci (c :>: _) =
     fromMaybe (error $ "unknown constructors: " ++ c) (lookup c (dConsts ci))
 
-
-
-
-
+addConsts ::
+  ConstructorInfo -> [(Id, Int)] -> [(Id, [Assump])] -> ConstructorInfo
+addConsts ci@ConstructorInfo{dArity=da0, dConsts=dc0} da dc =
+  ci{dArity = da0 ++ da, dConsts = dc0 ++ dc}

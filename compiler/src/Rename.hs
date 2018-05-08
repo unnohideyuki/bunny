@@ -60,16 +60,22 @@ scanDecls ds = do
           t = foldl TAp (TCon (Tycon qtn k)) tvs
 
       let cs = map (\(A.Con t) -> parseTy t) consts
-          cs' = map (\(n, ts) -> let i = origName n
-                                     t' = foldr fn t ts
-                                 in i ++ "::" ++ (show $ ppType t')
-                    ) cs
+          renCs (n, ts) = do
+            qn <- renameVar n
+            let t' = foldr fn t ts
+            return $ qn :>: toScheme t'
 
-      mapM (\(n, _) -> renameVar n) cs
+      trace (show cs) $ return ()
+      as <- mapM renCs cs
+      appendCMs as
+
+      da <- mapM parseConsts cs
+      let dc = map (\(n, _) -> (n, as)) da
+      appendConstInfo da dc
 
       -- for debug ...
       trace ("A.DataDecl: " ++ show d) $ return ()
-      trace (show (t, cs')) $ return ()
+      trace (show as) $ return ()
       -- fail "A.DataDecl: not yet."
       return ([], [], [])
 
@@ -91,6 +97,12 @@ scanDecls ds = do
           "Char" -> tChar
 
         renTy (A.ListTy t) = list (renTy t)
+
+        parseConsts (n, ts) = do
+          qn <- renameVar n
+          let aty = length ts
+          return (qn, aty)
+
 
     scandecl (A.DefaultDecl _)   = error "not yet: DefaultDecl"
     scandecl (A.ForeignDecl _)   = error "not yet: ForeignDecl"

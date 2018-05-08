@@ -10,6 +10,7 @@ import           Symbol
 import           Typing
 
 import           Control.Monad.State.Strict (get)
+import           Debug.Trace
 
 renProg ::
   A.Module
@@ -37,7 +38,7 @@ semProgram m cont = do
   st <- get
   let ce = rnCe st
       as = rnCms st
-      as' = tiProgram ce (as ++ as2) bgs cont
+  let as' = tiProgram ce (as ++ as2) bgs cont
   return (bgs'', as' ++ as2, dicts, ctab)
 
 semPrelude :: A.Module -> RN (Subst, Int, [Assump])

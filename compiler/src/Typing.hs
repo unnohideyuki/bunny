@@ -21,7 +21,7 @@ import           Control.Monad.State.Strict (State, get, put, runState, state)
 import           Data.List                  (intersect, nub, partition, union,
                                              (\\))
 import           Data.Maybe                 (fromMaybe)
--- import           Debug.Trace
+import           Debug.Trace
 
 class HasKind t where
   kind :: t -> Kind

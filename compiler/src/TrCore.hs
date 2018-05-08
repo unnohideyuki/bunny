@@ -2,7 +2,7 @@ module TrCore where -- Translate from Pattern.Expr to Core.
 
 import           Core
 import qualified Pattern                    as Pat
-import           PreDefined                 (initialConsts)
+import           PreDefined                 (ConstructorInfo, initialConsts)
 import           Symbol
 import           Types
 import           Typing                     (Assump (..), Qual (..),
@@ -11,7 +11,7 @@ import qualified Typing                     as Ty (Expr (..), Literal (..),
                                                    Pat (..))
 
 import           Control.Monad.State.Strict
--- import           Debug.Trace
+import           Debug.Trace
 
 ptypes :: Type -> [Type]
 ptypes t =
@@ -33,9 +33,15 @@ data TrcState = TrcState { trcAs     :: [Assump]
                          , trcBind   :: Bind
                          , trcBstack :: [Bind]
                          , trcNum    :: Int
+                         , trcConsts :: ConstructorInfo
                          }
 
 type TRC a = State TrcState a
+
+getCi :: TRC ConstructorInfo
+getCi = do
+  st <- get
+  return $ trcConsts st
 
 enumId' :: Int -> Id
 enumId' n = "t" ++ show n
@@ -50,10 +56,11 @@ freshInst' :: Scheme -> TRC (Qual Type)
 freshInst' (Forall ks qt) = do ts <- mapM newTVar' ks
                                return (inst ts qt)
 
-translateVdefs :: [Assump] -> [(Id, Pat.Expression)] -> Bind
-translateVdefs as vdefs =
+translateVdefs ::
+  [Assump] -> [(Id, Pat.Expression)] -> ConstructorInfo -> Bind
+translateVdefs as vdefs ci =
   let
-    st = TrcState as (Rec []) [] 0
+    st = TrcState as (Rec []) [] 0 ci
     (_, st') = runState (transVdefs vdefs) st
   in
    trcBind st'
@@ -215,14 +222,14 @@ trExpr2 (Ty.Ap e1 e2) = do
 
 trExpr2 (Ty.Let bg e) = do
   pushBind
+  ci <- getCi
+  let (_, iss) = bg
+      is = concat iss
+      vdefs = dsgIs [] is ci
   transVdefs vdefs
   b' <- popBind
   e' <- trExpr2 e
   return $ Let b' e'
-  where
-    (_, iss) = bg
-    is = concat iss
-    vdefs = dsgIs [] is
 
 trExpr2 (Ty.Const (n :>: sc)) = do
   qt <- freshInst' sc
@@ -231,16 +238,18 @@ trExpr2 (Ty.Const (n :>: sc)) = do
 trExpr2 expr = error $ "Non-exaustive patterns in trExpr2: " ++ show expr
 
 dsgIs :: [(Id, Pat.Expression)]
-      -> [(Id, [([Ty.Pat], Ty.Expr)])] -> [(Id, Pat.Expression)]
+      -> [(Id, [([Ty.Pat], Ty.Expr)])] -> ConstructorInfo
+      -> [(Id, Pat.Expression)]
 
-dsgIs vds [] = vds
-dsgIs vds (impl:is) = dsgIs (desis impl:vds) is
+dsgIs vds [] _ = vds
+dsgIs vds (impl:is) ci = dsgIs (desis impl:vds) is ci
   where
-    desis (n, alts) = (n, dsgAlts n $ cnvalts alts)
+    desis (n, alts) = (n, dsgAlts n (cnvalts alts) ci)
 
-dsgAlts :: Id -> [([Ty.Pat], Pat.Expression)] -> Pat.Expression
+dsgAlts ::
+  Id -> [([Ty.Pat], Pat.Expression)] -> ConstructorInfo -> Pat.Expression
 
-dsgAlts n alts@((pats,_):_) =
+dsgAlts n alts@((pats,_):_) ci =
   let
     k = length pats
     us = [Pat.mkVar n i| i <- [1..k]]
@@ -250,13 +259,11 @@ dsgAlts n alts@((pats,_):_) =
     rmWild (([Ty.PWildcard], e'):als') as =
       rmWild als' (([Ty.PVar "_"], e'):as)
     rmWild (alt:als') as = rmWild als' (alt:as)
-
-    ci = initialConsts
     e = Pat.reduceMatch ci n k us alts' Pat.Error
   in
    Pat.Lambda us e
 
-dsgAlts _ [] = error "dsgAlts: must not occur"
+dsgAlts _ [] _ = error "dsgAlts: must not occur"
 
 cnvalts :: [([Ty.Pat], Ty.Expr)] -> [([Ty.Pat], Pat.Expression)]
 cnvalts = fmap (\(pats, e) -> (pats, Pat.OtherExpression e))

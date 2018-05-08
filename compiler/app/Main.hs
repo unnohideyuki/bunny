@@ -35,6 +35,7 @@ initRnState =
            , rnCms = primConsMems
            , rnKdict = Symbol.empty
            , rnCdicts = []
+           , rnConsts = initialConsts
            }
 
 tiAs :: (a, b, c) -> c
@@ -76,7 +77,8 @@ doCompile st0 m dest cont opts = do
 
   when (optDdumpas opts) $ ddumpAssump as
 
-  let cmod = dsgModule (rnModid st') bgs (as ++ rnCms st) -- see memo#p-258
+  let ci = rnConsts st'
+  let cmod = dsgModule (rnModid st') bgs (as ++ rnCms st') ci -- see memo#p-258
   let b = case cmod of
         Module _ [x] -> x
         _            -> error "Must not occur, cmod must be a Module."

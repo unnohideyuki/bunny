@@ -1,6 +1,7 @@
 module RenUtil where
 
 import qualified Absyn                      as A
+import           PreDefined
 import           Symbol
 import           Types
 import           Typing
@@ -68,6 +69,7 @@ data RnState = RnState { rnModid  :: !Id
                        , rnCms    :: ![Assump]
                        , rnKdict  :: !(Table Kind)
                        , rnCdicts :: ![(Id, DictDef)]
+                       , rnConsts :: !ConstructorInfo
                        }
                deriving Show
 
@@ -178,6 +180,11 @@ findCMs qn = do
         find' (a@(n :>: _):as') qn' | n == qn'  = Just a
                                     | otherwise = find' as' qn'
 
+appendCMs :: [Assump] -> RN ()
+appendCMs as = do
+  st <- get
+  put st{rnCms = rnCms st ++ as}
+
 enterNewLevelWith :: Id -> RN ()
 enterNewLevelWith n = do
   currPrefix <- getPrefix
@@ -210,4 +217,9 @@ lookupKdict n = do
     Just k  -> return k
     Nothing -> error $ "kind not found: " ++ n
 
-
+appendConstInfo :: [(Id, Int)] -> [(Id, [Assump])] -> RN ()
+appendConstInfo da dc = do
+  st <- get
+  let ci = rnConsts st
+      ci' = addConsts ci da dc
+  put st{rnConsts = ci'}
