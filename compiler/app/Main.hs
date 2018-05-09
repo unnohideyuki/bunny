@@ -77,8 +77,9 @@ doCompile st0 m dest cont opts = do
 
   when (optDdumpas opts) $ ddumpAssump as
 
-  let ci = concatConstInfo initialConsts $ rnConsts st'
-  let cmod = dsgModule (rnModid st') bgs (as ++ rnCms st') ci -- see memo#p-258
+  let ci = rnConsts st'
+      ci' = concatConstInfo initialConsts ci
+  let cmod = dsgModule (rnModid st') bgs (as ++ rnCms st') ci' -- see memo#p-258
   let b = case cmod of
         Module _ [x] -> x
         _            -> error "Must not occur, cmod must be a Module."
@@ -92,7 +93,7 @@ doCompile st0 m dest cont opts = do
   let b'' = TR.trBind b'
       mname = case cmod of
         Module n _ -> n
-  CodeGen.emitProgram b'' dest mname
+  CodeGen.emitProgram b'' dest mname ci
   CodeGen.emitDicts dest dicts
   CodeGen.emitInsts dest dicts ctab
   debugmes verbose_mode "done.\n"

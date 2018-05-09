@@ -1,15 +1,16 @@
 module CodeGen where
 
 import           NameMangle
+import           PreDefined
 import           Semant                     (DictDef (..))
 import           STG
 import           Symbol
 
 import           Control.Monad.State.Strict
 import           Data.List                  (intercalate)
+import           Data.List.Split            (splitOn)
 import qualified Data.Map                   as Map
 import           Data.Maybe                 (fromMaybe)
-
 import           System.IO
 
 emitPreamble :: Handle -> IO ()
@@ -24,12 +25,13 @@ emitPreamble h =
   in
    ploop preamble
 
-emitProgram :: Program -> String -> String -> IO ()
-emitProgram prog dest mname = do
+emitProgram :: Program -> String -> String -> ConstructorInfo -> IO ()
+emitProgram prog dest mname ci = do
   h <- openFile (dest ++ "/" ++ mname ++ ".java") WriteMode
   emitPreamble h
   emitHeader mname h -- Todo: module name.
   emitBinds prog h 0
+  emitConsts h ci
   emitFooter h
   hClose h
 
@@ -467,4 +469,18 @@ emitInsts dest dicts ((qin, qcn):ctab) = do
   hClose h
   emitInsts dest dicts ctab
 
+emitConsts :: Handle -> ConstructorInfo -> IO ()
+emitConsts h ci = do
+  hPutStrLn h "    private static Expr mkExpr(HeapObj obj){"
+  hPutStrLn h "        return new AtomExpr(new Var(obj));"
+  hPutStrLn h "    }"
+  mapM_ emitMkf $ dArity ci
+  where
+    emitMkf (n, _) = do
+      let n' = head $ reverse $ splitOn "." n
+      hPutStrLn h $ "    public static Expr mk" ++ n' ++ "(){"
+      hPutStr   h "        return mkExpr(new ConObj(new Cotr("
+      hPutStr   h $ show n
+      hPutStrLn h "), new AtomExpr[0]));"
+      hPutStrLn h "    }"
 

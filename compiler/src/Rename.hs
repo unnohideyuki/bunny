@@ -65,30 +65,19 @@ scanDecls ds = do
             let t' = foldr fn t ts
             return $ qn :>: toScheme t'
 
-      trace (show cs) $ return ()
       as <- mapM renCs cs
       appendCMs as
 
       da <- mapM parseConsts cs
       let dc = map (\(n, _) -> (n, as)) da
       appendConstInfo da dc
-
-      -- for debug ...
-      trace ("A.DataDecl: " ++ show d) $ return ()
-      trace (show as) $ return ()
-      -- fail "A.DataDecl: not yet."
       return ([], [], [])
-
       where
         parseTy (A.Tycon n) = (n, [])
         parseTy t = parsety' [] t
           where
-            parsety' tvs (A.AppTy (A.Tycon cn) t2) =
-              (cn, renTy t2 : tvs)
-
-            parsety' tvs (A.AppTy t t2) =
-              parsety' (renTy t2 : tvs) t
-
+            parsety' tvs (A.AppTy (A.Tycon cn) t2) = (cn, renTy t2 : tvs)
+            parsety' tvs (A.AppTy t t2) = parsety' (renTy t2 : tvs) t
 
         renTy (A.Tyvar i) = TVar (Tyvar (origName i) Star)
 
@@ -102,7 +91,6 @@ scanDecls ds = do
           qn <- renameVar n
           let aty = length ts
           return (qn, aty)
-
 
     scandecl (A.DefaultDecl _)   = error "not yet: DefaultDecl"
     scandecl (A.ForeignDecl _)   = error "not yet: ForeignDecl"
