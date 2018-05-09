@@ -35,7 +35,7 @@ initRnState =
            , rnCms = primConsMems
            , rnKdict = Symbol.empty
            , rnCdicts = []
-           , rnConsts = initialConsts
+           , rnConsts = emptyConstInfo
            }
 
 tiAs :: (a, b, c) -> c
@@ -77,7 +77,7 @@ doCompile st0 m dest cont opts = do
 
   when (optDdumpas opts) $ ddumpAssump as
 
-  let ci = rnConsts st'
+  let ci = concatConstInfo initialConsts $ rnConsts st'
   let cmod = dsgModule (rnModid st') bgs (as ++ rnCms st') ci -- see memo#p-258
   let b = case cmod of
         Module _ [x] -> x

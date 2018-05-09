@@ -188,6 +188,13 @@ data ConstructorInfo = ConstructorInfo { dArity  :: [(Id, Int)]
                                        }
                        deriving Show
 
+emptyConstInfo :: ConstructorInfo
+emptyConstInfo = ConstructorInfo [] []
+
+concatConstInfo :: ConstructorInfo -> ConstructorInfo -> ConstructorInfo
+concatConstInfo (ConstructorInfo da1 dc1)(ConstructorInfo da2 dc2) =
+  ConstructorInfo (da1 ++ da2) (dc1 ++ dc2)
+
 initialConsts :: ConstructorInfo
 initialConsts = ConstructorInfo da dc
   where   da = [ ("Prim.()", 0)
@@ -218,3 +225,4 @@ addConsts ::
   ConstructorInfo -> [(Id, Int)] -> [(Id, [Assump])] -> ConstructorInfo
 addConsts ci@ConstructorInfo{dArity=da0, dConsts=dc0} da dc =
   ci{dArity = da0 ++ da, dConsts = dc0 ++ dc}
+
