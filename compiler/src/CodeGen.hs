@@ -476,11 +476,30 @@ emitConsts h ci = do
   hPutStrLn h "    }"
   mapM_ emitMkf $ dArity ci
   where
-    emitMkf (n, _) = do
-      let n' = head $ reverse $ splitOn "." n
-      hPutStrLn h $ "    public static Expr mk" ++ n' ++ "(){"
-      hPutStr   h "        return mkExpr(new ConObj(new Cotr("
-      hPutStr   h $ show n
-      hPutStrLn h "), new AtomExpr[0]));"
-      hPutStrLn h "    }"
+    emitMkf (n, aty)
+      | aty == 0 = do
+        let n' = head $ reverse $ splitOn "." n
+        hPutStrLn h $ "    public static Expr mk" ++ n' ++ "(){"
+        hPutStr   h "        return mkExpr(new ConObj(new Cotr("
+        hPutStr   h $ show n
+        hPutStrLn h "), new AtomExpr[0]));"
+        hPutStrLn h "    }"
+      | otherwise = do
+        let n' = head $ reverse $ splitOn "." n
+        hPutStr   h $ "    public static class " ++ n' ++ "Func "
+        hPutStrLn h " implements LambdaForm {"
+        hPutStr   h "        public int arity(){ return "
+        hPutStrLn h $ show aty ++ ";}"
+        hPutStrLn h "        public Expr call(AtomExpr[] args){"
+        hPutStrLn h "        assert args.length == arity();"
+        hPutStr   h "        return new AtomExpr(new Var(new ConObj(new Cotr("
+        hPutStrLn h $ show n ++ "), args)));"
+        hPutStrLn h "        }"
+        hPutStrLn h "    }"
+        hPutStrLn h $ "    public static Expr mk" ++ n' ++ "(){"
+        hPutStr   h "        return RTLib.mkFun(new "
+        hPutStrLn h $ n' ++ "Func());"
+        hPutStrLn h "    }"
+
+
 

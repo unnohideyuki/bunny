@@ -8,4 +8,4 @@ if [ -d /c ]; then
     s=";"
 fi
 
-javac -cp "../../brt/src$s$d" $target
+javac -J-Duser.language=en -cp "../../brt/src$s$d" $target
