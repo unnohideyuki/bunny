@@ -88,7 +88,7 @@ data Level = Level { lvPrefix :: !Id
 
 懸念点：
 
-+ 元の名前は、ソースコード中で qualifier が指定されていなかった場合のみを想定しているのでは
++ 元の名前は、ソースコード中で qualifier が指定されていなかった場合のみを想定しているのでは (ソースコード中で既に Qualified だった場合の考慮がまだ）
 + Bang pattern の利用に方針がない
 
 ### fromModname
@@ -157,6 +157,7 @@ data RnState = RnState { rnModid  :: !Id
                        , rnCms    :: ![Assump]
                        , rnKdict  :: !(Table Kind)
                        , rnCdicts :: ![(Id, DictDef)]
+                       , rnConsts :: !ConstructorInfo
                        }
                deriving Show
 
@@ -173,6 +174,7 @@ type RN a = State RnState a
 - rnCms: 
 - rnKdict: 
 - rnCdicts: 
+- rnConstructorInfo: コンストラクタ情報（パターンマッチコンパイルなどで用いられる）
 
 ````Haskell
 getCDicts :: RN [(Id, DictDef)]

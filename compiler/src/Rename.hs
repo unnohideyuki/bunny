@@ -83,6 +83,7 @@ scanDecls ds = do
 
         renTy (A.Tycon i) = case origName i of  -- TODO:
           "Int"  -> tInt
+          "Integer" -> tInteger
           "Char" -> tChar
           x -> error $ "Non-exhaustive patterns: " ++ x
 
