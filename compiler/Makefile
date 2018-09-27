@@ -12,6 +12,8 @@ all: $(execs)
 
 OPTIONS = -Wall -XHaskell2010
 
+SHELL = /bin/bash
+
 src/Lexer.hs:	src/Lexer.x
 	alex src/Lexer.x
 
