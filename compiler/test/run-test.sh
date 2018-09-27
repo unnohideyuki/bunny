@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 i=0
 nng=0
