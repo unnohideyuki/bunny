@@ -1,3 +1,4 @@
+SHELL = /bin/bash
 execs = bin/bunnyc
 
 temps = src/Lexer.x src/Lexer.hs src/Parser.hs
