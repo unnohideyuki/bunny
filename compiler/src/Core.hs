@@ -2,9 +2,7 @@ module Core where
 
 import           Symbol
 import           Types
-import           Typing    (Qual (..))
-
-import           Data.List (intercalate)
+import           Typing (Qual (..))
 
 data Module = Module Id [Bind] {- [Axiom] -}
 
