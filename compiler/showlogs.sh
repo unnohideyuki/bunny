@@ -19,7 +19,7 @@ for f in src/*.hs app/Main.hs; do
 	tlines=`expr $tlines \+ $n`
 	
 	# warnings
-	w=`cat log/* | grep $bn | grep "warning:" | wc -l | cut -d " " -f 1`
+	w=`cat log/* | grep -E src.$bn | grep "warning:" | wc -l | cut -d " " -f 1`
 	echo -n -e "$w warnings\t"
 	twarns=`expr $twarns \+ $w`
 
