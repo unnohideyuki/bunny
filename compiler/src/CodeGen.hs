@@ -478,14 +478,14 @@ emitConsts h ci = do
   where
     emitMkf (n, aty)
       | aty == 0 = do
-        let n' = head $ reverse $ splitOn "." n
+        let n' = last (splitOn "." n)
         hPutStrLn h $ "    public static Expr mk" ++ n' ++ "(){"
         hPutStr   h "        return mkExpr(new ConObj(new Cotr("
         hPutStr   h $ show n
         hPutStrLn h "), new AtomExpr[0]));"
         hPutStrLn h "    }"
       | otherwise = do
-        let n' = head $ reverse $ splitOn "." n
+        let n' = last (splitOn "." n)
         hPutStr   h $ "    public static class " ++ n' ++ "Func "
         hPutStrLn h " implements LambdaForm {"
         hPutStr   h "        public int arity(){ return "
