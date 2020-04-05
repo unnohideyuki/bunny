@@ -352,8 +352,7 @@ renFExp (A.InfixExp le op re) = do
 renFExp e = error $ "renFExp" ++ show e
 
 expandList :: [A.Exp] -> A.Exp
-expandList []     = aNil
-expandList (e:es) = A.FunAppExp (A.FunAppExp aCons e) (expandList es)
+expandList = foldr (A.FunAppExp . A.FunAppExp aCons) aNil
 
 renPat :: A.Exp -> RN Pat
 renPat (A.VarExp n) | isConName n = do qn <- qname (origName n)
