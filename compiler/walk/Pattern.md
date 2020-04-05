@@ -3,7 +3,7 @@ Pattern
 
 ## パターンマッチ変換の方法
 
-Pattern.hs で持ちている方法について述べる。
+Pattern.hs で用いている方法について述べる。
 これは、Efficient compilation of pattern-matching で述べられているものである。
 
 ### データ構造: match 
