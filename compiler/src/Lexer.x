@@ -5,17 +5,22 @@ import Data.Char
 %wrapper "monadUserState"
 
 -- include for $uniwhite, $unismall, $unilarge, $unisymbol and $unidigit
-#include "unisets.txt"
+-- #include "unisets.txt"
 
-$whitechar = [$white $uniwhite]
+-- $whitechar = [$white $uniwhite]
+$whitechar = $white
 
 $special = [\( \) \, \; \[ \] \` \{ \}]
 $ascsymbol = [\! \# \$ \% \& \* \+ \. \/ \< \= \> \? \@ \\ \^ \| \- \~]
-$symbol = [$ascsymbol $unisymbol] # [$special _ \" \']
+--$symbol = [$ascsymbol $unisymbol] # [$special _ \" \']
+$symbol = $ascsymbol # [$special _ \" \']
 
-$small = [a-z _ $unismall]
-$large = [A-Z $unilarge]
-$digit = [0-9 $unidigit]
+-- $small = [a-z _ $unismall]
+-- $large = [A-Z $unilarge]
+-- $digit = [0-9 $unidigit]
+$small = [a-z _]
+$large = [A-Z]
+$digit = [0-9]
 $octit = [0-7]
 $hexit = [0-9a-fA-F]
 

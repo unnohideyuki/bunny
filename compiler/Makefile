@@ -1,7 +1,7 @@
 SHELL = /bin/bash
 execs = bin/bunnyc
 
-temps = src/Lexer.x src/Lexer.hs src/Parser.hs
+temps = src/Lexer.hs src/Parser.hs
 objs = src/Lexer.o src/Parser.o src/PreDefined.o \
        src/Absyn.o src/Symbol.o src/Types.o src/Typing.o \
        src/Semant.o src/Rename.o src/RenUtil.o src/BindGrouping.o \
@@ -17,9 +17,6 @@ SHELL = /bin/bash
 
 src/Lexer.hs:	src/Lexer.x
 	alex src/Lexer.x
-
-src/Lexer.x:	src/Lexer.x.source src/unisets.txt
-	cpp -w -E -P -Isrc $< $@
 
 src/Parser.hs:	src/Parser.y
 	happy $<
