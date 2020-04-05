@@ -307,12 +307,13 @@ renSigdoc (A.ParTy e) kdict = renSigdoc e kdict
 
 -- TODO: should be fix this hard coding.
 renSigdoc (A.Tycon n) _ = case origName n of
-  "Integer" -> return tInteger
-  "Int"     -> return tInt
-  "String"  -> return tString
-  "IO"      -> return $ TCon (Tycon "IO" (Kfun Star Star))
   "()"      -> return tUnit
   "Bool"    -> return tBool
+  "Char"    -> return tChar
+  "Integer" -> return tInteger
+  "Int"     -> return tInt
+  "IO"      -> return $ TCon (Tycon "IO" (Kfun Star Star))
+  "String"  -> return tString
   s         -> error $ "renSigDoc $ A.Tycon " ++ s
 
 renSigdoc (A.ListTy e) kdict = do
