@@ -15,7 +15,7 @@ tUnit     = TCon (Tycon "()" Star)
 tChar    :: Type
 tChar     = TCon (Tycon "Prelude.Char" Star)
 tInt     :: Type
-tInt      = TCon (Tycon "Int" Star)
+tInt      = TCon (Tycon "Prelude.Int" Star)
 tInteger :: Type
 tInteger  = TCon (Tycon "Prelude.Integer" Star)
 tFloat   :: Type
