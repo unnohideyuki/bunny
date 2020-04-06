@@ -515,7 +515,7 @@ ambiguities _ vs ps = [(v, filter (elem v . tv) ps) | v <- tv ps \\ vs]
 
 numClasses :: [Id]
 numClasses  = ["Prelude.Num", "Prelude.Integral", "Prelude.Floating",
-               "Prelude.Fractional", "Prelude.Integer",
+               "Prelude.Fractional",
                "Prelude.Real", "Prelude.RealFloat", "Prelude.RealFrac"]
 
 stdClasses :: [Id]
