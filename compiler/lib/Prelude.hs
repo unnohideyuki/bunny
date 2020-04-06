@@ -83,3 +83,15 @@ instance Ord Integer where
 
 instance Eq Integer where
   (==) = Prim.integerEq
+
+instance Num Int where
+  (+)  = Prim.intAdd
+
+instance Ord Int where
+  (<)  = Prim.intLt
+  (<=) = Prim.intLe
+  (>=) = Prim.intGe
+  (>)  = Prim.intGt
+
+instance Eq Int where
+  (==) = Prim.intEq

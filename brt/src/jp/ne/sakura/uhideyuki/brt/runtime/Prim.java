@@ -110,6 +110,30 @@ public class Prim {
 	return RTLib.mkFun(new IntegerAdd());
     }
 
+    public static Expr mkintLt(){
+	return mkintegerLt();
+    }
+
+    public static Expr mkintLe(){
+	return mkintegerLe();
+    }
+
+    public static Expr mkintGe(){
+	return mkintegerGe();
+    }
+
+    public static Expr mkintGt(){
+	return mkintegerGt();
+    }
+
+    public static Expr mkintEq(){
+	return mkintegerEq();
+    }
+
+    public static Expr mkintAdd(){
+	return mkintegerAdd();
+    }
+
     // (,) = Prim.(,)
     public static class PairFunc implements LambdaForm {
 	public int arity(){ return 2;}

@@ -112,12 +112,41 @@ primIntegerEqCfun = "Prim.integerEq" :>: scIntegerintegerbool
 primIntegerAddCfun :: Assump
 primIntegerAddCfun = "Prim.integerAdd" :>: scIntegerintegerinteger
 
+scIntintbool :: Scheme
+scIntintbool = Forall [] ([] :=> (tInt `fn` tInt `fn` tBool))
+
+scIntintint :: Scheme
+scIntintint =
+  Forall [] ([] :=> (tInt `fn` tInt `fn` tInt))
+
+primIntLtCfun :: Assump
+primIntLtCfun = "Prim.intLt" :>: scIntintbool
+
+primIntLeCfun :: Assump
+primIntLeCfun = "Prim.intLe" :>: scIntintbool
+
+primIntGeCfun :: Assump
+primIntGeCfun = "Prim.intGe" :>: scIntintbool
+
+primIntGtCfun :: Assump
+primIntGtCfun = "Prim.intGt" :>: scIntintbool
+
+primIntEqCfun :: Assump
+primIntEqCfun = "Prim.intEq" :>: scIntintbool
+
+primIntAddCfun :: Assump
+primIntAddCfun = "Prim.intAdd" :>: scIntintint
+
 primCharShow :: Assump
 primCharShow = "Prim.charShow" :>: Forall [] ([] :=> (tChar `fn` tString))
 
 primIntegerShow :: Assump
 primIntegerShow =
-  "Prim.integerShow" :>: Forall [] ([] :=> (tChar `fn` tString))
+  "Prim.integerShow" :>: Forall [] ([] :=> (tInteger `fn` tString))
+
+primIntShow :: Assump
+primIntShow =
+  "Prim.intShow" :>: Forall [] ([] :=> (tInt `fn` tString))
 
 showCfun :: Assump
 showCfun  = "Prim.show" :>: Forall [Star] ([] :=> (TGen 0 `fn` tString))
@@ -137,6 +166,10 @@ primConsMems  = [ unitCfun, nilCfun, consCfun
                 , primIntegerGeCfun, primIntegerGtCfun
                 , primIntegerEqCfun
                 , primIntegerAddCfun
+                , primIntLtCfun, primIntLeCfun
+                , primIntGeCfun, primIntGtCfun
+                , primIntEqCfun
+                , primIntAddCfun
 --                , primCharShow, primIntegerShow
                 , showCfun
                 , errorCfun
@@ -168,6 +201,12 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.integerGt", "Prim.integerGt")
                  , ("Prim.integerEq", "Prim.integerEq")
                  , ("Prim.integerAdd", "Prim.integerAdd")
+                 , ("Prim.intLt", "Prim.intLt")
+                 , ("Prim.intLe", "Prim.intLe")
+                 , ("Prim.intGe", "Prim.intGe")
+                 , ("Prim.intGt", "Prim.intGt")
+                 , ("Prim.intEq", "Prim.intEq")
+                 , ("Prim.intAdd", "Prim.intAdd")
 --                 , ("Prim.charShow", "Prim.charShow")
 --                 , ("Prim.integerShow", "Prim.integerShow")
                  , ("show", "Prim.show")
