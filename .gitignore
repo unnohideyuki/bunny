@@ -10,6 +10,7 @@ compiler/test/jout
 compiler/test/results
 compiler/test/errors.txt
 compiler/log
+compiler/bin
 *.hi
 *.o
 *~
