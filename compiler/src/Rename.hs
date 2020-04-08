@@ -59,6 +59,9 @@ scanDecls ds = do
       let k = foldr Kfun Star (replicate (length tvs) Star)
           t = foldl TAp (TCon (Tycon qtn k)) tvs
 
+      -- the keys of TypeConst dict should be qualified?
+      appendTConst (origName tn) (TCon (Tycon qtn k))
+
       cs <- mapM (\(A.Con t) -> parseTy t) consts
       let renCs (n, ts) = do
             qn <- renameVar n
@@ -85,7 +88,10 @@ scanDecls ds = do
 
         renTy (A.Tycon i) = do
           t <- lookupTConst (origName i)
-          return $ fromMaybe (error $ "Non-exhaustive patterns: " ++ origName i) t
+          st <- get
+          return $ fromMaybe
+            (error $ "Non-exhaustive patterns: " ++ origName i ++ (show $ rnTConsts st))
+            t
 
         renTy (A.ListTy t) = do rt <- renTy t
                                 return $ list rt
