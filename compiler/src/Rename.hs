@@ -82,10 +82,10 @@ scanDecls ds = do
         renTy (A.Tyvar i) = TVar (Tyvar (origName i) Star)
 
         renTy (A.Tycon i) = case origName i of  -- TODO:
-          "Int"  -> tInt
+          "Int"     -> tInt
           "Integer" -> tInteger
-          "Char" -> tChar
-          x -> error $ "Non-exhaustive patterns: " ++ x
+          "Char"    -> tChar
+          x         -> error $ "Non-exhaustive patterns: " ++ x
 
         renTy (A.ListTy t) = list (renTy t)
 
@@ -267,7 +267,7 @@ kiExpr (A.FunTy t1 t2) dict = kiExpr t2 $ kiExpr t1 dict
 kiExpr (A.AppTy t1 t2) dict = dict ++ [(extrid t1, Kfun Star Star)
                                       ,(extrid t2, Star)]
   where extrid (A.Tyvar n) = origName n
-        extrid _           = "extrid: unexpected"
+        extrid x           = "extrid: unexpected: " ++ show x
 
 kiExpr (A.Tyvar n) dict = dict ++ [(origName n, Star)]
 
@@ -305,16 +305,10 @@ renSigdoc (A.AppTy e1 e2) kdict = do
 
 renSigdoc (A.ParTy e) kdict = renSigdoc e kdict
 
--- TODO: should be fix this hard coding.
-renSigdoc (A.Tycon n) _ = case origName n of
-  "()"      -> return tUnit
-  "Bool"    -> return tBool
-  "Char"    -> return tChar
-  "Integer" -> return tInteger
-  "Int"     -> return tInt
-  "IO"      -> return $ TCon (Tycon "IO" (Kfun Star Star))
-  "String"  -> return tString
-  s         -> error $ "renSigDoc $ A.Tycon " ++ s
+renSigdoc (A.Tycon n) _ = do
+  let n' = origName n
+  t <- lookupTConst n'
+  return $ fromMaybe (error $ "renSigDoc $ A.Tycon " ++ n') t
 
 renSigdoc (A.ListTy e) kdict = do
   t <- renSigdoc e kdict

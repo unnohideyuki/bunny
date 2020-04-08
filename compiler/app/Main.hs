@@ -36,6 +36,7 @@ initRnState =
            , rnKdict = Symbol.empty
            , rnCdicts = []
            , rnConsts = emptyConstInfo
+           , rnTConsts = initialTypeConsts
            }
 
 tiAs :: (a, b, c) -> c

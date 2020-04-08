@@ -61,15 +61,16 @@ data Assoc = LeftAssoc | RightAssoc | NoAssoc
 
 -- Renaming Monad
 
-data RnState = RnState { rnModid  :: !Id
-                       , rnLvs    :: ![Level]
-                       , rnTenv   :: !(Table Id)
-                       , rnIfxenv :: !(Table Fixity)
-                       , rnCe     :: !ClassEnv
-                       , rnCms    :: ![Assump]
-                       , rnKdict  :: !(Table Kind)
-                       , rnCdicts :: ![(Id, DictDef)]
-                       , rnConsts :: !ConstructorInfo
+data RnState = RnState { rnModid   :: !Id
+                       , rnLvs     :: ![Level]
+                       , rnTenv    :: !(Table Id)
+                       , rnIfxenv  :: !(Table Fixity)
+                       , rnCe      :: !ClassEnv
+                       , rnCms     :: ![Assump]
+                       , rnKdict   :: !(Table Kind)
+                       , rnCdicts  :: ![(Id, DictDef)]
+                       , rnConsts  :: !ConstructorInfo
+                       , rnTConsts :: ![(Id, Type)]
                        }
                deriving Show
 
@@ -223,3 +224,15 @@ appendConstInfo da dc = do
   let ci = rnConsts st
       ci' = addConsts ci da dc
   put st{rnConsts = ci'}
+
+lookupTConst :: Id -> RN (Maybe Type)
+lookupTConst n = do
+  st <- get
+  let d = rnTConsts st
+  return $ lookup n d
+
+appendTConst :: Id -> Type -> RN ()
+appendTConst n ty = do
+  st <- get
+  let d = rnTConsts st
+  put st{rnTConsts = (n,ty):d}
