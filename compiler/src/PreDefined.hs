@@ -262,9 +262,10 @@ addConsts ci@ConstructorInfo{dArity=da0, dConsts=dc0} da dc =
 
 initialTypeConsts :: [(Id, Type)]
 initialTypeConsts =
-  [ ("Integer", tInteger)
-  , ("Int", tInt)
-  , ("String", tString)
-  , ("()", tUnit)
+  [ ("()", tUnit)
   , ("Bool", tBool)
+  , ("Char", tChar)
+  , ("Int", tInt)
+  , ("Integer", tInteger)
+  , ("String", tString)
   ]

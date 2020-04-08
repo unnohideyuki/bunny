@@ -54,13 +54,13 @@ scanDecls ds = do
                                              return ([], [], [])
 
     scandecl d@(A.DataDecl (maybe_context, ty) consts maybe_dtys) = do
-      let (tn, tvs) = parseTy ty
+      (tn, tvs) <- parseTy ty
       qtn <- renameVar tn
       let k = foldr Kfun Star (replicate (length tvs) Star)
           t = foldl TAp (TCon (Tycon qtn k)) tvs
 
-      let cs = map (\(A.Con t) -> parseTy t) consts
-          renCs (n, ts) = do
+      cs <- mapM (\(A.Con t) -> parseTy t) consts
+      let renCs (n, ts) = do
             qn <- renameVar n
             let t' = foldr fn t ts
             return $ qn :>: toScheme t'
@@ -73,21 +73,22 @@ scanDecls ds = do
       appendConstInfo da dc
       return ([], [], [])
       where
-        parseTy (A.Tycon n) = (n, [])
+        parseTy (A.Tycon n) = return (n, [])
         parseTy t = parsety' [] t
           where
-            parsety' tvs (A.AppTy (A.Tycon cn) t2) = (cn, renTy t2 : tvs)
-            parsety' tvs (A.AppTy t t2) = parsety' (renTy t2 : tvs) t
+            parsety' tvs (A.AppTy (A.Tycon cn) t2) = do rt2 <- renTy t2
+                                                        return (cn, rt2 : tvs)
+            parsety' tvs (A.AppTy t t2) = do rt2 <- renTy t2
+                                             parsety' (rt2 : tvs) t
 
-        renTy (A.Tyvar i) = TVar (Tyvar (origName i) Star)
+        renTy (A.Tyvar i) = return $ TVar (Tyvar (origName i) Star)
 
-        renTy (A.Tycon i) = case origName i of  -- TODO:
-          "Int"     -> tInt
-          "Integer" -> tInteger
-          "Char"    -> tChar
-          x         -> error $ "Non-exhaustive patterns: " ++ x
+        renTy (A.Tycon i) = do
+          t <- lookupTConst (origName i)
+          return $ fromMaybe (error $ "Non-exhaustive patterns: " ++ origName i) t
 
-        renTy (A.ListTy t) = list (renTy t)
+        renTy (A.ListTy t) = do rt <- renTy t
+                                return $ list rt
 
         parseConsts (n, ts) = do
           qn <- renameVar n
