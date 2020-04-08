@@ -5,11 +5,6 @@ import           Typing
 
 import           Data.Maybe (fromMaybe)
 
--- preludeClasses
-preludeClasses :: ClassEnv
-preludeClasses = fromMaybe (error "preludeClasses must not occur")
-                 (exampleInsts initialEnv)
-
 -- Primitive Constructors and Member Functions
 unitCfun :: Assump
 unitCfun  = "Prim.()" :>: Forall [] ([] :=> tUnit)
