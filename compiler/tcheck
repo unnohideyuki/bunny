@@ -6,7 +6,7 @@ bname=`basename $s .hs`
 echo "# 1. test-compile"
 ./test-compile.sh $s
 if [ $? -ne 0 ];then
-  return 1
+  exit 1
 fi
 
 cd jout
@@ -14,11 +14,11 @@ cd jout
 echo "# 2. jout/compile"
 ./compile $bname/Sample.java
 if [ $? -ne 0 ];then
-  return 1
+  exit 1
 fi
 
 echo "# 3. jout/run"
 ./run $bname/Sample.java
 if [ $? -ne 0 ];then
-  return 1
+  exit 1
 fi
