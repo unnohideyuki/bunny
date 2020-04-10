@@ -113,4 +113,6 @@ main = do
   let r = parse s
   case r of
     Left  mes -> putStrLn $ "Error: " ++ mes
-    Right m   -> doCompile rne m dest cont opts
+    Right m   -> do
+      when (optDdumpabsyn opts) $ print m
+      doCompile rne m dest cont opts

@@ -13,6 +13,7 @@ data Options = Options
                , xlibPath           :: String
                , xnoImplicitPrelude :: Bool
                , optVerbose         :: Bool
+               , optDdumpabsyn      :: Bool
                , optDdumpas         :: Bool
                , optDdumpcore       :: Bool
                , optDdumpcore0      :: Bool
@@ -57,6 +58,12 @@ verboseP = switch $ mconcat
            , help "Verbose mode"
            ]
 
+ddumpabsynP :: Parser Bool
+ddumpabsynP = switch $ mconcat
+           [ long "ddump-absyn"
+           , help "Debugging dump of Absyn"
+           ]
+
 ddumpasP :: Parser Bool
 ddumpasP = switch $ mconcat
            [ long "ddump-assump"
@@ -85,6 +92,7 @@ optionsP = (<*>) helper $
            <*> xlibPathP
            <*> xNoImplicitPreludeP
            <*> verboseP
+           <*> ddumpabsynP
            <*> ddumpasP
            <*> ddumpcoreP
            <*> ddumpcore0P
