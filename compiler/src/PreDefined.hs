@@ -267,5 +267,6 @@ initialTypeConsts =
   , ("Char", tChar)
   , ("Int", tInt)
   , ("Integer", tInteger)
+  , ("IO", tIO)
   , ("String", tString)
   ]
