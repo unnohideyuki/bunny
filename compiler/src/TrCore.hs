@@ -223,9 +223,10 @@ trExpr2 (Ty.Ap e1 e2) = do
 trExpr2 (Ty.Let bg e) = do
   pushBind
   ci <- getCi
-  let (_, iss) = bg
+  let (es, iss) = bg
+      es' = map (\(n, _, alts) -> (n, alts)) es
       is = concat iss
-      vdefs = dsgIs [] is ci
+      vdefs = dsgBs [] (es' ++ is) ci
   transVdefs vdefs
   b' <- popBind
   e' <- trExpr2 e
@@ -237,14 +238,14 @@ trExpr2 (Ty.Const (n :>: sc)) = do
 
 trExpr2 expr = error $ "Non-exaustive patterns in trExpr2: " ++ show expr
 
-dsgIs :: [(Id, Pat.Expression)]
+dsgBs :: [(Id, Pat.Expression)]
       -> [(Id, [([Ty.Pat], Ty.Expr)])] -> ConstructorInfo
       -> [(Id, Pat.Expression)]
 
-dsgIs vds [] _ = vds
-dsgIs vds (impl:is) ci = dsgIs (desis impl:vds) is ci
+dsgBs vds [] _ = vds
+dsgBs vds (impl:is) ci = dsgBs (desbs impl:vds) is ci
   where
-    desis (n, alts) = (n, dsgAlts n (cnvalts alts) ci)
+    desbs (n, alts) = (n, dsgAlts n (cnvalts alts) ci)
 
 dsgAlts ::
   Id -> [([Ty.Pat], Pat.Expression)] -> ConstructorInfo -> Pat.Expression
