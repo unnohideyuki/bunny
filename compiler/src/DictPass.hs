@@ -188,10 +188,10 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) (_ :=> t)
       mkdicts (IsIn n2 (TVar x) : qs) ds =
         case apply s (TVar x) of
           (TCon (Tycon n1 _)) -> mkdicts qs (Var (DictVar n1 n2) : ds)
-          _ -> do v <- lookupDictArg (n2, x)
+          y -> do v <- lookupDictArg (n2, x)
                   case v of
                     Nothing -> error ("Error: dictionary not found: "
-                                      ++ n ++ ", " ++ show (x,s))
+                                      ++ n ++ ", " ++ show (x,n2,y))
                     Just v' -> mkdicts qs (Var v' : ds)
       mkdicts _ _ = error "mkdicts: must not occur"
 
