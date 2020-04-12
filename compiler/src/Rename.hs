@@ -15,6 +15,7 @@ import           Symbol
 import           Types
 import           Typing
 
+import           Control.Exception          (assert)
 import           Control.Monad              (when)
 import           Control.Monad.State.Strict (get, put)
 import           Data.List                  (concatMap, foldl', notElem)
@@ -452,7 +453,7 @@ renExp (A.LetExp ds e) = do
   e' <- renExp e
   exitLevel
   let bgs = toBg tbs
-  return (Let (head bgs) e') -- TODO: (head bgs) is temporary
+  assert (length bgs == 1) $ return (Let (head bgs) e') -- TODO: (head bgs) is temporary
 
 -- List comprehension
 -- [e | True] = [e]
