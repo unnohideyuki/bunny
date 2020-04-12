@@ -110,6 +110,10 @@ public class Prim {
 	return RTLib.mkFun(new IntegerAdd());
     }
 
+    public static Expr mkintegerMul(){
+	return RTLib.mkFun(new IntegerMul());
+    }
+
     public static Expr mkintLt(){
 	return mkintegerLt();
     }
@@ -132,6 +136,10 @@ public class Prim {
 
     public static Expr mkintAdd(){
 	return mkintegerAdd();
+    }
+
+    public static Expr mkintMul(){
+	return mkintegerMul();
     }
 
     // (,) = Prim.(,)
@@ -544,6 +552,28 @@ class IntegerAdd implements LambdaForm {
 	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
 
 	LitInt r = new LitInt(il.value + ir.value);
+
+	return new AtomExpr(r);
+    }
+}
+
+class IntegerMul implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedInt();
+	assert rhs.isBoxedInt();
+
+	BoxedIntObj il =
+	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntObj ir =
+	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
+
+	LitInt r = new LitInt(il.value * ir.value);
 
 	return new AtomExpr(r);
     }

@@ -71,9 +71,11 @@ instance Eq Char where
 
 class (Eq a) => Num a where
   (+) :: a -> a -> a
+  (*) :: a -> a -> a
 
 instance Num Integer where
   (+)  = Prim.integerAdd
+  (*)  = Prim.integerMul
 
 instance Ord Integer where
   (<)  = Prim.integerLt
@@ -86,6 +88,7 @@ instance Eq Integer where
 
 instance Num Int where
   (+)  = Prim.intAdd
+  (*)  = Prim.intMul
 
 instance Ord Int where
   (<)  = Prim.intLt
