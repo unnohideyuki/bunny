@@ -11,17 +11,27 @@ touch errors.txt
 
 function dotest(){
   f=$1
-    
+  bname=`basename $f .hs`
+
   echo "----"
   echo "Test: $f"
   ./test-compile.sh $f
-  if [ $? -ne 0 ];then
-      echo "Compiling $f failed"
-      echo "$f: compile" >> errors.txt
-      return 1
+  s=$?
+  if [ -f err/$bname ];then
+      if [ $s -eq 0 ] ;then
+	  echo "Compiling $f failed (e)"
+	  echo "$f: compile" >> errors.txt
+	  return 1
+      else
+	  return 0
+      fi
+  else
+      if [ $s -ne 0 ] ;then
+	  echo "Compiling $f failed"
+	  echo "$f: compile" >> errors.txt
+	  return 1
+      fi
   fi
-
-  bname=`basename $f .hs`
 
   ./jcompile jout/$bname/Sample.java
   if [ $? -ne 0 ];then
