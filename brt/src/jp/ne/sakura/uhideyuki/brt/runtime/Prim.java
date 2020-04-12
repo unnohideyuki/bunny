@@ -201,8 +201,14 @@ class ShowFunc implements LambdaForm {
 	    } else if (ident == "Prim.False") {
 		r = "False";
 	    } else {
-		System.out.println(ident);
-		r = "warn: unsupported contr at show.";
+		String[] t = ident.split("\\.", 0);
+		r = t[t.length - 1];
+		LambdaForm f = new ShowFunc();
+		for (int i = 0; i < co.args.length; i++){
+		    r += " ";
+		    AtomExpr[] a = {co.args[i]};
+		    r += RTLib.toJString(f.call(a));
+		}
 	    }
 	    return RTLib.fromJString(r);
 	} else {

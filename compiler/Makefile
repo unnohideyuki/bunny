@@ -36,6 +36,6 @@ clean:
 rt:	
 	cd ../brt; make
 
-check:	bin/bunnyc rt
+check:	$(execs) rt
 	cd test; ./run-test.sh
 

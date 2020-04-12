@@ -44,7 +44,7 @@ foldr k z = go
 infix 4 ==, /=, <, <=, >=, >
 
 not :: Bool -> Bool
-not True = False
+not True  = False
 not False = True
 
 class Eq a where
@@ -95,3 +95,5 @@ instance Ord Int where
 
 instance Eq Int where
   (==) = Prim.intEq
+
+print x = putStrLn (show x)
