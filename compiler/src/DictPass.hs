@@ -20,13 +20,19 @@ normQTy (qs :=> t) = let
   in
    qs' :=> t
 
-tcBind :: Bind -> Bind
-tcBind (Rec bs) = Rec $ map tcbind bs
+tcBind :: Bind -> Maybe TcState -> Bind
+tcBind (Rec bs) maybest = Rec $ map tcbind bs
   where
     tcbind (v@(TermVar n qt@(qs :=> _)), e)
       | isOVExpr e = (v, e)
       | otherwise =
-        let st = mkTcState (zip qs (repeat n))
+        let pss = (zip qs (repeat n))
+            st = case maybest of
+              Just st' -> let pss' = tcPss st'
+                              subst = tcSubst st'
+                              num = tcNum st'
+                          in mkTcState (pss ++ pss') subst num
+              Nothing -> mkTcState pss nullSubst 0
             (e', _) = runState (tcExpr e qt) st
         in
          if null qs then (v, e')
@@ -168,8 +174,8 @@ lookupDictArg (c, x) = do
                    in Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen 100)
   return ret
 
-mkTcState :: [(Pred, Id)] -> TcState
-mkTcState pss = TcState{tcPss=pss, tcSubst=nullSubst, tcNum=0}
+mkTcState :: [(Pred, Id)] -> Subst -> Int -> TcState
+mkTcState pss subst num = TcState{tcPss=pss, tcSubst=subst, tcNum=num}
 
 tcExpr :: Expr -> Qual Type -> TC Expr
 
@@ -218,7 +224,8 @@ tcExpr e@(Lam vs ebody) (qs :=> t) = do
   return $ Lam vs ebody'
 
 tcExpr (Let bs e) qt = do
-  let bs' = tcBind bs
+  st <- get
+  let bs' = tcBind bs (Just st)
   e' <- tcExpr e qt
   return $ Let bs' e'
 
