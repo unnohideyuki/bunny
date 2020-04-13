@@ -197,10 +197,8 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) (_ :=> t)
 
   dicts <- mkdicts qv []
   return $ foldl App e dicts
-  where isTVar x@(TVar _) y | notFunTy x = True
-                            | otherwise = trace (show y) True
-        isTVar x y | not (notFunTy x) = False
-                   | otherwise         = trace (show y) False
+  where isTVar x@(TVar _) y = True
+        isTVar x y          = False
         notFunTy (TAp (TAp (TCon (Tycon "(->)" _)) _) _) = False
         notFunTy _                                       = True
         isArg ('_':_) = True
