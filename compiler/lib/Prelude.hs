@@ -3,6 +3,9 @@ module Prelude where
 -- Qualified name of (:) is (Prim.:)
 -- infixr 5 :
 
+infixl 7 *, /, `quot`, `rem`, `div`, `mod`
+infixl 6 +, -
+
 infixl 1 >>, >>=
 
 class Monad m where
