@@ -50,6 +50,12 @@ not :: Bool -> Bool
 not True  = False
 not False = True
 
+-- Ordering type
+data Ordering = LT | EQ | GT
+              deriving (Eq, Ord, Enum, Read, Show, Bounded)
+
+-- Equality and Ordered classes
+
 class Eq a where
   (==),(/=) :: a -> a -> Bool
   -- Minimal Complete Definition:
@@ -62,6 +68,26 @@ class (Eq a) => Ord a where
   (<=) :: a -> a -> Bool
   (>=) :: a -> a -> Bool
   (>) :: a -> a -> Bool
+  {-
+  compare :: a -> a -> Ordering
+  max :: a -> a -> a
+  -- Minimal complete definition:
+  --   (<=) or compare
+  compare x y
+    | x == y    = EQ
+    | x <= y    = LT
+    | otherwise = GT
+  x <= y = compare x y /= GT
+  x <  y = compare x y == LT
+  x >= y = compare x y /= LT
+  x >  y = compare x y == GT
+  max x y
+    | x <= y    = y
+    | otherwise = x
+  mix x y
+    | x <= y    = x
+    | otherwise = y
+  -}
 
 instance Ord Char where
   (<)  = Prim.charLt
