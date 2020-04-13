@@ -26,7 +26,7 @@ tcBind (Rec bs) = Rec $ map tcbind bs
     tcbind (v@(TermVar n qt@(qs :=> _)), e)
       | isOVExpr e = (v, e)
       | otherwise =
-        let st = mkTcState n qs
+        let st = mkTcState (zip qs (repeat n))
             (e', _) = runState (tcExpr e qt) st
         in
          if null qs then (v, e')
@@ -41,8 +41,7 @@ mkVs :: Id -> [Pred] -> [Var]
 mkVs n ps = [TermVar (n ++ ".DARG" ++ show i) ([] :=> TGen 99)
             | (i, _) <- zip [(0::Int)..] ps]
 
-data TcState = TcState { tcName  :: Id
-                       , tcPs    :: [Pred]
+data TcState = TcState { tcPss   :: [(Pred, Id)]
                        , tcSubst :: Subst
                        , tcNum   :: Int
                        }
@@ -75,13 +74,9 @@ unify' t1 t2 = do s <- getSubst
                   u <- mgu (apply s t1) (apply s t2)
                   extSubst u
 
-getName :: TC Id
-getName = do st <- get
-             return $ tcName st
-
-getPs :: TC [Pred]
-getPs = do st <- get
-           return $ tcPs st
+getPss :: TC [(Pred, Id)]
+getPss = do st <- get
+            return $ tcPss st
 
 getTy :: Expr -> TC (Qual Type)
 -- TODO: quantify here is ok?
@@ -163,19 +158,18 @@ unifyTs [] = fail "Non-exhaustive patterns in uniftyTs."
 
 lookupDictArg :: (Id, Tyvar) -> TC (Maybe Var)
 lookupDictArg (c, x) = do
-  n <- getName
   s <- getSubst
-  ps' <- getPs
-  let ps = apply s ps'
-      d = zip (map (\(IsIn i t) -> (i, t)) ps) [(0::Int)..]
+  pss <- getPss
+  let d = zip (map (\((IsIn i t), _) -> (i, apply s t)) pss) [(0::Int)..]
       (TVar y) = apply s (TVar x)
       ret = case lookup (c, TVar y) d of
         Nothing -> Nothing
-        Just j  -> Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen 100)
+        Just j  -> let (_, n) = pss !! j
+                   in Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen 100)
   return ret
 
-mkTcState :: Id -> [Pred] -> TcState
-mkTcState n ps = TcState{tcName=n, tcPs=ps, tcSubst=nullSubst, tcNum=0}
+mkTcState :: [(Pred, Id)] -> TcState
+mkTcState pss = TcState{tcPss=pss, tcSubst=nullSubst, tcNum=0}
 
 tcExpr :: Expr -> Qual Type -> TC Expr
 
