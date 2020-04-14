@@ -1,7 +1,7 @@
 module Symbol where
 
 import           Data.Char
-import qualified Data.Map  as Map
+import qualified Data.Map.Strict as Map
 
 type Id = String
 

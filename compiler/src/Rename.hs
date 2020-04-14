@@ -141,13 +141,17 @@ renClassDecls dcls = do
           dcls
   return $ concat tbss
   where
-    clsadd (_, A.AppTy (A.Tycon n) _) = do
+    clsadd (maybe_sc, A.AppTy (A.Tycon n) _) = do
       cname <- qname $ origName n
+      sps <- case maybe_sc of
+               Just sc -> do s <- qname $
+                                  (\(A.ParTy (A.AppTy (A.Tycon i) _)) -> origName i) sc
+                             return [s]
+               Nothing -> return []
       st <- get
       let ce = rnCe st
-          ce' = -- todo: super class
-            fromMaybe (error $ "addClass failed: " ++ show (cname, ce))
-            (addClass cname [] ce)
+          ce' = fromMaybe (error $ "addClass failed: " ++ show (cname, ce))
+                (addClass cname sps ce)
       put $ st{rnCe=ce'}
       return cname
 

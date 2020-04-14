@@ -642,5 +642,5 @@ tiImportedProgram ::
 tiImportedProgram ce as bgs st =
   runTI st $ do (_, as') <- tiSeq tiBindGroup ce as bgs
                 (s, n, _) <- get -- TODO: why not use [Assump] in the state
-                return (s, n, as++as')
+                return (s, n, as ++ as')
 
