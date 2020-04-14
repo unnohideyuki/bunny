@@ -29,8 +29,12 @@ for f in src/*.hs app/Main.hs; do
 	
     # warnings
     w=`cat log/* | grep -E src.$bn | grep "warning:" | wc -l | cut -d " " -f 1`
-    echo -n -e "$w warnings\t"
     twarns=`expr $twarns \+ $w`
+    if [ $w -gt 1 ];then
+	echo -n -e "$w warnings\t"
+    else
+	echo -n -e "$w warning\t"
+    fi
 
     # hints
     h=`hlint -XHaskell2010 $f | tail -1 | cut -d " " -f 1 | sed s/No/0/`
