@@ -32,14 +32,14 @@ renProg m = do
   return (bgs, bgs'', as2, dicts, ctab)
 
 semProgram :: A.Module -> (Subst, Int, [Assump])
-           -> RN ([BindGroup], [Assump], [DictDef] ,[(Id, Id)])
+           -> RN ([BindGroup], [Assump], [DictDef] ,[(Id, Id)], ClassEnv)
 semProgram m cont = do
   (bgs, bgs'', as2, dicts, ctab) <- renProg m
   st <- get
   let ce = rnCe st
       as = rnCms st
   let as' = tiProgram ce (as ++ as2) bgs cont
-  return (bgs'', as' ++ as2, dicts, ctab)
+  return (bgs'', as' ++ as2, dicts, ctab, ce)
 
 semPrelude :: A.Module -> RN (Subst, Int, [Assump])
 semPrelude m = do

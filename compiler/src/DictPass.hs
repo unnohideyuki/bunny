@@ -4,9 +4,11 @@ import           Core
 import           PPTypes
 import           Symbol
 import           Types
-import           Typing                     (Pred (..), Qual (..), Subst, apply,
-                                             mgu, nullSubst, tv, (@@))
+import           Typing                     (ClassEnv (..), Pred (..),
+                                             Qual (..), Subst, apply, mgu,
+                                             nullSubst, super, tv, (@@))
 
+import           Control.Monad
 import           Control.Monad.State.Strict (State, get, put, runState)
 import           Data.List                  (nub)
 import           Data.Maybe                 (fromMaybe)
@@ -20,8 +22,8 @@ normQTy (qs :=> t) = let
   in
    qs' :=> t
 
-tcBind :: Bind -> Maybe TcState -> Bind
-tcBind (Rec bs) maybest = Rec $ map tcbind bs
+tcBind :: Bind -> ClassEnv -> Maybe TcState -> Bind
+tcBind (Rec bs) ce maybest = Rec $ map tcbind bs
   where
     tcbind (v@(TermVar n qt@(qs :=> _)), e)
       | isOVExpr e = (v, e)
@@ -31,8 +33,8 @@ tcBind (Rec bs) maybest = Rec $ map tcbind bs
               Just st' -> let pss' = tcPss st'
                               subst = tcSubst st'
                               num = tcNum st'
-                          in mkTcState (pss ++ pss') subst num
-              Nothing -> mkTcState pss nullSubst 0
+                          in mkTcState ce (pss ++ pss') subst num
+              Nothing -> mkTcState ce pss nullSubst 0
             (e', _) = runState (tcExpr e qt) st
         in
          if null qs then (v, e')
@@ -47,7 +49,8 @@ mkVs :: Id -> [Pred] -> [Var]
 mkVs n ps = [TermVar (n ++ ".DARG" ++ show i) ([] :=> TGen 99)
             | (i, _) <- zip [(0::Int)..] ps]
 
-data TcState = TcState { tcPss   :: [(Pred, Id)]
+data TcState = TcState { tcCe    :: ClassEnv
+                       , tcPss   :: [(Pred, Id)]
                        , tcSubst :: Subst
                        , tcNum   :: Int
                        }
@@ -83,6 +86,10 @@ unify' t1 t2 = do s <- getSubst
 getPss :: TC [(Pred, Id)]
 getPss = do st <- get
             return $ tcPss st
+
+getCe :: TC ClassEnv
+getCe = tcCe <$> get
+
 
 getTy :: Expr -> TC (Qual Type)
 -- TODO: quantify here is ok?
@@ -166,16 +173,22 @@ lookupDictArg :: (Id, Tyvar) -> TC (Maybe Var)
 lookupDictArg (c, x) = do
   s <- getSubst
   pss <- getPss
+  ce <- getCe
   let d = zip (map (\((IsIn i t), _) -> (i, apply s t)) pss) [(0::Int)..]
       (TVar y) = apply s (TVar x)
-      ret = case lookup (c, TVar y) d of
+
+      lookupDict (k, tv) (((c, tv'), i):d')
+        | k == c  || k `elem` super ce c = Just i
+        | otherwise = Nothing
+
+      ret = case lookupDict (c, TVar y) d of
         Nothing -> Nothing
         Just j  -> let (_, n) = pss !! j
                    in Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen 100)
   return ret
 
-mkTcState :: [(Pred, Id)] -> Subst -> Int -> TcState
-mkTcState pss subst num = TcState{tcPss=pss, tcSubst=subst, tcNum=num}
+mkTcState :: ClassEnv -> [(Pred, Id)] -> Subst -> Int -> TcState
+mkTcState ce pss subst num = TcState{tcCe=ce, tcPss=pss, tcSubst=subst, tcNum=num}
 
 tcExpr :: Expr -> Qual Type -> TC Expr
 
@@ -225,7 +238,7 @@ tcExpr e@(Lam vs ebody) (qs :=> t) = do
 
 tcExpr (Let bs e) qt = do
   st <- get
-  let bs' = tcBind bs (Just st)
+  let bs' = tcBind bs (tcCe st) (Just st)
   e' <- tcExpr e qt
   return $ Let bs' e'
 
