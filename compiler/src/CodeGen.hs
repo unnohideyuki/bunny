@@ -5,12 +5,14 @@ import           PreDefined
 import           Semant                     (DictDef (..))
 import           STG
 import           Symbol
+import           Typing                     (ClassEnv (..), super)
 
 import           Control.Monad.State.Strict
-import           Data.List                  (intercalate)
+import           Data.List                  (find, intercalate)
 import           Data.List.Split            (splitOn)
 import qualified Data.Map                   as Map
-import           Data.Maybe                 (fromMaybe)
+import           Data.Maybe                 (fromJust, fromMaybe)
+import           Debug.Trace
 import           System.IO
 
 emitPreamble :: Handle -> IO ()
@@ -436,7 +438,7 @@ emitDicts dest (dict:ds) = do
   h <- openFile (dest ++ "/" ++ dname ++ ".java") WriteMode
   emitPreamble h
   hPutStrLn h $
-    "public abstract class " ++ dname ++ " extends Dictionary {"
+    "interface " ++ dname ++ " {"
   mapM_
     (\s -> hPutStrLn h $ "    abstract public Expr mk" ++ s ++ "();")
     msM
@@ -444,20 +446,47 @@ emitDicts dest (dict:ds) = do
   hClose h
   emitDicts dest ds
 
-emitInsts :: String -> [DictDef] -> [(Id, Id)] -> IO ()
-emitInsts _ _ [] = return ()
-emitInsts dest dicts ((qin, qcn):ctab) = do
-  let dicts' = dropWhile ((/= qcn).ddId) dicts
-      ms = case dicts' of
-        [] -> error $ "Class name not found: " ++ qcn
-        _  -> ddMethods $ head dicts'
+emitInsts :: String -> [DictDef] -> [(Id, Id)] -> ClassEnv -> IO ()
+emitInsts _ _ [] _ = return ()
+emitInsts dest dicts ((qin, qcn):ctab) ce = do
+  let ms = ddMethods $ fromJust $ find ((== qcn). ddId) dicts
       msM = map mangle ms
       pdname = cls2dictNameM qcn
+      supers = super ce qcn
+      sdname = map cls2dictNameM supers
       dname = cls2dictNameM $ qin ++ "@" ++ qcn
       mname = modname qin
   h <- openFile (dest ++ "/" ++ dname ++ ".java") WriteMode
   emitPreamble h
-  hPutStrLn h $ "public class " ++ dname ++ " extends " ++ pdname ++ "{"
+  hPutStrLn h $ "public class " ++ dname
+  hPutStrLn h $ "    extends Dictionary"
+  hPutStrLn h $ "    implements "
+    ++ foldr (\a b -> a ++ ", " ++ b) "" sdname
+    ++ pdname ++ " {"
+  when ((not.null) supers) $ do
+    forM_ supers $ \s -> do
+      -- print private vars
+      hPutStrLn h $
+        "    private " ++ (cls2dictNameM $ qin ++ "@" ++ s)
+        ++ " " ++ "dict" ++ cls2dictNameM s ++ ";"
+    -- print constructor
+    hPutStrLn h $
+      "    public " ++ dname ++ "(){"
+    forM_ supers $ \s -> do
+      hPutStrLn h $
+        "        this.dict" ++ cls2dictNameM s ++ " = "
+        ++ "new " ++ (cls2dictNameM $ qin ++ "@" ++ s) ++ "();"
+    hPutStrLn h "    }"
+    -- print super's mthods
+    forM_ supers $ \s -> do
+      let msM = map mangle $ ddMethods $ fromJust $ find ((== s).ddId) dicts
+      forM_ msM $ \m -> do
+        hPutStrLn h $ "    public Expr mk" ++ m ++ "(){"
+        hPutStrLn h $
+          "        return this.dict" ++ cls2dictNameM s ++ ".mk" ++ m ++ "();"
+        hPutStrLn h "    }"
+
+  -- print own methods
   mapM_
     (\s -> do hPutStrLn h $ "    public Expr mk" ++ s ++ "(){"
               hPutStr h $ "      return " ++ mangle mname ++ "."
@@ -467,7 +496,7 @@ emitInsts dest dicts ((qin, qcn):ctab) = do
     msM
   hPutStrLn h "}"
   hClose h
-  emitInsts dest dicts ctab
+  emitInsts dest dicts ctab ce
 
 emitConsts :: Handle -> ConstructorInfo -> IO ()
 emitConsts h ci = do

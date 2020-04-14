@@ -96,7 +96,7 @@ doCompile st0 m dest cont opts = do
         Module n _ -> n
   CodeGen.emitProgram b'' dest mname ci
   CodeGen.emitDicts dest dicts
-  CodeGen.emitInsts dest dicts ctab
+  CodeGen.emitInsts dest dicts ctab ce
   debugmes verbose_mode "done.\n"
 
 main :: IO ()
