@@ -52,7 +52,31 @@ not False = True
 
 -- Ordering type
 data Ordering = LT | EQ | GT
-              deriving (Eq, Ord, Enum, Read, Show, Bounded)
+--              deriving (Eq, Ord, Enum, Read, Show, Bounded)
+
+instance Eq Ordering where
+  a == b = case (a, b) of
+    (LT, LT) -> True
+    (LT, EQ) -> False
+    (LT, GT) -> False
+    (EQ, LT) -> False
+    (EQ, EQ) -> True
+    (EQ, GT) -> False
+    (GT, LT) -> False
+    (GT, EQ) -> False
+    (GT, GT) -> True
+
+{-
+instance Ord Ordering where
+  a <= b = case (a, b) of
+    (LT, LT) -> True
+    (LT, EQ) -> True
+    (LT, GT) -> True
+    (EQ, EQ) -> True
+    (EQ, GT) -> True
+    (GT, GT) -> True
+    _        -> False
+-}
 
 -- Equality and Ordered classes
 
@@ -89,10 +113,7 @@ class (Eq a) => Ord a where
     | otherwise = y
 
 instance Ord Char where
-  (<)  = Prim.charLt
   (<=) = Prim.charLe
-  (>=) = Prim.charGe
-  (>)  = Prim.charGt
 
 instance Eq Char where
   (==) = Prim.charEq
@@ -106,10 +127,7 @@ instance Num Integer where
   (*)  = Prim.integerMul
 
 instance Ord Integer where
-  (<)  = Prim.integerLt
   (<=) = Prim.integerLe
-  (>=) = Prim.integerGe
-  (>)  = Prim.integerGt
 
 instance Eq Integer where
   (==) = Prim.integerEq
@@ -119,10 +137,7 @@ instance Num Int where
   (*)  = Prim.intMul
 
 instance Ord Int where
-  (<)  = Prim.intLt
   (<=) = Prim.intLe
-  (>=) = Prim.intGe
-  (>)  = Prim.intGt
 
 instance Eq Int where
   (==) = Prim.intEq
