@@ -7,6 +7,10 @@ public class Prim {
 	return new AtomExpr(new Var(obj));
     }
 
+    public static Expr mkerror(){
+	return RTLib.error;
+    }
+    
     public static Expr mkputStrLn(){
 	return RTLib.putStrLn;
     }

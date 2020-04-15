@@ -129,3 +129,5 @@ instance Eq Int where
   (==) = Prim.intEq
 
 print x = putStrLn (show x)
+
+otherwise = True

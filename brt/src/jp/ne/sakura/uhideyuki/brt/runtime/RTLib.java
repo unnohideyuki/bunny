@@ -22,6 +22,17 @@ class PutStrLnFunc implements LambdaForm {
     }
 }
 
+class ErrorFunc implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	String t = RTLib.toJString(RT.eval(args[0]));
+	System.err.println("error: " + t);
+	System.exit(1);
+	return null;
+    }
+}
+
 public class RTLib {
     private static Expr mkExpr(HeapObj obj){
 	return new AtomExpr(new Var(obj));
@@ -160,4 +171,7 @@ public class RTLib {
 	}
 	return ((Dict) e.a).d;
     }
+
+    public static Expr error = mkFun(new ErrorFunc());
+
 }

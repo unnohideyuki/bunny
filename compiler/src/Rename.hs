@@ -416,9 +416,17 @@ renRhs (A.UnguardedRhs e []) = renExp e
 renRhs (A.UnguardedRhs e ds) =
   renRhs (A.UnguardedRhs (A.LetExp ds e) [])
 
+renRhs (A.GuardedRhs gs decls) =
+  let err = A.FunAppExp (A.VarExp (Name {origName="error", namePos=(0,0), isConName = False}))
+                        (A.LitExp (A.LitString "Non-exaustive patterns" (0,0)))
+      cnvGs []                         = err
+      -- todo cnvGs support most simple case that has only one statement.
+      cnvGs (([A.ExpStmt e1], e2):gs') = A.IfExp e1 e2 (cnvGs gs')
+  in renExp $ A.LetExp decls (cnvGs gs)
+
 renRhs rhs = do
   st <- get
-  error $ "renRhs not yet implemented. " ++ show (st, rhs)
+  error $ "renRhs not yet implemented. " ++ show rhs
 
 resolveFixity :: A.Exp -> Name -> A.Exp -> Name -> A.Exp -> RN A.Exp
 resolveFixity rest op2 e2 op1 e1 = do
