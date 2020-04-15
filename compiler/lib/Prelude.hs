@@ -68,9 +68,9 @@ class (Eq a) => Ord a where
   (<=) :: a -> a -> Bool
   (>=) :: a -> a -> Bool
   (>) :: a -> a -> Bool
-  {-
   compare :: a -> a -> Ordering
   max :: a -> a -> a
+  min :: a -> a -> a
   -- Minimal complete definition:
   --   (<=) or compare
   compare x y
@@ -84,10 +84,9 @@ class (Eq a) => Ord a where
   max x y
     | x <= y    = y
     | otherwise = x
-  mix x y
+  min x y
     | x <= y    = x
     | otherwise = y
-  -}
 
 instance Ord Char where
   (<)  = Prim.charLt
