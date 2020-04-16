@@ -505,8 +505,13 @@ emitConsts h ci = do
   hPutStrLn h "    }"
   mapM_ emitMkf $ dArity ci
 
+  -- Prelude.[]
   hPutStrLn h $ "    public static Expr mk_91__93_(){"
   hPutStr   h "        return mkExpr(new ConObj(new Cotr(\"Prelude.[]\"), new AtomExpr[0]));"
+  hPutStrLn h "    }"
+  -- Prelude.:
+  hPutStrLn h $ "    public static Expr mk_58_(){"
+  hPutStr   h "        return RTLib.cons;"
   hPutStrLn h "    }"
 
   where

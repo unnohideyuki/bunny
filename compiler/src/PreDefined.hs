@@ -13,7 +13,7 @@ nilCfun :: Assump
 nilCfun  = "Prelude.[]" :>: Forall [Star] ([] :=> TAp tList (TGen 0))
 
 consCfun :: Assump
-consCfun  = "Prim.:" :>:
+consCfun  = "Prelude.:" :>:
   Forall [Star]
   ([] :=> (TGen 0 `fn` TAp tList (TGen 0) `fn` TAp tList (TGen 0)))
 
@@ -165,7 +165,7 @@ primConsNames :: [(Id, Id)]
 primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.[]", "Prim.[]")
                  , ("[]", "Prelude.[]")
-                 , (":", "Prim.:")
+                 , (":", "Prelude.:")
                  , ("error", "Prim.error")
                  , ("Prim.retIO", "Prim.retIO")
                  , ("Prim.bindIO", "Prim.bindIO")
@@ -218,13 +218,13 @@ initialConsts :: ConstructorInfo
 initialConsts = ConstructorInfo da dc
   where   da = [ ("Prim.()", 0)
                , ("Prelude.[]", 0)
-               , ("Prim.:", 2)
+               , ("Prelude.:", 2)
                , ("Prim.(,)", 2)
                ]
 
           dc = [ ("Prim.()", [unitCfun])
                , ("Prelude.[]", [nilCfun, consCfun])
-               , ("Prim.:", [nilCfun, consCfun])
+               , ("Prelude.:", [nilCfun, consCfun])
                , ("Prim.(,)", [pairCfun])
                ]
 

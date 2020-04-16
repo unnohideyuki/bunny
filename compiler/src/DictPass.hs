@@ -189,7 +189,6 @@ lookupDictArg (c, x) = do
         Just j  -> let (_, n) = pss !! j
                    in Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen 100)
 
-  trace ("lookupDict (" ++ show c ++ ", Tvar " ++ show y ++ ") " ++ show d ++ ":" ++ show ret) $ return ()
   return ret
 
 mkTcState :: ClassEnv -> [(Pred, Id)] -> Subst -> Int -> TcState

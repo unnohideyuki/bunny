@@ -8,7 +8,7 @@ class ConsFunc implements LambdaForm {
     public int arity(){ return 2; }
     public Expr call(AtomExpr[] args){
 	assert args.length == 2;
-	return new AtomExpr(new Var(new ConObj(new Cotr("Prim.:"), args)));
+	return new AtomExpr(new Var(new ConObj(new Cotr("Prelude.:"), args)));
     }
 }
 
@@ -53,7 +53,7 @@ public class RTLib {
 	    Atom a = ((AtomExpr)e).a;
 	    if (a instanceof Var && ((Var)a).obj instanceof ConObj){
 		Cotr c = ((ConObj)((Var)a).obj).cotr;
-		return c.ident == "Prim.:";
+		return c.ident == "Prelude.:";
 	    }
 	}
 	return false;
@@ -94,7 +94,7 @@ public class RTLib {
 	mkExpr(new ConObj(new Cotr("Prim.()"), new AtomExpr[0]));
 
     public static Expr nil =
-	mkExpr(new ConObj(new Cotr("Prim.[]"), new AtomExpr[0]));
+	mkExpr(new ConObj(new Cotr("Prelude.[]"), new AtomExpr[0]));
 
     public static Expr app(Expr f, Expr a1, Expr a2){
 	assert a1 instanceof AtomExpr;
@@ -143,14 +143,14 @@ public class RTLib {
 	} else if (s.length == 1){
 	    // return app(cons, mkExpr(s[0]), nil);
 	    AtomExpr[] args = {(AtomExpr) mkExpr(s[0]), (AtomExpr) nil};
-	    return new AtomExpr(new Var(new ConObj(new Cotr("Prim.:"), args)));
+	    return new AtomExpr(new Var(new ConObj(new Cotr("Prelude.:"), args)));
 	}
 	
 	char[] t = Arrays.copyOfRange(s, 1, s.length);
 	// return app(cons, mkExpr(s[0]), fromJCharArray(t));
 	AtomExpr[] args = {(AtomExpr) mkExpr(s[0]), 
 			   (AtomExpr) fromJCharArray(t)};
-	return new AtomExpr(new Var(new ConObj(new Cotr("Prim.:"), args)));
+	return new AtomExpr(new Var(new ConObj(new Cotr("Prelude.:"), args)));
     }
 	       
     public static Expr fromJString(String s){
