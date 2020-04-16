@@ -13,6 +13,11 @@ instance Show Bool where
 instance (Show a) => Show [a] where
   show = Prim.show
 
+{-
+instance (Show a, b) => Show (a, b) where
+  show = Prim.show
+-}
+
 infixl 7 *, /, `quot`, `rem`, `div`, `mod`
 infixl 6 +, -
 
@@ -55,6 +60,7 @@ foldr k z = go
                   go (y:ys) = y `k` go ys
 
 infix 4 ==, /=, <, <=, >=, >
+infixr 3 &&
 
 not :: Bool -> Bool
 not True  = False
@@ -63,6 +69,9 @@ not False = True
 -- Ordering type
 data Ordering = LT | EQ | GT
 --              deriving (Eq, Ord, Enum, Read, Show, Bounded)
+
+instance Show Ordering where
+  show = Prim.show
 
 instance Eq Ordering where
   a == b = case (a, b) of

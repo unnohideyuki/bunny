@@ -513,6 +513,11 @@ emitConsts h ci = do
   hPutStrLn h $ "    public static Expr mk_58_(){"
   hPutStr   h "        return RTLib.cons;"
   hPutStrLn h "    }"
+  -- Prelude.(,)
+  hPutStrLn h $ "    public static Expr mk_40__44__41_(){"
+  hPutStr   h "        return Prim.mk_40__44__41_();"
+  hPutStrLn h "    }"
+
 
   where
     emitMkf (n, aty)

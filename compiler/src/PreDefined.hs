@@ -18,7 +18,7 @@ consCfun  = "Prelude.:" :>:
   ([] :=> (TGen 0 `fn` TAp tList (TGen 0) `fn` TAp tList (TGen 0)))
 
 pairCfun :: Assump
-pairCfun = "Prim.(,)" :>:
+pairCfun = "Prelude.(,)" :>:
     Forall [Star, Star]
     ([] :=> (TGen 0 `fn` TGen 1 `fn` pair (TGen 0) (TGen 1)))
 
@@ -219,13 +219,13 @@ initialConsts = ConstructorInfo da dc
   where   da = [ ("Prim.()", 0)
                , ("Prelude.[]", 0)
                , ("Prelude.:", 2)
-               , ("Prim.(,)", 2)
+               , ("Prelude.(,)", 2)
                ]
 
           dc = [ ("Prim.()", [unitCfun])
                , ("Prelude.[]", [nilCfun, consCfun])
                , ("Prelude.:", [nilCfun, consCfun])
-               , ("Prim.(,)", [pairCfun])
+               , ("Prelude.(,)", [pairCfun])
                ]
 
 arity :: ConstructorInfo -> Assump -> Int

@@ -146,12 +146,12 @@ public class Prim {
 	return mkintegerMul();
     }
 
-    // (,) = Prim.(,)
+    // (,) = Prelude.(,)
     public static class PairFunc implements LambdaForm {
 	public int arity(){ return 2;}
 	public Expr call(AtomExpr[] args){
 	    assert args.length == arity();
-	    return new AtomExpr(new Var(new ConObj(new Cotr("Prim.(,)"),
+	    return new AtomExpr(new Var(new ConObj(new Cotr("Prelude.(,)"),
 						   args)));
 	}
     }
