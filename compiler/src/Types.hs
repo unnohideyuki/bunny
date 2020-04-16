@@ -24,7 +24,7 @@ tDouble  :: Type
 tDouble   = TCon (Tycon "Double" Star)
 
 tBool    :: Type
-tBool     = TCon (Tycon "Bool" Star)
+tBool     = TCon (Tycon "Prelude.Bool" Star)
 
 tList    :: Type
 tList     = TCon (Tycon "[]" (Kfun Star Star))

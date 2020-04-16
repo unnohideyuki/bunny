@@ -17,19 +17,10 @@ consCfun  = "Prim.:" :>:
   Forall [Star]
   ([] :=> (TGen 0 `fn` TAp tList (TGen 0) `fn` TAp tList (TGen 0)))
 
-falseCfun :: Assump
-falseCfun  = "Prim.False" :>: Forall [] ([] :=> tBool)
-
-trueCfun :: Assump
-trueCfun  = "Prim.True" :>: Forall [] ([] :=> tBool)
-
 pairCfun :: Assump
 pairCfun = "Prim.(,)" :>:
     Forall [Star, Star]
     ([] :=> (TGen 0 `fn` TGen 1 `fn` pair (TGen 0) (TGen 1)))
-
-cShow :: String
-cShow  = "Prim.Show"
 
 cOrd :: String
 cOrd  = "Prelude.Ord"
@@ -138,17 +129,6 @@ primIntAddCfun = "Prim.intAdd" :>: scIntintint
 primIntMulCfun :: Assump
 primIntMulCfun = "Prim.intMul" :>: scIntintint
 
-primCharShow :: Assump
-primCharShow = "Prim.charShow" :>: Forall [] ([] :=> (tChar `fn` tString))
-
-primIntegerShow :: Assump
-primIntegerShow =
-  "Prim.integerShow" :>: Forall [] ([] :=> (tInteger `fn` tString))
-
-primIntShow :: Assump
-primIntShow =
-  "Prim.intShow" :>: Forall [] ([] :=> (tInt `fn` tString))
-
 showCfun :: Assump
 showCfun  = "Prim.show" :>: Forall [Star] ([] :=> (TGen 0 `fn` tString))
 
@@ -158,7 +138,6 @@ overloadedCfun = "#overloaded#" :>:
 
 primConsMems :: [Assump]
 primConsMems  = [ unitCfun, nilCfun, consCfun
-                , falseCfun, trueCfun
                 , leMfun, gtMfun
                 , primRetCfun, primBindCfun, primFailCfun
                 , primCharLtCfun, primCharLeCfun, primCharGeCfun, primCharGtCfun
@@ -173,7 +152,6 @@ primConsMems  = [ unitCfun, nilCfun, consCfun
                 , primIntEqCfun
                 , primIntAddCfun
                 , primIntMulCfun
---                , primCharShow, primIntegerShow
                 , showCfun
                 , errorCfun
                 , "Prim.putStrLn" :>:
@@ -187,8 +165,6 @@ primConsNames :: [(Id, Id)]
 primConsNames  = [ ("()", "Prim.()")
                  , ("[]", "Prim.[]")
                  , (":", "Prim.:")
-                 , ("False", "Prim.False")
-                 , ("True", "Prim.True")
                  , ("error", "Prim.error")
                  , ("Prim.retIO", "Prim.retIO")
                  , ("Prim.bindIO", "Prim.bindIO")
@@ -212,9 +188,7 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.intEq", "Prim.intEq")
                  , ("Prim.intAdd", "Prim.intAdd")
                  , ("Prim.intMul", "Prim.intMul")
---                 , ("Prim.charShow", "Prim.charShow")
---                 , ("Prim.integerShow", "Prim.integerShow")
-                 , ("show", "Prim.show")
+                 , ("Prim.show", "Prim.show")
                  , ("#overloaded#", "#overloaded#")
                  ]
 
@@ -244,16 +218,12 @@ initialConsts = ConstructorInfo da dc
   where   da = [ ("Prim.()", 0)
                , ("Prim.[]", 0)
                , ("Prim.:", 2)
-               , ("Prim.True" , 0)
-               , ("Prim.False", 0)
                , ("Prim.(,)", 2)
                ]
 
           dc = [ ("Prim.()", [unitCfun])
                , ("Prim.[]", [nilCfun, consCfun])
                , ("Prim.:", [nilCfun, consCfun])
-               , ("Prim.True", [falseCfun, trueCfun])
-               , ("Prim.False", [falseCfun, trueCfun])
                , ("Prim.(,)", [pairCfun])
                ]
 

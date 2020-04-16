@@ -3,6 +3,16 @@ module Prelude where
 -- Qualified name of (:) is (Prim.:)
 -- infixr 5 :
 
+class Show a where
+  show :: a -> [Char]
+
+
+data Bool = False | True
+
+instance Show Bool where
+  show = Prim.show
+
+
 infixl 7 *, /, `quot`, `rem`, `div`, `mod`
 infixl 6 +, -
 
