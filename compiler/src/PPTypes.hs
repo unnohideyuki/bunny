@@ -12,7 +12,7 @@ ppType :: Type -> Doc
 ppType (TAp (TAp (TCon (Tycon "(->)" (Kfun Star (Kfun Star Star)))) t1) t2) =
   text "(" <> ppType t1 <+> text "->" <+> ppType t2 <> text ")"
 
-ppType (TAp (TCon (Tycon "[]" (Kfun Star Star))) t) =
+ppType (TAp (TCon (Tycon "Prelude.[]" (Kfun Star Star))) t) =
   text "[" <> ppType t <> text "]"
 
 ppType (TAp t1 t2) =
@@ -36,8 +36,8 @@ ppPred (IsIn n t) = text n <+> ppType t
 
 ppPreds :: [Pred] -> Doc
 ppPreds ps = text "[" <> pppreds' ps <> text "]"
-  where pppreds' [] = empty
-        pppreds' [x] = ppPred x
+  where pppreds' []     = empty
+        pppreds' [x]    = ppPred x
         pppreds' (x:xs) = ppPred x <> text "," <> pppreds' xs
 
 -- Qual Type

@@ -1,7 +1,6 @@
 module Prelude where
 
--- Qualified name of (:) is (Prim.:)
--- infixr 5 :
+infixr 5 :
 
 class Show a where
   show :: a -> [Char]
