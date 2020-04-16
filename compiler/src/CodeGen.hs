@@ -511,7 +511,7 @@ emitConsts h ci = do
   hPutStrLn h "    }"
   -- Prelude.:
   hPutStrLn h $ "    public static Expr mk_58_(){"
-  hPutStr   h "        return RTLib.cons;"
+  hPutStr   h "        return RTLib.nil;"
   hPutStrLn h "    }"
 
   where
