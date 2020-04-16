@@ -205,11 +205,15 @@ renInstDecls dcls' = do
                                                   return (qcn, qin, n2, "")
         (A.AppTy (A.Tycon n1) (A.ListTy (A.Tyvar n2))) -> do
           qcn <- qname $ origName n1
-          qin <- renameVar nNil
+          qin <- return "Prelude.[]" -- renameVar nNil
           return (qcn, qin, nNil, origName n2)
+
         _ -> error $ "Non-exhaustive pattern in case: " ++ show t
 
-      k <- lookupKdict qcn
+      k <- if qin == "Prelude.[]"  -- work round
+           then return (Kfun Star Star)
+           else  lookupKdict qcn -- why qcn, should it be qin??
+
       let p = case origName i of
             "[]" -> IsIn qcn (TAp (TCon (Tycon qin k)) (TVar (Tyvar a Star)))
             _    -> IsIn qcn (TCon (Tycon qin k))

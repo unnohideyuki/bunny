@@ -6,12 +6,13 @@ module Prelude where
 class Show a where
   show :: a -> [Char]
 
-
 data Bool = False | True
 
 instance Show Bool where
   show = Prim.show
 
+instance (Show a) => Show [a] where
+  show = Prim.show
 
 infixl 7 *, /, `quot`, `rem`, `div`, `mod`
 infixl 6 +, -
@@ -128,6 +129,9 @@ instance Ord Char where
 instance Eq Char where
   (==) = Prim.charEq
 
+instance Show Char where
+  show = Prim.show
+
 class (Eq a) => Num a where
   (+) :: a -> a -> a
   (*) :: a -> a -> a
@@ -142,6 +146,9 @@ instance Ord Integer where
 instance Eq Integer where
   (==) = Prim.integerEq
 
+instance Show Integer where
+  show = Prim.show
+
 instance Num Int where
   (+)  = Prim.intAdd
   (*)  = Prim.intMul
@@ -151,6 +158,9 @@ instance Ord Int where
 
 instance Eq Int where
   (==) = Prim.intEq
+
+instance Show Int where
+  show = Prim.show
 
 print x = putStrLn (show x)
 

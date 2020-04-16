@@ -3,14 +3,14 @@ import           Symbol
 import           Types
 import           Typing
 
-import           Data.Maybe (fromMaybe)
+import           Data.Maybe (fromJust, fromMaybe)
 
 -- Primitive Constructors and Member Functions
 unitCfun :: Assump
 unitCfun  = "Prim.()" :>: Forall [] ([] :=> tUnit)
 
 nilCfun :: Assump
-nilCfun  = "Prim.[]" :>: Forall [Star] ([] :=> TAp tList (TGen 0))
+nilCfun  = "Prelude.[]" :>: Forall [Star] ([] :=> TAp tList (TGen 0))
 
 consCfun :: Assump
 consCfun  = "Prim.:" :>:
@@ -163,7 +163,8 @@ primConsMems  = [ unitCfun, nilCfun, consCfun
 
 primConsNames :: [(Id, Id)]
 primConsNames  = [ ("()", "Prim.()")
-                 , ("[]", "Prim.[]")
+                 , ("Prim.[]", "Prim.[]")
+                 , ("[]", "Prelude.[]")
                  , (":", "Prim.:")
                  , ("error", "Prim.error")
                  , ("Prim.retIO", "Prim.retIO")
@@ -216,13 +217,13 @@ concatConstInfo (ConstructorInfo da1 dc1)(ConstructorInfo da2 dc2) =
 initialConsts :: ConstructorInfo
 initialConsts = ConstructorInfo da dc
   where   da = [ ("Prim.()", 0)
-               , ("Prim.[]", 0)
+               , ("Prelude.[]", 0)
                , ("Prim.:", 2)
                , ("Prim.(,)", 2)
                ]
 
           dc = [ ("Prim.()", [unitCfun])
-               , ("Prim.[]", [nilCfun, consCfun])
+               , ("Prelude.[]", [nilCfun, consCfun])
                , ("Prim.:", [nilCfun, consCfun])
                , ("Prim.(,)", [pairCfun])
                ]

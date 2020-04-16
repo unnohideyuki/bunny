@@ -504,6 +504,11 @@ emitConsts h ci = do
   hPutStrLn h "        return new AtomExpr(new Var(obj));"
   hPutStrLn h "    }"
   mapM_ emitMkf $ dArity ci
+
+  hPutStrLn h $ "    public static Expr mk_91__93_(){"
+  hPutStr   h "        return mkExpr(new ConObj(new Cotr(\"Prelude.[]\"), new AtomExpr[0]));"
+  hPutStrLn h "    }"
+
   where
     emitMkf (n, aty)
       | aty == 0 = do

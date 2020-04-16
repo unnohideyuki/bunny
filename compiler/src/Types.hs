@@ -27,7 +27,7 @@ tBool    :: Type
 tBool     = TCon (Tycon "Prelude.Bool" Star)
 
 tList    :: Type
-tList     = TCon (Tycon "[]" (Kfun Star Star))
+tList     = TCon (Tycon "Prelude.[]" (Kfun Star Star))
 tArrow   :: Type
 tArrow    = TCon (Tycon "(->)" (Kfun Star (Kfun Star Star)))
 tTuple2  :: Type

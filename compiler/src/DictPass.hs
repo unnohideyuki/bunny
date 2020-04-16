@@ -175,16 +175,21 @@ lookupDictArg (c, x) = do
   pss <- getPss
   ce <- getCe
   let d = zip (map (\((IsIn i t), _) -> (i, apply s t)) pss) [(0::Int)..]
-      (TVar y) = apply s (TVar x)
+      (TVar y) = case apply s (TVar x) of
+        (TVar x') -> (TVar x')
+        x'        -> error $ "Irrefutable pattern failed " ++ show (x', ce)
 
       lookupDict (k, tv) (((c, tv'), i):d')
         | k == c  || k `elem` super ce c = Just i
         | otherwise = Nothing
+      lookupDict _ _ = Nothing
 
       ret = case lookupDict (c, TVar y) d of
         Nothing -> Nothing
         Just j  -> let (_, n) = pss !! j
                    in Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen 100)
+
+  trace ("lookupDict (" ++ show c ++ ", Tvar " ++ show y ++ ") " ++ show d ++ ":" ++ show ret) $ return ()
   return ret
 
 mkTcState :: ClassEnv -> [(Pred, Id)] -> Subst -> Int -> TcState

@@ -16,11 +16,11 @@ public class Prim {
     }
 
     public static Expr mkTrue(){
-	return mkExpr(new ConObj(new Cotr("Prim.True"), new AtomExpr[0]));
+	return mkExpr(new ConObj(new Cotr("Prelude.True"), new AtomExpr[0]));
     }
 
     public static Expr mkFalse(){
-	return mkExpr(new ConObj(new Cotr("Prim.False"), new AtomExpr[0]));
+	return mkExpr(new ConObj(new Cotr("Prelude.False"), new AtomExpr[0]));
     }
 
     public static Expr mkneErr(){
