@@ -14,7 +14,7 @@ instance (Show a) => Show [a] where
   show = Prim.show
 
 {-
-instance (Show a, b) => Show (a, b) where
+instance (Show a, Show b) => Show (a, b) where
   show = Prim.show
 -}
 
