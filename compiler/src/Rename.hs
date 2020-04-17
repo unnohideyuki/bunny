@@ -16,7 +16,7 @@ import           Types
 import           Typing
 
 import           Control.Exception          (assert)
-import           Control.Monad              (when)
+import           Control.Monad              (mapM, when)
 import           Control.Monad.State.Strict (get, put)
 import           Data.List                  (concatMap, foldl', notElem)
 import           Data.Maybe                 (fromMaybe)
@@ -214,19 +214,46 @@ renInstDecls dcls' = do
            then return (Kfun Star Star)
            else  lookupKdict qcn -- why qcn, should it be qin??
 
-      let p = case origName i of
-            "[]" -> IsIn qcn (TAp (TCon (Tycon qin k)) (TVar (Tyvar a Star)))
-            _    -> IsIn qcn (TCon (Tycon qin k))
+      let p = if origName i == origName nNil
+            then IsIn qcn (TAp (TCon (Tycon qin k)) (TVar (Tyvar a Star)))
+            else IsIn qcn (TCon (Tycon qin k))
       ps <- tops ctx
       instAdd ps p
       dict <- lookupCDicts qcn
       let defds = ddDecls dict
           ds' = mergeDs ds (map A.VDecl defds)
-      enterNewLevelWith $ "I%" ++ origName i -- see STG/isLocal
-      (ds'', _, _) <- scanDecls ds'
+      ds'' <- concat <$> mapM (renMDecl ("I%" ++ origName i)) ds'
       tbs <- renDecls ds''
-      exitLevel
       return (tbs, (qin, qcn))
+
+    renMDecl :: Id -> A.Decl -> RN [A.ValueDecl]
+    renMDecl pfx (A.VDecl d) = do d' <- renMName pfx d
+                                  return [d']
+    renMDecl _   _           = return []
+
+    renMName :: Id -> A.ValueDecl -> RN A.ValueDecl
+    renMName pfx (A.ValDecl expr rhs) = do expr' <- renmname expr
+                                           return (A.ValDecl expr' rhs)
+      where
+        ren' name = do
+          lv:lvs <- getLvs
+          let n = origName name
+              n' = lvPrefix lv ++ "." ++ pfx ++ "." ++ n
+              dict' = insert n' n' (lvDict lv) -- here is defferent from renameVar
+              lv' = lv{lvDict=dict'}
+          putLvs (lv':lvs)
+          return name{origName=n'}
+
+        renmname (A.VarExp n)          = do n' <- ren' n
+                                            return (A.VarExp n')
+        renmname (A.FunAppExp f e)     = do f' <- renmname f
+                                            return (A.FunAppExp f' e)
+        renmname (A.InfixExp le op re) = do op' <- ren' op
+                                            return (A.InfixExp le op' re)
+
+    renMName _ (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) =
+      return (A.TypeSigDecl ns (maybe_sigvar, sigdoc))
+
 
     instAdd :: [Pred] -> Pred -> RN ()
     instAdd ps p = do

@@ -132,6 +132,11 @@ primIntMulCfun = "Prim.intMul" :>: scIntintint
 showCfun :: Assump
 showCfun  = "Prim.show" :>: Forall [Star] ([] :=> (TGen 0 `fn` tString))
 
+showListCfun :: Assump
+showListCfun  = "Prim.showList" :>:
+  Forall [Star] ([IsIn "Prelude.Show" (TGen 0)] :=>
+                 ((TAp (TCon (Tycon "Prelude.[]" (Kfun Star Star))) (TGen 0)) `fn` tString))
+
 overloadedCfun :: Assump
 overloadedCfun = "#overloaded#" :>:
   Forall [Star, Star] ([] :=> (TGen 0 `fn` tString `fn` TGen 1))
@@ -152,7 +157,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun
                 , primIntEqCfun
                 , primIntAddCfun
                 , primIntMulCfun
-                , showCfun
+                , showCfun, showListCfun
                 , errorCfun
                 , "Prim.putStrLn" :>:
                   Forall []
@@ -190,6 +195,7 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.intAdd", "Prim.intAdd")
                  , ("Prim.intMul", "Prim.intMul")
                  , ("Prim.show", "Prim.show")
+                 , ("Prim.showList", "Prim.showList")
                  , ("#overloaded#", "#overloaded#")
                  ]
 

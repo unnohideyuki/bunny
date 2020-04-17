@@ -86,7 +86,7 @@ mgu (TCon tc1) (TCon tc2) | tc1 == tc2 = return nullSubst
 mgu t1 t2                 = fail $ "types do not unify: " ++ show (t1, t2)
 
 varBind u t | t == TVar u      = return nullSubst
-            | u `elem` tv t    = fail "occurs check fails"
+            | u `elem` tv t    = fail $ "occurs check fails: " ++ show u ++ ", " ++ show t
             | kind u /= kind t = fail "kinds do not match"
             | otherwise        = return (u +-> t)
 

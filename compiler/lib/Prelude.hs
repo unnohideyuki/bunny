@@ -3,15 +3,37 @@ module Prelude where
 infixr 5 :
 
 class Show a where
+  -- showsPrec :: Int -> a -> ([Char] -> [Char])
   show :: a -> [Char]
+  -- showList :: [a] -> ([Char] -> [Char])
+
+  -- Minimal complete definition:
+  --   show or showsPrec
+  {-
+  showsPrec i x s = show x ++ s
+  show x = showsPrec 0 x ""
+
+  showList []       = (++) "[]"
+  showList (x:xs)   = showChar '[' . shows x . showl xs
+    where showl []     = showChar ']'
+          showl (x:xs) = showChar ',' . shows x . showl xs
+  
+shows            =  showsPrec 0
+showChar = (:)
+  -}
+
 
 data Bool = False | True
 
 instance Show Bool where
   show = Prim.show
 
+
 instance (Show a) => Show [a] where
-  show = Prim.show
+  -- show = Prim.show
+  -- show = Prim.showListp
+  show xs = "[" ++ foldr (\i s -> show i ++ s) "]" xs
+
 
 {-
 instance (Show a, Show b) => Show (a, b) where
