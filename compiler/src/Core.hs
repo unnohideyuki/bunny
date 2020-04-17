@@ -17,7 +17,7 @@ data Literal = LitInt  Integer  Type
              | LitStr  String   Type
              deriving (Show, Eq)
 
-newtype Dict = Dict Id deriving (Show, Eq)
+-- newtype Dict = Dict Id deriving (Show, Eq) -- unused? (2020-04-17)
 
 data Expr = Var Var
           | Lit Literal

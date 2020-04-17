@@ -16,8 +16,8 @@ ppVar (DictVar x y) =
   text "${" <> text x <+> text y <> text "}"
 
 ppVars :: String -> [Var] -> Doc
-ppVars _ [] = empty
-ppVars _ [v] = ppVar v
+ppVars _ []     = empty
+ppVars _ [v]    = ppVar v
 ppVars s (v:vs) = ppVar v <> text s <> ppVars s vs
 
 -- Literal
@@ -49,11 +49,12 @@ ppExpr (App (App (Var (TermVar "Prelude.$" _)) e1) e2) =
 ppExpr (App (App (Var (TermVar "Prelude.." _)) e1) e2) =
   (text "(" <> ppExpr e1 <+> text "." <+> ppExpr e2 <> text ")")
 
+{-
 ppExpr (App (App (App (Var (TermVar "Prelude.>>" _)) d) e1) e2) =
   nest 0
   (text "(" <> ppExpr e1 <+> text ">>" <+> ppExpr d <$$>
    ppExpr e2 <> text ")")
-
+-}
 
 ppExpr (App e1 e2) =
   nest 2 (text "(" <> ppExpr e1 <+> softline <> ppExpr e2 <> text ")")
@@ -78,7 +79,7 @@ ppAlt (ac, vs, e) =
   (ppAltCon ac <+> ppVars " " vs <> text "->" <+> softline <> ppExpr e)
 
 ppAlts :: [Alt] -> Doc
-ppAlts [] = empty
+ppAlts []     = empty
 ppAlts (a:as) = ppAlt a <$$> ppAlts as
 
 ppAltCon :: AltCon -> Doc

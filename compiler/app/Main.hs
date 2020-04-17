@@ -19,6 +19,7 @@ import           DDumpCore
 
 import           Control.Monad
 import           Control.Monad.State.Strict (runState)
+import           Debug.Trace
 import           Options.Applicative
 import           System.IO
 
@@ -87,7 +88,7 @@ doCompile st0 m dest cont opts = do
 
   when (optDdumpcore0 opts) $ ddumpCore b
 
-  let b' = tcBind b ce Nothing
+  let b' = tcBind b ce as Nothing
 
   when (optDdumpcore opts) $ ddumpCore b'
 

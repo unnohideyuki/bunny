@@ -490,7 +490,7 @@ emitInsts dest dicts ((qin, qcn):ctab) ce = do
   mapM_
     (\s -> do hPutStrLn h $ "    public Expr mk" ++ s ++ "(){"
               hPutStr h $ "      return " ++ mangle mname ++ "."
-              hPutStr h $ "mk" ++ mangle ("I%" ++ basename qin ++ ".")
+              hPutStr h $ "mk" ++ mangle (basename qin ++ "%I.")
               hPutStrLn h $ s ++ "();"
               hPutStrLn h "    }")
     msM

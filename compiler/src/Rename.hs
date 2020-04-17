@@ -222,7 +222,7 @@ renInstDecls dcls' = do
       dict <- lookupCDicts qcn
       let defds = ddDecls dict
           ds' = mergeDs ds (map A.VDecl defds)
-      ds'' <- concat <$> mapM (renMDecl ("I%" ++ origName i)) ds'
+      ds'' <- concat <$> mapM (renMDecl (origName i ++ "%I")) ds'
       tbs <- renDecls ds''
       return (tbs, (qin, qcn))
 
@@ -235,25 +235,25 @@ renInstDecls dcls' = do
     renMName pfx (A.ValDecl expr rhs) = do expr' <- renmname expr
                                            return (A.ValDecl expr' rhs)
       where
-        ren' name = do
-          lv:lvs <- getLvs
-          let n = origName name
-              n' = lvPrefix lv ++ "." ++ pfx ++ "." ++ n
-              dict' = insert n' n' (lvDict lv) -- here is defferent from renameVar
-              lv' = lv{lvDict=dict'}
-          putLvs (lv':lvs)
-          return name{origName=n'}
-
-        renmname (A.VarExp n)          = do n' <- ren' n
+        renmname (A.VarExp n)          = do n' <- ren' pfx n
                                             return (A.VarExp n')
         renmname (A.FunAppExp f e)     = do f' <- renmname f
                                             return (A.FunAppExp f' e)
-        renmname (A.InfixExp le op re) = do op' <- ren' op
+        renmname (A.InfixExp le op re) = do op' <- ren' pfx op
                                             return (A.InfixExp le op' re)
 
-    renMName _ (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) =
-      return (A.TypeSigDecl ns (maybe_sigvar, sigdoc))
+    renMName pfx (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) =
+      do ns' <- mapM (ren' pfx) ns
+         return (A.TypeSigDecl ns' (maybe_sigvar, sigdoc))
 
+    ren' pfx name = do
+      lv:lvs <- getLvs
+      let n = origName name
+          n' = lvPrefix lv ++ "." ++ pfx ++ "." ++ n
+          dict' = insert n' n' (lvDict lv) -- here is defferent from renameVar
+          lv' = lv{lvDict=dict'}
+      putLvs (lv':lvs)
+      return name{origName=n'}
 
     instAdd :: [Pred] -> Pred -> RN ()
     instAdd ps p = do
