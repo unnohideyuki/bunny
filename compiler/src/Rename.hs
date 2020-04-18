@@ -227,12 +227,34 @@ renInstDecls dcls' = do
       let defds = ddDecls dict
           ds' = mergeDs ds (map A.VDecl defds)
       ds'' <- concat <$> mapM (renMDecl (origName i ++ "%I")) ds'
-      tsdecls <- concat <$> mapM (renTDecl (origName i ++ "%I")) (ddTDecls dict)
+      tsdecls <- concat <$> mapM (renTDecl (origName i ++ "%I") t) (ddTDecls dict)
       tbs <- renDecls ds''
       return (tbs, (qin, qcn))
 
-    renTDecl :: Id -> A.ValueDecl -> RN [A.ValueDecl]
-    renTDecl pfx d = do trace (show d) $ return []
+    renTDecl :: Id -> A.Type -> A.ValueDecl -> RN [A.ValueDecl]
+    renTDecl pfx (A.AppTy _ tc) (A.TypeSigDecl ns (sigvar,sigdoc)) =
+      do ns' <- mapM (ren' pfx) ns
+         let Just (A.AppTy _ (A.Tyvar tv)) = sigvar
+             a = origName tv
+
+             subst' t@(A.Tyvar name) | origName name == a = tc
+                                     | otherwise          = t
+             subst' t@(A.Tycon _) = t
+             subst' (A.FunTy t1 t2) = A.FunTy (subst' t1) (subst' t2)
+             subst' (A.AppTy t1 t2) = A.AppTy (subst' t1) (subst' t2)
+             subst' (A.BangTy t) = A.BangTy (subst' t)
+             subst' (A.TupleTy ts) = A.TupleTy $ map subst' ts
+             subst' (A.ListTy t) = A.ListTy (subst' t)
+             subst' (A.ParTy t) = subst' t
+             subst' t@(A.RecTy _) = t
+
+             sigdoc' = subst' sigdoc
+
+             d' = A.TypeSigDecl ns' (Nothing, sigdoc')
+         trace (show d') $ return ()
+         return []
+
+    renTDecl pfx _ d = return [] -- not implemented yet.
 
     renMDecl :: Id -> A.Decl -> RN [A.ValueDecl]
     renMDecl pfx (A.VDecl d) = do d' <- renMName pfx d
