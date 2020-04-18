@@ -18,7 +18,7 @@ import           Typing
 import           Control.Exception          (assert)
 import           Control.Monad              (mapM, when)
 import           Control.Monad.State.Strict (get, put)
-import           Data.List                  (concatMap, foldl', notElem)
+import           Data.List                  (concatMap, foldl', notElem, sort)
 import           Data.Maybe                 (fromMaybe)
 import           Debug.Trace
 
@@ -228,7 +228,7 @@ renInstDecls dcls' = do
           ds' = mergeDs ds (map A.VDecl defds)
       ds'' <- concat <$> mapM (renMDecl (origName i ++ "%I")) ds'
       tsdecls <- concat <$> mapM (renTDecl (origName i ++ "%I") t) (ddTDecls dict)
-      tbs <- renDecls ds''
+      tbs <- renDecls (tsdecls ++ ds'')
       return (tbs, (qin, qcn))
 
     renTDecl :: Id -> A.Type -> A.ValueDecl -> RN [A.ValueDecl]
@@ -251,8 +251,7 @@ renInstDecls dcls' = do
              sigdoc' = subst' sigdoc
 
              d' = A.TypeSigDecl ns' (Nothing, sigdoc')
-         trace (show d') $ return ()
-         return []
+         return [d']
 
     renTDecl pfx _ d = return [] -- not implemented yet.
 

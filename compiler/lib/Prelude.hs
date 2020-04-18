@@ -29,11 +29,12 @@ instance Show Bool where
   show = Prim.show
 
 
+{-
 instance (Show a) => Show [a] where
   -- show = Prim.show
   -- show = Prim.showListp
   show xs = "[" ++ foldr (\i s -> show i ++ s) "]" xs
-
+-}
 
 {-
 instance (Show a, Show b) => Show (a, b) where

@@ -7,6 +7,8 @@ import           Types
 import           Typing
 
 import           Control.Monad.State.Strict (State, get, put)
+import           Data.Char                  (isUpper)
+import           Data.List.Split            (splitOn)
 import           Data.Maybe                 (fromMaybe)
 
 aTrue :: A.Exp
@@ -134,7 +136,9 @@ putIfxenv ifxenv = do st <- get
                       put st{rnIfxenv=ifxenv}
 
 renameVar :: Name -> RN Id
-renameVar name = do
+renameVar name
+  | alreadyQualified (origName name) = return $ origName name
+  | otherwise   = do
   lv:lvs <- getLvs
   let n = origName name
       n' = lvPrefix lv ++ "." ++ n
@@ -142,6 +146,7 @@ renameVar name = do
       lv' = lv{lvDict=dict'}
   putLvs (lv':lvs)
   return n'
+  where alreadyQualified s = s /= "." && length (splitOn "." s) > 1
 
 regFixity :: A.Fixity -> Int -> [Name] -> RN ()
 regFixity _ _ [] = return ()
