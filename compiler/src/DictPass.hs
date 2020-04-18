@@ -200,7 +200,7 @@ tcExpr :: Expr -> Qual Type -> TC Expr
 
 tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
   | null qv || isTVar t' e || isArg n {- todo:too suspicious! -} = return e
-  | otherwise = findApplyDict e t' qt
+  | otherwise = findApplyDict e (qv :=> t') qt
   where isTVar x@(TVar _) y = True
         isTVar x y          = False
         notFunTy (TAp (TAp (TCon (Tycon "(->)" _)) _) _) = False
@@ -208,19 +208,19 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
         isArg ('_':_) = True
         isArg _       = False
 
-        findApplyDict e t' (_ :=> t) = do
+        findApplyDict e (qv :=> t') (_ :=> t) = do
           unify' t' t
           s <- getSubst
-          let mkdicts [] ds = return ds
-              mkdicts (IsIn n2 (TVar x) : qs) ds =
-                case apply s (TVar x) of
-                  (TCon (Tycon n1 _)) -> mkdicts qs (Var (DictVar n1 n2) : ds)
-                  y -> do v <- lookupDictArg (n2, x)
-                          case v of
-                            Nothing -> error ("Error: dictionary not found: "
-                                              ++ n ++ ", " ++ show (x,n2,y))
-                            Just v' -> mkdicts qs (Var v' : ds)
-              mkdicts _ _ = error "mkdicts: must not occur"
+          let  mkdicts [] ds = return ds
+               mkdicts (IsIn n2 (TVar x) : qs) ds =
+                 case apply s (TVar x) of
+                   (TCon (Tycon n1 _)) -> mkdicts qs (Var (DictVar n1 n2) : ds)
+                   y -> do v <- lookupDictArg (n2, x)
+                           case v of
+                             Nothing -> error ("Error: dictionary not found: "
+                                               ++ n ++ ", " ++ show (x,n2,y))
+                             Just v' -> mkdicts qs (Var v' : ds)
+               mkdicts _ _ = error "mkdicts: must not occur"
           dicts <- mkdicts qv []
           return $ foldl App e dicts
 
