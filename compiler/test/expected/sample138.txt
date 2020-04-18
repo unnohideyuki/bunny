@@ -1,2 +1,0 @@
-Hoge 10
-Fuga "nine"
