@@ -108,17 +108,17 @@ instance Eq Ordering where
     (GT, EQ) -> False
     (GT, GT) -> True
 
-{-
 instance Ord Ordering where
   a <= b = case (a, b) of
     (LT, LT) -> True
     (LT, EQ) -> True
     (LT, GT) -> True
+    (EQ, LT) -> False
     (EQ, EQ) -> True
     (EQ, GT) -> True
+    (GT, LT) -> False
+    (GT, EQ) -> False
     (GT, GT) -> True
-    _        -> False
--}
 
 -- Equality and Ordered classes
 
