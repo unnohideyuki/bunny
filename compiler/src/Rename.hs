@@ -37,9 +37,9 @@ scanDecls ds = do
       _ <- renameVar n
       mapM_ colname' ds'
       return ([], [d], [])
-      where colname' (A.VDecl (A.ValDecl e _)) = do _ <- renameVar (extrName e)
-                                                    return ()
-            colname' _ = return ()
+      where colname' (A.VDecl (A.ValDecl e _))      =
+              renameVar (extrName e) >> return ()
+            colname' (A.VDecl (A.TypeSigDecl ns _)) = mapM_ renameVar ns
 
     {- TODO: consider followin patterns.
             (A.CDecl (A.ClassDecl (_, A.Tyvar _) _))
@@ -108,21 +108,24 @@ scanDecls ds = do
     scandecl A.NewtypeDecl{}     = error "not yet: NewtypeDecl"
 
 trCdecl :: Id -> A.ClassDecl -> DictDef
-trCdecl modid (A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds) =
+trCdecl modid (A.ClassDecl (_, sigvar@(A.AppTy (A.Tycon n) _)) ds) =
   let
     name = modid ++ "." ++ origName n
 
     extrMName (A.VDecl (A.TypeSigDecl ns _)) = map origName ns
-    extrMName _                              = [] -- TODO: can ignore?
-
+    extrMName _                              = []
     ms = concatMap extrMName ds
 
     extrValDecl (A.VDecl d@(A.ValDecl _ _)) = [d]
-    extrValDecl _                           = [] -- TODO: can ignore?
-
+    extrValDecl _                           = []
     vdcls = concatMap extrValDecl ds
+
+    extrTSygDecl (A.VDecl (A.TypeSigDecl ns (_, sigdoc))) =
+      [A.TypeSigDecl ns (Just sigvar, sigdoc)]
+    extrTSygDecl _                               = []
+    tdcls = concatMap extrTSygDecl ds
  in
-   DictDef{ddId=name, ddMethods=ms, ddDecls=vdcls}
+   DictDef{ddId=name, ddMethods=ms, ddDecls=vdcls, ddTDecls=tdcls}
 
 {- TODO: consider following patterns:
             _ (A.ClassDecl (_, A.Tyvar _) _)
@@ -184,13 +187,14 @@ suppDs ds clsname =
     mkoldcl n = A.ValDecl (mkv n) (A.UnguardedRhs
                                    (A.FunAppExp
                                     (A.FunAppExp (mkv "#overloaded#") (mkv n))
-                                    (A.LitExp (A.LitString clsname undefined))
+                                    (A.LitExp (A.LitString clsname (0,0)))
                                    )
                                    [])
 
     ds' = map mkoldcl ns'
   in
-   cds ++ ds'
+    cds ++ ds'
+
 
 renInstDecls :: [A.InstDecl] -> RN ([TempBind], [(Id, Id)])
 renInstDecls dcls' = do
@@ -223,8 +227,12 @@ renInstDecls dcls' = do
       let defds = ddDecls dict
           ds' = mergeDs ds (map A.VDecl defds)
       ds'' <- concat <$> mapM (renMDecl (origName i ++ "%I")) ds'
+      tsdecls <- concat <$> mapM (renTDecl (origName i ++ "%I")) (ddTDecls dict)
       tbs <- renDecls ds''
       return (tbs, (qin, qcn))
+
+    renTDecl :: Id -> A.ValueDecl -> RN [A.ValueDecl]
+    renTDecl pfx d = do trace (show d) $ return []
 
     renMDecl :: Id -> A.Decl -> RN [A.ValueDecl]
     renMDecl pfx (A.VDecl d) = do d' <- renMName pfx d
@@ -242,9 +250,7 @@ renInstDecls dcls' = do
         renmname (A.InfixExp le op re) = do op' <- ren' pfx op
                                             return (A.InfixExp le op' re)
 
-    renMName pfx (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) =
-      do ns' <- mapM (ren' pfx) ns
-         return (A.TypeSigDecl ns' (maybe_sigvar, sigdoc))
+    renMName pfx (A.TypeSigDecl _ _) = error "must not occur"
 
     ren' pfx name = do
       lv:lvs <- getLvs

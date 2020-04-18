@@ -5,12 +5,14 @@ import           PPTypes
 import           Symbol
 import           Types
 import           Typing                     (Assump (..), ClassEnv (..),
-                                             Pred (..), Qual (..), Subst, apply,
-                                             mgu, nullSubst, super, tv, (@@))
+                                             Pred (..), Qual (..), Scheme (..),
+                                             Subst, apply, find, mgu, nullSubst,
+                                             super, tv, (@@))
 
 import           Control.Monad
 import           Control.Monad.State.Strict (State, get, put, runState)
 import           Data.List                  (nub)
+import           Data.List.Split            (splitOn)
 import           Data.Maybe                 (fromMaybe)
 import           Debug.Trace
 
@@ -22,8 +24,8 @@ normQTy (qs :=> t) = let
   in
    qs' :=> t
 
-tcBind :: Bind -> ClassEnv -> [Assump] -> Maybe TcState -> Bind
-tcBind (Rec bs) ce as maybest = Rec $ map tcbind bs
+tcBind :: Bind -> ClassEnv -> Maybe TcState -> Bind
+tcBind (Rec bs) ce maybest = Rec $ map tcbind bs
   where
     tcbind (v@(TermVar n qt@(qs :=> _)), e)
       | isOVExpr e = (v, e)
@@ -33,8 +35,8 @@ tcBind (Rec bs) ce as maybest = Rec $ map tcbind bs
               Just st' -> let pss' = tcPss st'
                               subst = tcSubst st'
                               num = tcNum st'
-                          in mkTcState ce as (pss ++ pss') subst num
-              Nothing -> mkTcState ce as pss nullSubst 0
+                          in mkTcState ce (pss ++ pss') subst num
+              Nothing -> mkTcState ce pss nullSubst 0
             (e', _) = runState (tcExpr e qt) st
         in
          if null qs then (v, e')
@@ -50,7 +52,6 @@ mkVs n ps = [TermVar (n ++ ".DARG" ++ show i) ([] :=> TGen 99)
             | (i, _) <- zip [(0::Int)..] ps]
 
 data TcState = TcState { tcCe    :: ClassEnv
-                       , tcAs    :: [Assump]
                        , tcPss   :: [(Pred, Id)]
                        , tcSubst :: Subst
                        , tcNum   :: Int
@@ -192,9 +193,9 @@ lookupDictArg (c, x) = do
 
   return ret
 
-mkTcState :: ClassEnv -> [Assump] -> [(Pred, Id)] -> Subst -> Int -> TcState
-mkTcState ce as pss subst num =
-  TcState{tcCe=ce, tcAs=as, tcPss=pss, tcSubst=subst, tcNum=num}
+mkTcState :: ClassEnv -> [(Pred, Id)] -> Subst -> Int -> TcState
+mkTcState ce pss subst num =
+  TcState{tcCe=ce, tcPss=pss, tcSubst=subst, tcNum=num}
 
 tcExpr :: Expr -> Qual Type -> TC Expr
 
@@ -222,7 +223,20 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
                              Just v' -> mkdicts qs (Var v' : ds)
                mkdicts _ _ = error "mkdicts: must not occur"
           dicts <- mkdicts qv []
-          return $ foldl App e dicts
+          return (foldl App e dicts)
+            {-
+            where
+              appliedQv :: [Expr] -> TC (Maybe (Qual Type))
+              appliedQv [(Var (DictVar iname _))] = do
+                let mname = iname ++ "%I." ++ last (splitOn "." n)
+                as <- tcAs <$> get
+                let maybe_sc = find mname as
+                case maybe_sc of
+                  Just (Forall _ qt) -> return (Just qt)
+                  Nothing            -> return Nothing
+              appliedQv _ = return Nothing
+            -}
+
 
 tcExpr e@(Lit _) _ = return e
 
@@ -245,7 +259,7 @@ tcExpr e@(Lam vs ebody) (qs :=> t) = do
 
 tcExpr (Let bs e) qt = do
   st <- get
-  let bs' = tcBind bs (tcCe st) (tcAs st) (Just st)
+  let bs' = tcBind bs (tcCe st) (Just st)
   e' <- tcExpr e qt
   return $ Let bs' e'
 

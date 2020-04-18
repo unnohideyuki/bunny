@@ -88,7 +88,7 @@ doCompile st0 m dest cont opts = do
 
   when (optDdumpcore0 opts) $ ddumpCore b
 
-  let b' = tcBind b ce as Nothing
+  let b' = tcBind b ce Nothing
 
   when (optDdumpcore opts) $ ddumpCore b'
 
