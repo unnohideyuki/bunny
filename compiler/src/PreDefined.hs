@@ -102,13 +102,17 @@ primIntAddCfun = "Prim.intAdd" :>: scIntintint
 primIntMulCfun :: Assump
 primIntMulCfun = "Prim.intMul" :>: scIntintint
 
-showCfun :: Assump
-showCfun  = "Prim.show" :>: Forall [Star] ([] :=> (TGen 0 `fn` tString))
+showConNameCfun :: Assump
+showConNameCfun  = "Prim.showConName" :>: Forall [Star] ([] :=> (TGen 0 `fn` tString))
 
-showListCfun :: Assump
-showListCfun  = "Prim.showList" :>:
-  Forall [Star] ([IsIn "Prelude.Show" (TGen 0)] :=>
-                 (TAp (TCon (Tycon "Prelude.[]" (Kfun Star Star))) (TGen 0) `fn` tString))
+charShowCfun :: Assump
+charShowCfun  = "Prim.charShow" :>: Forall [] ([] :=> (tChar `fn` tString))
+
+integerShowCfun :: Assump
+integerShowCfun  = "Prim.integerShow" :>: Forall [] ([] :=> (tInteger `fn` tString))
+
+intShowCfun :: Assump
+intShowCfun  = "Prim.intShow" :>: Forall [] ([] :=> (tInt `fn` tString))
 
 overloadedCfun :: Assump
 overloadedCfun = "#overloaded#" :>:
@@ -125,7 +129,8 @@ primConsMems  = [ unitCfun, nilCfun, consCfun
                 , primIntLeCfun, primIntEqCfun
                 , primIntAddCfun
                 , primIntMulCfun
-                , showCfun, showListCfun
+                , showConNameCfun
+                , charShowCfun, integerShowCfun, intShowCfun
                 , errorCfun
                 , "Prim.putStrLn" :>:
                   Forall []
@@ -153,8 +158,10 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.intEq", "Prim.intEq")
                  , ("Prim.intAdd", "Prim.intAdd")
                  , ("Prim.intMul", "Prim.intMul")
-                 , ("Prim.show", "Prim.show")
-                 , ("Prim.showList", "Prim.showList")
+                 , ("Prim.showConName", "Prim.showConName")
+                 , ("Prim.charShow", "Prim.charShow")
+                 , ("Prim.integerShow", "Prim.integerShow")
+                 , ("Prim.intShow", "Prim.intShow")
                  , ("#overloaded#", "#overloaded#")
                  ]
 

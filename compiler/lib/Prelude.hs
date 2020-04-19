@@ -26,7 +26,7 @@ showChar = (:)
 data Bool = False | True
 
 instance Show Bool where
-  show = Prim.show
+  show = Prim.showConName
 
 
 {-
@@ -94,7 +94,7 @@ data Ordering = LT | EQ | GT
 --              deriving (Eq, Ord, Enum, Read, Show, Bounded)
 
 instance Show Ordering where
-  show = Prim.show
+  show = Prim.showConName
 
 instance Eq Ordering where
   a == b = case (a, b) of
@@ -161,7 +161,7 @@ instance Eq Char where
   (==) = Prim.charEq
 
 instance Show Char where
-  show = Prim.show
+  show = Prim.charShow
 
 class (Eq a) => Num a where
   (+) :: a -> a -> a
@@ -178,7 +178,7 @@ instance Eq Integer where
   (==) = Prim.integerEq
 
 instance Show Integer where
-  show = Prim.show
+  show = Prim.integerShow
 
 instance Num Int where
   (+)  = Prim.intAdd
@@ -191,7 +191,7 @@ instance Eq Int where
   (==) = Prim.intEq
 
 instance Show Int where
-  show = Prim.show
+  show = Prim.intShow
 
 print x = putStrLn (show x)
 
