@@ -3,7 +3,7 @@ import           Symbol
 import           Types
 import           Typing
 
-import           Data.Maybe (fromJust, fromMaybe)
+import           Data.Maybe (fromMaybe)
 
 -- Primitive Constructors and Member Functions
 unitCfun :: Assump
@@ -58,17 +58,8 @@ primFailCfun = "Prim.failIO" :>:
 scCharcharbool :: Scheme
 scCharcharbool = Forall [] ([] :=> (tChar `fn` tChar `fn` tBool))
 
-primCharLtCfun :: Assump
-primCharLtCfun = "Prim.charLt" :>: scCharcharbool
-
 primCharLeCfun :: Assump
 primCharLeCfun = "Prim.charLe" :>: scCharcharbool
-
-primCharGeCfun :: Assump
-primCharGeCfun = "Prim.charGe" :>: scCharcharbool
-
-primCharGtCfun :: Assump
-primCharGtCfun = "Prim.charGt" :>: scCharcharbool
 
 primCharEqCfun :: Assump
 primCharEqCfun = "Prim.charEq" :>: scCharcharbool
@@ -80,17 +71,8 @@ scIntegerintegerinteger :: Scheme
 scIntegerintegerinteger =
   Forall [] ([] :=> (tInteger `fn` tInteger `fn` tInteger))
 
-primIntegerLtCfun :: Assump
-primIntegerLtCfun = "Prim.integerLt" :>: scIntegerintegerbool
-
 primIntegerLeCfun :: Assump
 primIntegerLeCfun = "Prim.integerLe" :>: scIntegerintegerbool
-
-primIntegerGeCfun :: Assump
-primIntegerGeCfun = "Prim.integerGe" :>: scIntegerintegerbool
-
-primIntegerGtCfun :: Assump
-primIntegerGtCfun = "Prim.integerGt" :>: scIntegerintegerbool
 
 primIntegerEqCfun :: Assump
 primIntegerEqCfun = "Prim.integerEq" :>: scIntegerintegerbool
@@ -108,17 +90,8 @@ scIntintint :: Scheme
 scIntintint =
   Forall [] ([] :=> (tInt `fn` tInt `fn` tInt))
 
-primIntLtCfun :: Assump
-primIntLtCfun = "Prim.intLt" :>: scIntintbool
-
 primIntLeCfun :: Assump
 primIntLeCfun = "Prim.intLe" :>: scIntintbool
-
-primIntGeCfun :: Assump
-primIntGeCfun = "Prim.intGe" :>: scIntintbool
-
-primIntGtCfun :: Assump
-primIntGtCfun = "Prim.intGt" :>: scIntintbool
 
 primIntEqCfun :: Assump
 primIntEqCfun = "Prim.intEq" :>: scIntintbool
@@ -135,7 +108,7 @@ showCfun  = "Prim.show" :>: Forall [Star] ([] :=> (TGen 0 `fn` tString))
 showListCfun :: Assump
 showListCfun  = "Prim.showList" :>:
   Forall [Star] ([IsIn "Prelude.Show" (TGen 0)] :=>
-                 ((TAp (TCon (Tycon "Prelude.[]" (Kfun Star Star))) (TGen 0)) `fn` tString))
+                 (TAp (TCon (Tycon "Prelude.[]" (Kfun Star Star))) (TGen 0) `fn` tString))
 
 overloadedCfun :: Assump
 overloadedCfun = "#overloaded#" :>:
@@ -145,16 +118,11 @@ primConsMems :: [Assump]
 primConsMems  = [ unitCfun, nilCfun, consCfun
                 , leMfun, gtMfun
                 , primRetCfun, primBindCfun, primFailCfun
-                , primCharLtCfun, primCharLeCfun, primCharGeCfun, primCharGtCfun
-                , primCharEqCfun
-                , primIntegerLtCfun, primIntegerLeCfun
-                , primIntegerGeCfun, primIntegerGtCfun
-                , primIntegerEqCfun
+                , primCharLeCfun, primCharEqCfun
+                , primIntegerLeCfun, primIntegerEqCfun
                 , primIntegerAddCfun
                 , primIntegerMulCfun
-                , primIntLtCfun, primIntLeCfun
-                , primIntGeCfun, primIntGtCfun
-                , primIntEqCfun
+                , primIntLeCfun, primIntEqCfun
                 , primIntAddCfun
                 , primIntMulCfun
                 , showCfun, showListCfun
@@ -175,22 +143,13 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.retIO", "Prim.retIO")
                  , ("Prim.bindIO", "Prim.bindIO")
                  , ("Prim.failIO", "Prim.failIO")
-                 , ("Prim.charLt", "Prim.charLt")
                  , ("Prim.charLe", "Prim.charLe")
-                 , ("Prim.charGe", "Prim.charGe")
-                 , ("Prim.charGt", "Prim.charGt")
                  , ("Prim.charEq", "Prim.charEq")
-                 , ("Prim.integerLt", "Prim.integerLt")
                  , ("Prim.integerLe", "Prim.integerLe")
-                 , ("Prim.integerGe", "Prim.integerGe")
-                 , ("Prim.integerGt", "Prim.integerGt")
                  , ("Prim.integerEq", "Prim.integerEq")
                  , ("Prim.integerAdd", "Prim.integerAdd")
                  , ("Prim.integerMul", "Prim.integerMul")
-                 , ("Prim.intLt", "Prim.intLt")
                  , ("Prim.intLe", "Prim.intLe")
-                 , ("Prim.intGe", "Prim.intGe")
-                 , ("Prim.intGt", "Prim.intGt")
                  , ("Prim.intEq", "Prim.intEq")
                  , ("Prim.intAdd", "Prim.intAdd")
                  , ("Prim.intMul", "Prim.intMul")

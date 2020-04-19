@@ -70,40 +70,16 @@ public class Prim {
 	return null;
     }
 
-    public static Expr mkcharLt(){
-	return RTLib.mkFun(new CharLt());
-    }
-
     public static Expr mkcharLe(){
 	return RTLib.mkFun(new CharLe());
-    }
-
-    public static Expr mkcharGe(){
-	return RTLib.mkFun(new CharGe());
-    }
-
-    public static Expr mkcharGt(){
-	return RTLib.mkFun(new CharGt());
     }
 
     public static Expr mkcharEq(){
 	return RTLib.mkFun(new CharEq());
     }
 
-    public static Expr mkintegerLt(){
-	return RTLib.mkFun(new IntegerLt());
-    }
-
     public static Expr mkintegerLe(){
 	return RTLib.mkFun(new IntegerLe());
-    }
-
-    public static Expr mkintegerGe(){
-	return RTLib.mkFun(new IntegerGe());
-    }
-
-    public static Expr mkintegerGt(){
-	return RTLib.mkFun(new IntegerGt());
     }
 
     public static Expr mkintegerEq(){
@@ -118,20 +94,8 @@ public class Prim {
 	return RTLib.mkFun(new IntegerMul());
     }
 
-    public static Expr mkintLt(){
-	return mkintegerLt();
-    }
-
     public static Expr mkintLe(){
 	return mkintegerLe();
-    }
-
-    public static Expr mkintGe(){
-	return mkintegerGe();
-    }
-
-    public static Expr mkintGt(){
-	return mkintegerGt();
     }
 
     public static Expr mkintEq(){
