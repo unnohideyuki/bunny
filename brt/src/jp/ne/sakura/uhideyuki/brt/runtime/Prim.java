@@ -23,6 +23,10 @@ public class Prim {
 	return mkExpr(new ConObj(new Cotr("Prelude.False"), new AtomExpr[0]));
     }
 
+    public static Expr mk_40__41_(){
+	return mkExpr(new ConObj(new Cotr("Prim.()"), new AtomExpr[0]));
+    }
+
     public static Expr mkneErr(){
 	return new ErrExpr("Error: Non-exhaustive patterns.");
     }
