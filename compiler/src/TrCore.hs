@@ -256,7 +256,7 @@ dsgAlts n alts@((pats,_):_) ci =
     us = [Pat.mkVar n i| i <- [1..k]]
 
     alts' = rmWild alts [] -- for temporary fix (#t002), see the note p.212
-    rmWild [] as = reverse as
+    rmWild [] as         = reverse as
     rmWild (([Ty.PWildcard], e'):als') as =
       rmWild als' (([Ty.PVar "_"], e'):as)
     rmWild (alt:als') as = rmWild als' (alt:as)
