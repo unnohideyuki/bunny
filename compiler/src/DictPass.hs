@@ -51,10 +51,11 @@ mkVs :: Id -> [Pred] -> [Var]
 mkVs n ps = [TermVar (n ++ ".DARG" ++ show i) ([] :=> TGen 99)
             | (i, _) <- zip [(0::Int)..] ps]
 
-data TcState = TcState { tcCe    :: ClassEnv
-                       , tcPss   :: [(Pred, Id)]
-                       , tcSubst :: Subst
-                       , tcNum   :: Int
+data TcState = TcState { tcCe           :: ClassEnv
+                       , tcPss          :: [(Pred, Id)]
+                       , tcSubst        :: Subst
+                       , tcNum          :: Int
+                       , tcIntegerTVars :: [Type]
                        }
                deriving Show
 
@@ -94,12 +95,17 @@ getCe = tcCe <$> get
 
 
 getTy :: Expr -> TC (Qual Type)
--- TODO: quantify here is ok?
 getTy (Var (TermVar _ qt)) = return qt
-getTy (Lit (LitInt _ t)) = return ([] :=> t)
-getTy (Lit (LitChar _ t)) = return ([] :=> t)
-getTy (Lit (LitFrac _ t)) = return ([] :=> t)
-getTy (Lit (LitStr _ t)) = return ([] :=> t)
+getTy (Lit (LitChar _ qt)) = return qt
+getTy (Lit (LitFrac _ qt)) = return qt
+getTy (Lit (LitStr  _ qt)) = return qt
+
+getTy e@(Lit (LitInt  _ qt@(_ :=> v))) = do
+  st <- get
+  let tvars = tcIntegerTVars st
+      st' = st{tcIntegerTVars = (v:tvars)}
+  put st'
+  return qt
 
 getTy (App f e) = do
   (qf :=> tf) <- getTy f
@@ -141,10 +147,10 @@ tyScrut s as = do
 
         altty (LitAlt l, _, _) = return $
                                  case l of
-                                   LitInt _ t  -> t
-                                   LitChar _ t -> t
-                                   LitFrac _ t -> t
-                                   LitStr _ t  -> t
+                                   LitInt  _ ( _ :=> t) -> t
+                                   LitChar _ ( _ :=> t) -> t
+                                   LitFrac _ ( _ :=> t) -> t
+                                   LitStr  _ ( _ :=> t) -> t
 
         altty _ = do n <- newNum
                      return $ TVar (Tyvar ("a" ++ show n) Star)
@@ -195,7 +201,7 @@ lookupDictArg (c, x) = do
 
 mkTcState :: ClassEnv -> [(Pred, Id)] -> Subst -> Int -> TcState
 mkTcState ce pss subst num =
-  TcState{tcCe=ce, tcPss=pss, tcSubst=subst, tcNum=num}
+  TcState{tcCe=ce, tcPss=pss, tcSubst=subst, tcNum=num, tcIntegerTVars=[]}
 
 tcExpr :: Expr -> Qual Type -> TC Expr
 
@@ -212,15 +218,20 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
         findApplyDict e (qv :=> t') (_ :=> t) = do
           unify' t' t
           s <- getSubst
+          itvars <- tcIntegerTVars <$> get
+          let itvars' = fmap (apply s) itvars
           let  mkdicts [] ds = return ds
                mkdicts (IsIn n2 (TVar x) : qs) ds =
                  case apply s (TVar x) of
                    (TCon (Tycon n1 _)) -> mkdicts qs (Var (DictVar n1 n2) : ds)
-                   y -> do v <- lookupDictArg (n2, x)
-                           case v of
-                             Nothing -> error ("Error: dictionary not found: "
-                                               ++ n ++ ", " ++ show (x,n2,y))
-                             Just v' -> mkdicts qs (Var v' : ds)
+                   y | y `elem` itvars'
+                       -> mkdicts qs (Var (DictVar "Prelude.Integer" n2) : ds)
+                     | otherwise
+                       -> do v <- lookupDictArg (n2, x)
+                             case v of
+                               Nothing -> error ("Error: dictionary not found: "
+                                                 ++ n ++ ", " ++ show (x,n2,y,itvars))
+                               Just v' -> mkdicts qs (Var v' : ds)
                mkdicts _ _ = error "mkdicts: must not occur"
           dicts <- mkdicts qv []
           return (foldl App e dicts)
@@ -237,8 +248,8 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
               appliedQv _ = return Nothing
             -}
 
+tcExpr e@(Lit _) _ = do return e
 
-tcExpr e@(Lit _) _ = return e
 
 tcExpr (App e f) (ps :=> t) = do
   (qe :=> te) <- getTy e

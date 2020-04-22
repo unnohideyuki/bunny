@@ -25,7 +25,7 @@ ppVars s (v:vs) = ppVar v <> text s <> ppVars s vs
 ppLit :: Literal -> Doc
 
 ppLit (LitInt n t) =
-  text "(" <> text (show n) <+> text "::" <+> ppType t <> text ")"
+  text "(" <> text (show n) <+> text "::" <+> ppQType t <> text ")"
 
 ppLit (LitChar c _) = text $ show c
 
