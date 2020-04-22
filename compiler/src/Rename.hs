@@ -619,4 +619,8 @@ renExp (A.TupleExp [Just a, Just b]) = do
   let c = Const pairCfun
   return $ Ap (Ap c e1) e2
 
+renExp (A.UMinusExp e) = do
+  let f_negate = A.VarExp (Name {origName = "negate", namePos = (0, 0), isConName = False})
+  renExp (A.FunAppExp f_negate e)
+
 renExp e = error $ "Non-exhaustive patterns in renExp: " ++ show e

@@ -165,10 +165,14 @@ instance Show Char where
 
 class (Eq a) => Num a where
   (+) :: a -> a -> a
+  (-) :: a -> a -> a
   (*) :: a -> a -> a
+  negate :: a -> a
+  negate x = 0 - x
 
 instance Num Integer where
   (+)  = Prim.integerAdd
+  (-)  = Prim.integerSub
   (*)  = Prim.integerMul
 
 instance Ord Integer where
@@ -182,6 +186,7 @@ instance Show Integer where
 
 instance Num Int where
   (+)  = Prim.intAdd
+  (-)  = Prim.intSub
   (*)  = Prim.intMul
 
 instance Ord Int where

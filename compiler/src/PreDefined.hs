@@ -80,6 +80,9 @@ primIntegerEqCfun = "Prim.integerEq" :>: scIntegerintegerbool
 primIntegerAddCfun :: Assump
 primIntegerAddCfun = "Prim.integerAdd" :>: scIntegerintegerinteger
 
+primIntegerSubCfun :: Assump
+primIntegerSubCfun = "Prim.integerSub" :>: scIntegerintegerinteger
+
 primIntegerMulCfun :: Assump
 primIntegerMulCfun = "Prim.integerMul" :>: scIntegerintegerinteger
 
@@ -98,6 +101,9 @@ primIntEqCfun = "Prim.intEq" :>: scIntintbool
 
 primIntAddCfun :: Assump
 primIntAddCfun = "Prim.intAdd" :>: scIntintint
+
+primIntSubCfun :: Assump
+primIntSubCfun = "Prim.intSub" :>: scIntintint
 
 primIntMulCfun :: Assump
 primIntMulCfun = "Prim.intMul" :>: scIntintint
@@ -124,10 +130,10 @@ primConsMems  = [ unitCfun, nilCfun, consCfun
                 , primRetCfun, primBindCfun, primFailCfun
                 , primCharLeCfun, primCharEqCfun
                 , primIntegerLeCfun, primIntegerEqCfun
-                , primIntegerAddCfun
+                , primIntegerAddCfun, primIntegerSubCfun
                 , primIntegerMulCfun
                 , primIntLeCfun, primIntEqCfun
-                , primIntAddCfun
+                , primIntAddCfun, primIntSubCfun
                 , primIntMulCfun
                 , showConNameCfun
                 , charShowCfun, integerShowCfun, intShowCfun
@@ -153,10 +159,12 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.integerLe", "Prim.integerLe")
                  , ("Prim.integerEq", "Prim.integerEq")
                  , ("Prim.integerAdd", "Prim.integerAdd")
+                 , ("Prim.integerSub", "Prim.integerSub")
                  , ("Prim.integerMul", "Prim.integerMul")
                  , ("Prim.intLe", "Prim.intLe")
                  , ("Prim.intEq", "Prim.intEq")
                  , ("Prim.intAdd", "Prim.intAdd")
+                 , ("Prim.intSub", "Prim.intSub")
                  , ("Prim.intMul", "Prim.intMul")
                  , ("Prim.showConName", "Prim.showConName")
                  , ("Prim.charShow", "Prim.charShow")

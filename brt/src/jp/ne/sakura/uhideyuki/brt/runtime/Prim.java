@@ -98,6 +98,10 @@ public class Prim {
 	return RTLib.mkFun(new IntegerAdd());
     }
 
+    public static Expr mkintegerSub(){
+	return RTLib.mkFun(new IntegerSub());
+    }
+
     public static Expr mkintegerMul(){
 	return RTLib.mkFun(new IntegerMul());
     }
@@ -112,6 +116,10 @@ public class Prim {
 
     public static Expr mkintAdd(){
 	return RTLib.mkFun(new IntAdd());
+    }
+
+    public static Expr mkintSub(){
+	return RTLib.mkFun(new IntSub());
     }
 
     public static Expr mkintMul(){
@@ -331,6 +339,28 @@ class IntegerAdd implements LambdaForm {
     }
 }
 
+class IntegerSub implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedInt();
+	assert rhs.isBoxedInt();
+
+	BoxedIntObj il =
+	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntObj ir =
+	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
+
+	LitInt r = new LitInt(il.value - ir.value);
+
+	return new AtomExpr(r);
+    }
+}
+
 class IntegerMul implements LambdaForm {
     public int arity(){ return 2; }
     public Expr call(AtomExpr[] args){
@@ -418,6 +448,28 @@ class IntAdd implements LambdaForm {
 	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
 
 	LitInt r = new LitInt(il.value + ir.value);
+
+	return new AtomExpr(r);
+    }
+}
+
+class IntSub implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedInt();
+	assert rhs.isBoxedInt();
+
+	BoxedIntObj il =
+	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntObj ir =
+	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
+
+	LitInt r = new LitInt(il.value - ir.value);
 
 	return new AtomExpr(r);
     }
