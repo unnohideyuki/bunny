@@ -227,12 +227,13 @@ renInstDecls dcls' = do
       let defds = ddDecls dict
           ds' = mergeDs ds (map A.VDecl defds)
       ds'' <- concat <$> mapM (renMDecl (origName i ++ "%I")) ds'
-      tsdecls <- concat <$> mapM (renTDecl (origName i ++ "%I") t) (ddTDecls dict)
+      tsdecls <-
+        concat <$> mapM (renTDecl (origName i ++ "%I") t ctx) (ddTDecls dict)
       tbs <- renDecls (tsdecls ++ ds'')
       return (tbs, (qin, qcn))
 
-    renTDecl :: Id -> A.Type -> A.ValueDecl -> RN [A.ValueDecl]
-    renTDecl pfx (A.AppTy _ tc) (A.TypeSigDecl ns (sigvar,sigdoc)) =
+    renTDecl :: Id -> A.Type -> Maybe A.Type -> A.ValueDecl -> RN [A.ValueDecl]
+    renTDecl pfx (A.AppTy _ tc) osv (A.TypeSigDecl ns (sigvar,sigdoc)) =
       do ns' <- mapM (ren' pfx) ns
          let Just (A.AppTy _ (A.Tyvar tv)) = sigvar
              a = origName tv
@@ -250,10 +251,10 @@ renInstDecls dcls' = do
 
              sigdoc' = subst' sigdoc
 
-             d' = A.TypeSigDecl ns' (Nothing, sigdoc')
+             d' = A.TypeSigDecl ns' (osv, sigdoc')
          return [d']
 
-    renTDecl pfx _ d = return [] -- not implemented yet.
+    renTDecl pfx _ _ d = return [] -- not implemented yet.
 
     renMDecl :: Id -> A.Decl -> RN [A.ValueDecl]
     renMDecl pfx (A.VDecl d) = do d' <- renMName pfx d
@@ -358,6 +359,7 @@ renSigvar (Just (A.AppTy (A.Tycon n) (A.Tyvar m))) kdict = do
   when (isConName n) (insertKdict qn k)
   return [IsIn qn (TVar (Tyvar vname k))]
 
+renSigvar (Just (A.ParTy t)) kdict = renSigvar (Just t) kdict
 renSigvar _ _ = error "renSigvar"
 
 renSigdoc :: A.Type -> [(Id, Kind)] -> RN Type
