@@ -28,9 +28,11 @@ data Bool = False | True
 instance Show Bool where
   show = Prim.showConName
 
+{-
 instance (Show a) => Show [a] where
   show [] = "[]"
   show (x:xs) = show x ++ ":" ++ show xs
+-}
 
 {-
 instance (Show a, Show b) => Show (a, b) where

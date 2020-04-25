@@ -179,6 +179,7 @@ unifyTs [] = fail "Non-exhaustive patterns in uniftyTs."
 
 lookupDictArg :: (Id, Tyvar) -> TC (Maybe Var)
 lookupDictArg (c, x) = do
+  -- trace ("lookupDictArg " ++ show (c, x)) $ return ()
   s <- getSubst
   pss <- getPss
   ce <- getCe
@@ -188,15 +189,16 @@ lookupDictArg (c, x) = do
         x'        -> error $ "Irrefutable pattern failed " ++ show (x', ce)
 
       lookupDict (k, tv) (((c, tv'), i):d')
-        | k == c  || k `elem` super ce c = Just i
-        | otherwise = Nothing
-      lookupDict _ _ = Nothing
+        | tv == tv' && (k == c  || k `elem` super ce c) = Just i
+        | otherwise = lookupDict (k, tv) d'
+      lookupDict _ [] = Nothing
 
       ret = case lookupDict (c, TVar y) d of
         Nothing -> Nothing
         Just j  -> let (_, n) = pss !! j
                    in Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen 100)
 
+  -- trace (show (d, (apply s (TVar x)), ret)) $ return ()
   return ret
 
 mkTcState :: ClassEnv -> [(Pred, Id)] -> Subst -> Int -> TcState
