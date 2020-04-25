@@ -235,8 +235,8 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
                                                  ++ n ++ ", " ++ show (x,n2,y,itvars))
                                Just v' -> mkdicts qs (Var v' : ds)
                mkdicts _ _ = error "mkdicts: must not occur"
-          dicts <- mkdicts qv []
-          return (foldl App e dicts)
+          dicts <- mkdicts qv [] -- mkdicts returns dictionaries in reverse order
+          return (foldr (flip App) e dicts)
             {-
             where
               appliedQv :: [Expr] -> TC (Maybe (Qual Type))
