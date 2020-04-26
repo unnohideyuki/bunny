@@ -9,6 +9,7 @@ import           Data.List.Split
 
 data Var = TermVar Id
          | DictVar Id Id
+         | CompositDict Expr [Expr]
          deriving Show
 
 data Literal = LitStr String
@@ -59,6 +60,8 @@ fv (AtomExpr (LitAtom _)) = []
 fv (AtomExpr (VarAtom (TermVar n))) = [n | isLocal n]
 
 fv (AtomExpr (VarAtom (DictVar _ _))) = []
+
+fv (AtomExpr (VarAtom (CompositDict _ _))) = []
 
 fv (FunAppExpr f args) = nub (fv f ++ concatMap fv args)
 

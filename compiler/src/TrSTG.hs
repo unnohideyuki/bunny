@@ -6,8 +6,9 @@ import           STG
 -- import           Debug.Trace
 
 trVar :: Core.Var -> Var
-trVar (Core.TermVar n _)   = TermVar n
-trVar (Core.DictVar n1 n2) = DictVar n1 n2
+trVar (Core.TermVar n _)       = TermVar n
+trVar (Core.DictVar n1 n2)     = DictVar n1 n2
+trVar (Core.CompositDict d ds) = CompositDict (trExpr d) (map trExpr ds)
 
 trLit :: Core.Literal -> Literal
 trLit (Core.LitInt i _)  = LitInt i
