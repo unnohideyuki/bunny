@@ -179,9 +179,25 @@ genExpr (FunAppExpr (FunAppExpr (AtomExpr (VarAtom (TermVar "#overloaded#"))) [e
       enterLambda 1 lamname empty
       n <- nexti
       let dname = cls2dictNameM clsname
+      appendCode $ "Expr t" ++ show n ++ ";"
+      appendCode "if (args[0].a instanceof CompositDict){"
+
       appendCode $
-        dname ++ " d = (" ++ dname ++ ") RTLib.extrDict(args[0]);"
-      appendCode $ "Expr t" ++ show n ++ " = d.mk" ++ mname ++ "();"
+        "  " ++ dname ++ " d = (" ++ dname ++ ") RTLib.extrDict(((CompositDict) args[0].a).d);"
+      appendCode "  AtomExpr[] ds = ((CompositDict) args[0].a).ds;"
+      m <- nexti
+      appendCode $
+        "  Expr t" ++ show m ++ " = d.mk" ++ mname ++ "();"
+      appendCode $
+        "  t" ++ show n ++ " = RTLib.mkApp(t" ++ show m ++ ", ds);"
+
+      appendCode "} else {"
+
+      appendCode $
+        "  " ++ dname ++ " d = (" ++ dname ++ ") RTLib.extrDict(args[0]);"
+      appendCode $ "  t" ++ show n ++ " = d.mk" ++ mname ++ "();"
+
+      appendCode "}"
       exitLambda n
 
 genExpr (FunAppExpr f [e]) = do
@@ -402,6 +418,24 @@ genAtomExpr (AtomExpr (VarAtom (DictVar n1 n2))) = do
     "Expr t" ++ show n ++
     " = (Expr) new AtomExpr(new Dict(new " ++ s ++ "()));"
   return n
+
+genAtomExpr (AtomExpr (VarAtom (CompositDict d ds))) = do
+  dn <- genAtomExpr d
+  dn' <- nexti
+  appendCode $
+    "AtomExpr t" ++ show dn' ++ " = (AtomExpr) t" ++ show dn ++ ";"
+  dsn <- nexti
+  appendCode $
+    "AtomExpr[] t" ++ show dsn ++ " = new AtomExpr[" ++ show (length ds) ++ "];"
+  forM_ [0..(length ds - 1)] $ \i -> do
+    n' <- genAtomExpr $ ds !! i
+    appendCode $
+      "t" ++ show dsn ++ "[" ++ show i ++ "] = (AtomExpr) t" ++ show n' ++ ";"
+  n <- nexti
+  appendCode $
+    "Expr t" ++ show n ++
+    " = (Expr) new AtomExpr(new CompositDict(t" ++ show dn' ++ ", t" ++ show dsn ++ "));"
+  return n;
 
 genAtomExpr (AtomExpr (LitAtom (LitStr s))) = do
   n <- nexti
