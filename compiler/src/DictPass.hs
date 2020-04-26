@@ -178,16 +178,11 @@ unifyTs (t:ts) = do
 unifyTs [] = fail "Non-exhaustive patterns in uniftyTs."
 
 lookupDictArg :: (Id, Tyvar) -> TC (Maybe Var)
-lookupDictArg (c, x) = do
-  -- trace ("lookupDictArg " ++ show (c, x)) $ return ()
+lookupDictArg (c, y) = do
   s <- getSubst
   pss <- getPss
   ce <- getCe
   let d = zip (map (\((IsIn i t), _) -> (i, apply s t)) pss) [(0::Int)..]
-      (TVar y) = case apply s (TVar x) of
-        (TVar x') -> (TVar x')
-        x'        -> error $ "Irrefutable pattern failed " ++ show (x', ce)
-
       lookupDict (k, tv) (((c, tv'), i):d')
         | tv == tv' && (k == c  || k `elem` super ce c) = Just i
         | otherwise = lookupDict (k, tv) d'
@@ -197,8 +192,6 @@ lookupDictArg (c, x) = do
         Nothing -> Nothing
         Just j  -> let (_, n) = pss !! j
                    in Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen 100)
-
-  -- trace (show (d, (apply s (TVar x)), ret)) $ return ()
   return ret
 
 mkTcState :: ClassEnv -> [(Pred, Id)] -> Subst -> Int -> TcState
@@ -226,29 +219,28 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
                mkdicts (IsIn n2 (TVar x) : qs) ds =
                  case apply s (TVar x) of
                    (TCon (Tycon n1 _)) -> mkdicts qs (Var (DictVar n1 n2) : ds)
-                   y | y `elem` itvars'
-                       -> mkdicts qs (Var (DictVar "Prelude.Integer" n2) : ds)
-                     | otherwise
-                       -> do v <- lookupDictArg (n2, x)
-                             case v of
-                               Nothing -> error ("Error: dictionary not found: "
-                                                 ++ n ++ ", " ++ show (x,n2,y,itvars))
-                               Just v' -> mkdicts qs (Var v' : ds)
+                   {-
+                   (TAp (TCon (Tycon n1 _)) y)
+                     -> do let cdd = Var (DictVar n1 n2)
+                           trace ("here") $ return ()
+                           cdds <- mapM (var2dict n2 x) [y]
+                           mkdicts qs (Var (CompositDict cdd cdds): ds)
+                   -}
+                   (TVar y)               -> do d <- var2dict n2 y
+                                                mkdicts qs (d:ds)
                mkdicts _ _ = error "mkdicts: must not occur"
+
+               var2dict n2 y
+                 | (TVar y) `elem` itvars' =  return (Var (DictVar "Prelude.Integer" n2))
+                 | otherwise =
+                   do v <- lookupDictArg (n2, y)
+                      case v of
+                        Nothing -> error ("Error: dictionary not found: "
+                                           ++ n ++ ", " ++ show (n2,y,itvars))
+                        Just v' -> return (Var v')
+
           dicts <- mkdicts qv [] -- mkdicts returns dictionaries in reverse order
           return (foldr (flip App) e dicts)
-            {-
-            where
-              appliedQv :: [Expr] -> TC (Maybe (Qual Type))
-              appliedQv [(Var (DictVar iname _))] = do
-                let mname = iname ++ "%I." ++ last (splitOn "." n)
-                as <- tcAs <$> get
-                let maybe_sc = find mname as
-                case maybe_sc of
-                  Just (Forall _ qt) -> return (Just qt)
-                  Nothing            -> return Nothing
-              appliedQv _ = return Nothing
-            -}
 
 tcExpr e@(Lit _) _ = do return e
 

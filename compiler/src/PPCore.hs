@@ -15,6 +15,10 @@ ppVar (TermVar n qt) =
 ppVar (DictVar x y) =
   text "${" <> text x <+> text y <> text "}"
 
+ppVar (CompositDict d ds) =
+  text "(CompositDict" <+> ppExpr d <+> text "[" <> ppExprs "," ds <> text "])"
+
+
 ppVars :: String -> [Var] -> Doc
 ppVars _ []     = empty
 ppVars _ [v]    = ppVar v
@@ -72,6 +76,13 @@ ppExpr (Case e v as) =
   (nest 4
    (text "case" <+> ppExpr e <+> ppVar v <+> text "of" <$$>
     nest 0 (ppAlts as)))
+
+
+ppExprs :: String -> [Expr] -> Doc
+ppExprs _ []     = empty
+ppExprs _ [v]    = ppExpr v
+ppExprs s (v:vs) = ppExpr v <> text s <> ppExprs s vs
+
 
 ppAlt :: Alt -> Doc
 ppAlt (ac, vs, e) =
