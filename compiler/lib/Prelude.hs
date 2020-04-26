@@ -3,36 +3,17 @@ module Prelude where
 infixr 5 :
 
 class Show a where
-  -- showsPrec :: Int -> a -> ([Char] -> [Char])
   show :: a -> [Char]
-  -- showList :: [a] -> ([Char] -> [Char])
-
-  -- Minimal complete definition:
-  --   show or showsPrec
-  {-
-  showsPrec i x s = show x ++ s
-  show x = showsPrec 0 x ""
-
-  showList []       = (++) "[]"
-  showList (x:xs)   = showChar '[' . shows x . showl xs
-    where showl []     = showChar ']'
-          showl (x:xs) = showChar ',' . shows x . showl xs
-  
-shows            =  showsPrec 0
-showChar = (:)
-  -}
-
 
 data Bool = False | True
 
 instance Show Bool where
   show = Prim.showConName
 
-
 instance (Show a) => Show [a] where
-  show [] = "[]"
-  show (x:xs) = show x ++ ":" ++ show xs
-
+  show []     = "[]"
+  show [x]    = "[" ++ show x ++ "]"
+  show (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ show t) (show x) xs ++ "]"
 
 {-
 instance (Show a, Show b) => Show (a, b) where
@@ -74,6 +55,18 @@ infixr 5 ++
 
 concatMap  :: (a -> [b]) -> [a] -> [b]
 concatMap f = foldr ((++) . f) []
+
+head             :: [a] -> a
+head (x:xs)      =  x -- todo: wild card
+head []          =  error "Prelude.head: empty list"
+
+tail             :: [a] -> [a]
+tail (x:xs)      =  xs -- todo wild card
+tail []          =  error "Prelude.tail: empty list"
+
+foldl            :: (a -> b -> a) -> a -> [b] -> a
+foldl f z []     =  z
+foldl f z (x:xs) =  foldl f (f z x) xs
 
 foldr :: (a -> b -> b) -> b -> [a] -> b
 foldr k z = go
