@@ -223,6 +223,10 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
                      -> do let cdd = Var (DictVar n1 n2)
                            cdds <- mapM (var2dict n2) [y]
                            mkdicts qs (Var (CompositDict cdd cdds): ds)
+                   (TAp (TCon (Tycon n1 _)) (TCon (Tycon n1' _)))
+                     -> do let cdd = Var (DictVar n1 n2)
+                               cdds = [Var (DictVar n1' n2)]
+                           mkdicts qs (Var (CompositDict cdd cdds): ds)
                    (TVar y)               -> do d <- var2dict n2 y
                                                 mkdicts qs (d:ds)
                mkdicts _ _ = error "mkdicts: must not occur"
