@@ -203,24 +203,23 @@ renInstDecls dcls' = do
   return (concat tbss, ctabs)
   where
     renInstDecl (A.InstDecl ctx t ds) = do
-      (qcn, qin, i, a) <- case t of
+      (qcn, qin, i, as) <- case t of
         (A.AppTy (A.Tycon n1) (A.Tycon n2)) -> do qcn <- qname $ origName n1
                                                   qin <- renameVar n2
-                                                  return (qcn, qin, n2, "")
+                                                  return (qcn, qin, n2, [])
         (A.AppTy (A.Tycon n1) (A.ListTy (A.Tyvar n2))) -> do
           qcn <- qname $ origName n1
-          qin <- return "Prelude.[]" -- renameVar nNil
-          return (qcn, qin, nNil, origName n2)
+          return (qcn, "Prelude.[]", nNil, [origName n2])
 
         _ -> error $ "Non-exhaustive pattern in case: " ++ show t
 
-      k <- if qin == "Prelude.[]"  -- work round
-           then return (Kfun Star Star)
-           else  lookupKdict qcn -- why qcn, should it be qin??
+      k0 <- lookupKdict qcn
+      let k = if null as
+              then k0
+              else foldl' Kfun k0 (replicate (length as) Star)
+          as' = map (\a -> TVar (Tyvar a Star)) as
+          p = IsIn qcn (foldl' TAp (TCon (Tycon qin k)) as')
 
-      let p = if origName i == origName nNil
-            then IsIn qcn (TAp (TCon (Tycon qin k)) (TVar (Tyvar a Star)))
-            else IsIn qcn (TCon (Tycon qin k))
       ps <- tops ctx
       instAdd ps p
       dict <- lookupCDicts qcn
