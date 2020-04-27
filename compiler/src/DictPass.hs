@@ -218,20 +218,19 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
           let  mkdicts [] ds = return ds
                mkdicts (IsIn n2 (TVar x) : qs) ds =
                  case apply s (TVar x) of
-                   (TCon (Tycon n1 _)) -> mkdicts qs (Var (DictVar n1 n2) : ds)
-                   (TAp (TCon (Tycon n1 _)) (TVar y))
-                     -> do let cdd = Var (DictVar n1 n2)
-                           cdds <- mapM (var2dict n2) [y]
-                           mkdicts qs (Var (CompositDict cdd cdds): ds)
-                   (TAp (TCon (Tycon n1 _)) (TCon (Tycon n1' _)))
-                     -> do let cdd = Var (DictVar n1 n2)
-                               cdds = [Var (DictVar n1' n2)]
-                           mkdicts qs (Var (CompositDict cdd cdds): ds)
-                   (TVar y)               -> do d <- var2dict n2 y
-                                                mkdicts qs (d:ds)
+                   appty@(TAp _ _) -> do d <- appTy2dict n2 appty
+                                         mkdicts qs (d:ds)
+                   ty              -> do d <- simpleTy2dict n2 ty
+                                         mkdicts qs (d:ds)
                mkdicts _ _ = error "mkdicts: must not occur"
 
-               var2dict n2 y
+               appTy2dict n2 (TAp (TCon (Tycon n1 _)) ty) = do
+                 let cdd = Var (DictVar n1 n2)
+                 cdds <- mapM (simpleTy2dict n2) [ty]
+                 return $ Var (CompositDict cdd cdds)
+
+               simpleTy2dict n2 (TCon (Tycon n1 _)) = return $ Var (DictVar n1 n2)
+               simpleTy2dict n2 (TVar y)
                  | (TVar y) `elem` itvars' =  return (Var (DictVar "Prelude.Integer" n2))
                  | otherwise =
                    do v <- lookupDictArg (n2, y)
