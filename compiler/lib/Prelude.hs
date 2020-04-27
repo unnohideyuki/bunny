@@ -15,8 +15,8 @@ instance (Show a) => Show [a] where
   show [x]    = "[" ++ show x ++ "]"
   show (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ show t) (show x) xs ++ "]"
 
--- instance (Show a, Show b) => Show (a, b) where
---   show (a, b) = "(" ++ show a ++ "," ++ show b ++ ")"
+instance (Show a, Show b) => Show (a, b) where
+  show (a, b) = "(" ++ show a ++ "," ++ show b ++ ")"
 
 infixl 7 *, /, `quot`, `rem`, `div`, `mod`
 infixl 6 +, -

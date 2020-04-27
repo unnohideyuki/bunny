@@ -31,7 +31,7 @@ tList     = TCon (Tycon "Prelude.[]" (Kfun Star Star))
 tArrow   :: Type
 tArrow    = TCon (Tycon "(->)" (Kfun Star (Kfun Star Star)))
 tTuple2  :: Type
-tTuple2   = TCon (Tycon "(,)" (Kfun Star (Kfun Star Star)))
+tTuple2   = TCon (Tycon "Prelude.(,)" (Kfun Star (Kfun Star Star)))
 
 tString :: Type
 tString  = list tChar

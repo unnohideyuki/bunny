@@ -228,8 +228,15 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
                  let cdd = Var (DictVar n1 n2)
                  cdds <- mapM (simpleTy2dict n2) [ty]
                  return $ Var (CompositDict cdd cdds)
-               appTy2dict n2 ty = error $ "to be done: " ++ show ty
 
+               appTy2dict n2 ty = do
+                 let (n1, ts) = extr' ty []
+                     cdd = Var (DictVar n1 n2)
+                 -- todo: the order of cdds shold be reordered
+                 cdds <- mapM (simpleTy2dict n2) ts
+                 return $ Var (CompositDict cdd cdds)
+                 where extr' (TCon (Tycon n1 _)) ts = (n1, ts)
+                       extr' (TAp t1 t2) ts         = extr' t1 (t2:ts)
 
                simpleTy2dict n2 (TCon (Tycon n1 _)) = return $ Var (DictVar n1 n2)
                simpleTy2dict n2 (TVar y)

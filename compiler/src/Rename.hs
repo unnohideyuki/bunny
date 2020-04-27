@@ -203,20 +203,30 @@ renInstDecls dcls' = do
   return (concat tbss, ctabs)
   where
     renInstDecl (A.InstDecl ctx t ds) = do
+      let extrNames (A.AppTy (A.Tycon n1) (A.Tycon n2)) as = (n1, n2, as)
+          extrNames (A.AppTy t1 (A.Tyvar n)) as = extrNames t1 (origName n:as)
+          extrNames x _ = error $ "extrNames: " ++ show x
+
       (qcn, qin, i, as) <- case t of
-        (A.AppTy (A.Tycon n1) (A.Tycon n2)) -> do qcn <- qname $ origName n1
-                                                  qin <- renameVar n2
-                                                  return (qcn, qin, n2, [])
         (A.AppTy (A.Tycon n1) (A.ListTy (A.Tyvar n2))) -> do
           qcn <- qname $ origName n1
           return (qcn, "Prelude.[]", nNil, [origName n2])
-
+        (A.AppTy (A.Tycon n1) (A.TupleTy vs)) -> do
+          qcn <- qname $ origName n1
+          let n2 = Name ("(" ++ replicate (length vs - 1) ',' ++ ")") (0,0) True
+              as = map (\(A.Tyvar n) -> origName n) vs
+          qin <- renameVar n2
+          return (qcn, qin, n2, as)
+        t'@(A.AppTy _ _) -> do let (n1, n2, as) = extrNames t' []
+                               qcn <- qname $ origName n1
+                               qin <- renameVar n2
+                               return (qcn, qin, n2, as)
         _ -> error $ "Non-exhaustive pattern in case: " ++ show t
 
       k0 <- lookupKdict qcn
       let k = if null as
               then k0
-              else foldl' Kfun k0 (replicate (length as) Star)
+              else foldr Kfun k0 (replicate (length as) Star)
           as' = map (\a -> TVar (Tyvar a Star)) as
           p = IsIn qcn (foldl' TAp (TCon (Tycon qin k)) as')
 
@@ -300,17 +310,18 @@ renInstDecls dcls' = do
       in
         ds1 ++ ds2'
 
-    tops Nothing  = return []
-    tops (Just x) = tops' x
+    tops (Just (A.TupleTy ts)) = mapM tops' ts
+    tops (Just t)              = mapM tops' [t]
+    tops Nothing               = return []
 
     tops' (A.ParTy x) = tops' x
 
     tops' (A.AppTy (A.Tycon n1) (A.Tyvar n2)) = do
       qcn <- qname $ origName n1
       let x = TVar $ Tyvar (origName n2) Star -- TODO: always works?
-      return [IsIn qcn x]
+      return (IsIn qcn x)
 
-    tops' _ = error "tops': unexpected"
+    tops' t = error $ "tops': unexpected:" ++ show t
 
 renDecls :: [A.ValueDecl] -> RN [TempBind]
 renDecls decls = do tbss <- mapM renDecl decls
@@ -347,6 +358,8 @@ kiExpr (A.Tycon _) dict = dict
 
 kiExpr (A.ListTy e) dict = kiExpr e dict
 
+kiExpr (A.TupleTy ts) dict = dict ++ concatMap (\t -> kiExpr t []) ts
+
 kiExpr t dict = error $ "kiExpr: " ++ show (t, dict)
 
 renSigvar :: Maybe A.Type -> [(Id, Kind)] -> RN [Pred]
@@ -359,7 +372,12 @@ renSigvar (Just (A.AppTy (A.Tycon n) (A.Tyvar m))) kdict = do
   return [IsIn qn (TVar (Tyvar vname k))]
 
 renSigvar (Just (A.ParTy t)) kdict = renSigvar (Just t) kdict
-renSigvar _ _ = error "renSigvar"
+
+renSigvar (Just (A.TupleTy ts)) kdict = do
+  pss <- mapM (\t -> renSigvar (Just t) kdict) ts
+  return $ concat pss
+
+renSigvar x y = error $ "renSigvar: " ++ show (x,y)
 
 renSigdoc :: A.Type -> [(Id, Kind)] -> RN Type
 renSigdoc (A.FunTy e1 e2) kdict = do
@@ -384,6 +402,15 @@ renSigdoc (A.Tycon n) _ = do
 renSigdoc (A.ListTy e) kdict = do
   t <- renSigdoc e kdict
   return $ list t
+
+renSigdoc (A.TupleTy ts) kdict = do
+  let len = length ts
+      tcname = "Prelude.(" ++ replicate (len - 1) ',' ++ ")"
+      tckind = foldr Kfun Star (replicate len Star)
+      tc = TCon (Tycon tcname tckind)
+  ts' <- mapM (\t -> renSigdoc t kdict) ts
+  let r = foldl' TAp tc ts'
+  return r
 
 renSigdoc t _ = error $ "renSigdoc" ++ show t
 
