@@ -35,10 +35,6 @@ public class Prim {
 	return RTLib.mkFun(new ShowConNameFunc());
     }
 
-    public static Expr mkcharShow(){
-	return RTLib.mkFun(new CharShowFunc());
-    }
-
     public static Expr mkintegerShow(){
 	return RTLib.mkFun(new IntegerShowFunc());
     }
@@ -158,26 +154,6 @@ class ShowConNameFunc implements LambdaForm {
 	} else {
 	    return new ErrExpr("Prim.show: must not occur");
 	}
-    }
-}
-
-class CharShowFunc implements LambdaForm {
-    public int arity(){ return 1; }
-    public Expr call(AtomExpr[] args){
-	assert args.length == arity();
-	Expr x = RT.eval(args[0]);
-
-	if (x instanceof AtomExpr && 
-	    ((AtomExpr)x).a instanceof Var &&
-	    ((Var)((AtomExpr)x).a).obj instanceof BoxedCharObj){
-	    return show$Char((BoxedCharObj) ((Var)((AtomExpr)x).a).obj);
-	} else {
-	    return new ErrExpr("CharShowFunc: must not occur");
-	}
-    }
-    
-    private static Expr show$Char(BoxedCharObj c){
-	return RTLib.fromJString("'" + c.value + "'");
     }
 }
 
