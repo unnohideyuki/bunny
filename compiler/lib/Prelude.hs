@@ -152,8 +152,8 @@ instance Eq Char where
   (==) = Prim.charEq
 
 instance Show Char where
---  show c = ['\'', c, '\'']
-  show c = "'" ++ [c] ++ "'"
+  -- todo: escape
+  show c = ['\'', c, '\'']
 
 class (Eq a) => Num a where
   (+) :: a -> a -> a

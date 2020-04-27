@@ -471,9 +471,10 @@ act_esc_char :: AlexAction Token
 act_esc_char (pos, _, _, s) len = do
   case esc2Char esc of
     Just c -> return $ TChar (c, pos)
-    Nothing -> alexError $ "lexical error in char literal, " ++ esc
+    Nothing -> alexError $ "lexical error in char literal, " ++ show esc
   where
-    (_:esc) = take len s
+    -- "'\\xx'" to "xx"
+    esc = drop 2 $ take (len - 1) s
 
 act_ocurly :: AlexAction Token
 act_ocurly (pos, _, _, _) _ = 
