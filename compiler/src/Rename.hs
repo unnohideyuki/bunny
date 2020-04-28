@@ -203,9 +203,10 @@ renInstDecls dcls' = do
   return (concat tbss, ctabs)
   where
     renInstDecl (A.InstDecl ctx t ds) = do
-      let extrNames (A.AppTy (A.Tycon n1) (A.Tycon n2)) as = (n1, n2, as)
-          extrNames (A.AppTy t1 (A.Tyvar n)) as = extrNames t1 (origName n:as)
-          extrNames x _ = error $ "extrNames: " ++ show x
+      let parseTy' (A.Tycon n2) as = (n2, as)
+          parseTy' (A.AppTy t1 (A.Tyvar n)) as = parseTy' t1 (origName n:as)
+          parseTy' (A.ParTy t) as = parseTy' t as
+          parseTy' x _ = error $ "parseTy': " ++ show x
 
       (qcn, qin, i, as) <- case t of
         (A.AppTy (A.Tycon n1) (A.ListTy (A.Tyvar n2))) -> do
@@ -217,10 +218,10 @@ renInstDecls dcls' = do
               as = map (\(A.Tyvar n) -> origName n) vs
           qin <- renameVar n2
           return (qcn, qin, n2, as)
-        t'@(A.AppTy _ _) -> do let (n1, n2, as) = extrNames t' []
-                               qcn <- qname $ origName n1
-                               qin <- renameVar n2
-                               return (qcn, qin, n2, as)
+        (A.AppTy (A.Tycon n1) t') -> do let (n2, as) = parseTy' t' []
+                                        qcn <- qname $ origName n1
+                                        qin <- renameVar n2
+                                        return (qcn, qin, n2, as)
         _ -> error $ "Non-exhaustive pattern in case: " ++ show t
 
       k0 <- lookupKdict qcn
@@ -345,22 +346,23 @@ kiExpr :: A.Type -> [(Id, Kind)] -> [(Id, Kind)]
 
 kiExpr (A.FunTy t1 t2) dict = kiExpr t2 $ kiExpr t1 dict
 
-kiExpr (A.AppTy t1 t2) dict = dict ++ [(extrid t1, Kfun Star Star)
-                                      ,(extrid t2, Star)]
-  where extrid (A.Tyvar n) = origName n
-        extrid x           = "extrid: unexpected: " ++ show x
+kiExpr t@(A.AppTy _ _) dict = dict ++ kiexpr' t []
+  where kiexpr' (A.AppTy t1 (A.Tyvar n)) ds = kiexpr' t1 ((origName n, Star):ds)
+        kiexpr' (A.Tycon _) ds = ds
+        kiexpr' (A.Tyvar n) ds =
+          (origName n, foldr Kfun Star (replicate (length ds) Star)):ds
 
-kiExpr (A.Tyvar n) dict = dict ++ [(origName n, Star)]
+kiExpr (A.Tyvar n) dict     = dict ++ [(origName n, Star)]
 
-kiExpr (A.ParTy e) dict = kiExpr e dict
+kiExpr (A.ParTy e) dict     = kiExpr e dict
 
-kiExpr (A.Tycon _) dict = dict
+kiExpr (A.Tycon _) dict     = dict
 
-kiExpr (A.ListTy e) dict = kiExpr e dict
+kiExpr (A.ListTy e) dict    = kiExpr e dict
 
-kiExpr (A.TupleTy ts) dict = dict ++ concatMap (\t -> kiExpr t []) ts
+kiExpr (A.TupleTy ts) dict  = dict ++ concatMap (\t -> kiExpr t []) ts
 
-kiExpr t dict = error $ "kiExpr: " ++ show (t, dict)
+kiExpr t dict               = error $ "kiExpr: " ++ show (t, dict)
 
 renSigvar :: Maybe A.Type -> [(Id, Kind)] -> RN [Pred]
 renSigvar Nothing _ = return []
@@ -416,7 +418,8 @@ renSigdoc t _ = error $ "renSigdoc" ++ show t
 
 kindLookup :: Id -> [(Id, Kind)] -> Kind
 kindLookup n kdict =
-  fromMaybe (error $ "Kind not infered" ++ n) (lookup n kdict)
+  fromMaybe (error $ "Kind not infered " ++ show (n, kdict)) (lookup n kdict)
+
 
 -- Todo:
 renFExp :: A.Exp -> RN (Id, [Pat])
