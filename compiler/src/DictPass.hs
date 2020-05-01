@@ -239,14 +239,15 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
                        extr' (TAp t1 t2) ts         = extr' t1 (t2:ts)
 
                simpleTy2dict n2 (TCon (Tycon n1 _)) = return $ Var (DictVar n1 n2)
-               simpleTy2dict n2 (TVar y)
-                 | (TVar y) `elem` itvars' =  return (Var (DictVar "Prelude.Integer" n2))
-                 | otherwise =
-                   do v <- lookupDictArg (n2, y)
-                      case v of
-                        Nothing -> error ("Error: dictionary not found: "
-                                           ++ n ++ ", " ++ show (n2,y,itvars))
-                        Just v' -> return (Var v')
+               simpleTy2dict n2 (TVar y) =
+                 do v <- lookupDictArg (n2, y)
+                    case v of
+                      Just v' -> return (Var v')
+                      Nothing | (TVar y) `elem` itvars' ->
+                                return (Var (DictVar "Prelude.Integer" n2))
+                              | otherwise ->
+                                error ("Error: dictionary not found: "
+                                        ++ n ++ ", " ++ show (n2,y,itvars))
 
           dicts <- mkdicts qv [] -- mkdicts returns dictionaries in reverse order
           return (foldr (flip App) e dicts)
