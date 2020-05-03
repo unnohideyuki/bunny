@@ -61,7 +61,7 @@ fv (AtomExpr (VarAtom (TermVar n))) = [n | isLocal n]
 
 fv (AtomExpr (VarAtom (DictVar _ _))) = []
 
-fv (AtomExpr (VarAtom (CompositDict _ _))) = []
+fv (AtomExpr (VarAtom (CompositDict e es))) = nub (fv e ++ concatMap fv es)
 
 fv (FunAppExpr f args) = nub (fv f ++ concatMap fv args)
 

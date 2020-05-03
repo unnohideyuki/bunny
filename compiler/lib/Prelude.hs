@@ -4,7 +4,6 @@ infixr 5 :
 
 class Show a where
   show      :: a -> [Char]
-  {-
   showsPrec :: Int -> a -> ([Char] -> [Char])
   showList  :: [a] -> ([Char] -> [Char])
   -- Minimal complete definition:
@@ -15,7 +14,6 @@ class Show a where
   showList (x:xs) = (:) '[' . showsPrec 0 x . showl xs
     where showl []     = (:) ']'
           showl (x:xs) = (:) ',' . showsPrec 0 x . showl xs
-  -}
   
 data Bool = False | True
 
