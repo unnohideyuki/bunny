@@ -21,9 +21,7 @@ instance Show Bool where
   show = Prim.showConName
 
 instance (Show a) => Show [a] where
-  show []     = "[]"
-  show [x]    = "[" ++ show x ++ "]"
-  show (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ show t) (show x) xs ++ "]"
+  showsPrec p = showList
 
 instance (Show a, Show b) => Show (a, b) where
   show (a, b) = "(" ++ show a ++ "," ++ show b ++ ")"
@@ -162,6 +160,14 @@ instance Eq Char where
 instance Show Char where
   -- todo: escape
   show c = ['\'', c, '\'']
+  showList cs = (:) '"' . showl cs
+    where -- showl "" = (:) '"'
+          showl [] = (:) '"'
+          -- showl ('"':cs) = (++) "\\\"" . showl cs
+          showl (c:cs) = showLitChar c . showl cs
+
+-- todo: should convert to printable characters
+showLitChar c = (++) [c]
 
 class (Eq a) => Num a where
   (+) :: a -> a -> a
@@ -183,6 +189,10 @@ instance Eq Integer where
 
 instance Show Integer where
   show = Prim.integerShow
+  showList xs = (++) (showlist' xs)
+    where showlist' [] = "[]"
+          showlist' [x] =  "[" ++ Prim.integerShow x ++ "]"
+          showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ Prim.integerShow t) (show x) xs ++ "]"
 
 instance Num Int where
   (+)  = Prim.intAdd
@@ -197,6 +207,10 @@ instance Eq Int where
 
 instance Show Int where
   show = Prim.intShow
+  showList xs = (++) (showlist' xs)
+    where showlist' [] = "[]"
+          showlist' [x] =  "[" ++ Prim.intShow x ++ "]"
+          showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ Prim.intShow t) (show x) xs ++ "]"
 
 print x = putStrLn (show x)
 
