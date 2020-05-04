@@ -95,7 +95,18 @@ getCe = tcCe <$> get
 
 
 getTy :: Expr -> TC (Qual Type)
-getTy (Var (TermVar _ qt)) = return qt
+getTy (Var (TermVar _ qt@(ps :=> _))) =
+  do checkPreds ps
+     return qt
+       where checkPreds :: [Pred] -> TC ()
+             checkPreds [] = return ()
+             checkPreds (IsIn n v:ps)
+               | n == "Prelude.Num" = do st <- get
+                                         let tvars = tcIntegerTVars st
+                                         put st{tcIntegerTVars = (v:tvars)}
+                                         checkPreds ps
+               | otherwise = checkPreds ps
+
 getTy (Lit (LitChar _ qt)) = return qt
 getTy (Lit (LitFrac _ qt)) = return qt
 getTy (Lit (LitStr  _ qt)) = return qt
@@ -241,13 +252,16 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
                simpleTy2dict n2 (TCon (Tycon n1 _)) = return $ Var (DictVar n1 n2)
                simpleTy2dict n2 (TVar y) =
                  do v <- lookupDictArg (n2, y)
+                    pss <- getPss
                     case v of
                       Just v' -> return (Var v')
                       Nothing | (TVar y) `elem` itvars' ->
                                 return (Var (DictVar "Prelude.Integer" n2))
                               | otherwise ->
                                 error ("Error: dictionary not found: "
-                                        ++ n ++ ", " ++ show (n2,y,itvars))
+                                        ++ n ++ ", " ++ show (n2,y,pss))
+
+
 
           dicts <- mkdicts qv [] -- mkdicts returns dictionaries in reverse order
           return (foldr (flip App) e dicts)
