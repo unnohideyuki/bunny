@@ -462,7 +462,7 @@ renPat (A.VarExp n) | isConName n = do qn <- qname (origName n)
 
 renPat (A.ParExp e) = renPat e
 
-renPat(A.InfixExp (A.InfixExp rest op2 e2) op1 e1) =
+renPat (A.InfixExp (A.InfixExp rest op2 e2) op1 e1) =
   resolveFixity rest op2 e2 op1 e1 >>= renPat
 
 renPat (A.InfixExp e2 op e1) =
@@ -488,7 +488,18 @@ renPat (A.ListExp es) = renPat $ expandList es
 
 renPat A.WildcardPat = return PWildcard
 
+renPat (A.LitExp (A.LitString s _)) = renPat (lit2exp s)
+  where lit2exp []     = A.VarExp (Name "[]" (0,0) True)
+        lit2exp (c:cs) = A.InfixExp
+                         (A.LitExp (A.LitChar c (0,0)))
+                         (Name ":" (0,0) True)
+                         (lit2exp cs)
+
 renPat e = error $ "renPat: " ++ show e
+
+
+
+
 
 renRhs :: A.Rhs -> RN Expr
 renRhs (A.UnguardedRhs (A.VarExp n) []) = do

@@ -161,8 +161,7 @@ instance Show Char where
   -- todo: escape
   show c = ['\'', c, '\'']
   showList cs = (:) '"' . showl cs
-    where -- showl "" = (:) '"'
-          showl [] = (:) '"'
+    where showl "" = (:) '"'
           -- showl ('"':cs) = (++) "\\\"" . showl cs
           showl (c:cs) = showLitChar c . showl cs
 
