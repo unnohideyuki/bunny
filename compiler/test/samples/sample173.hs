@@ -1,0 +1,10 @@
+main = do print $ take 10 (enumFrom 2 :: [Int])
+          print $ (enumFromTo 3 9 :: [Int])
+          print $ take 10 (enumFromThen (-1) 3 :: [Int])
+          print $ (enumFromThenTo 1 3 8 :: [Int])
+
+          print $ (enumFromTo 1 0 :: [Int])
+          print $ (enumFromThenTo 1 2 0 :: [Int])
+          print $ take 10 $ (enumFromThenTo 1 1 2 :: [Int])
+          print $ take 10 $ (enumFromThenTo 1 1 1 :: [Int])
+          print $ take 10 $ (enumFromThenTo 1 1 0 :: [Int])

@@ -26,6 +26,16 @@ instance (Show a) => Show [a] where
 instance (Show a, Show b) => Show (a, b) where
   show (a, b) = "(" ++ show a ++ "," ++ show b ++ ")"
 
+class Enum a where
+  succ           :: a -> a
+  pred           :: a -> a
+  toEnum         :: Int -> a
+  fromEnum       :: a -> Int
+  enumFrom       :: a -> [a]           -- [n..]
+  enumFromThen   :: a -> a -> [a]      -- [n,n',..]
+  enumFromTo     :: a -> a -> [a]      -- [n..m]
+  enumFromThenTo :: a -> a -> a -> [a] -- [n,n'..m]
+
 infixl 7 *, /, `quot`, `rem`, `div`, `mod`
 infixl 6 +, -
 
@@ -70,6 +80,11 @@ tail             :: [a] -> [a]
 tail (x:xs)      =  xs -- todo wild card
 tail []          =  error "Prelude.tail: empty list"
 
+take :: Int -> [a] -> [a]
+take n []     = []
+take n (x:xs) | n <= 0 = []
+              | otherwise = x : take (n-1) xs
+
 foldl            :: (a -> b -> a) -> a -> [b] -> a
 foldl f z []     =  z
 foldl f z (x:xs) =  foldl f (f z x) xs
@@ -82,6 +97,10 @@ foldr k z = go
 infix 4 ==, /=, <, <=, >=, >
 infixr 3 &&
 
+(&&) :: Bool -> Bool -> Bool
+True  && x = x
+False && x = False
+  
 not :: Bool -> Bool
 not True  = False
 not False = True
@@ -210,6 +229,20 @@ instance Show Int where
     where showlist' [] = "[]"
           showlist' [x] =  "[" ++ Prim.intShow x ++ "]"
           showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ Prim.intShow t) (show x) xs ++ "]"
+
+instance Enum Int where
+  succ = (+1)
+  pred = (+ (-1))
+  toEnum x = x
+  fromEnum x = x
+  enumFrom n = n : enumFrom (n+1)
+  enumFromTo x y | x > y     = []
+                 | otherwise = x : enumFromTo (x+1) y
+  enumFromThen x y = x : enumFromThen y (2*y-x)
+  enumFromThenTo x y z | x == y && z >= x           = x : enumFromThenTo x y z
+                       | x == z                     = [x]
+                       | compare x y /= compare x z = []
+                       | otherwise                  = x : enumFromThenTo y (2*y-x) z
 
 print x = putStrLn (show x)
 
