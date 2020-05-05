@@ -681,4 +681,17 @@ renExp (A.SectionL e opname) =
       e_body = A.InfixExp e opname x_var
   in renExp (A.LamExp [x_var] e_body)
 
+renExp (A.ArithSeqExp (A.From n)) =
+  renExp (A.FunAppExp (A.VarExp (Name "enumFrom" (0,0) False)) n)
+
+renExp (A.ArithSeqExp (A.FromThen n n')) =
+  renExp (A.FunAppExp (A.FunAppExp (A.VarExp (Name "enumFromThen" (0,0) False)) n) n')
+
+renExp (A.ArithSeqExp (A.FromTo n m)) =
+  renExp (A.FunAppExp (A.FunAppExp (A.VarExp (Name "enumFromTo" (0,0) False)) n) m)
+
+renExp (A.ArithSeqExp (A.FromThenTo n n' m)) =
+  renExp (A.FunAppExp (A.FunAppExp (A.FunAppExp
+                                    (A.VarExp (Name "enumFromThenTo" (0,0) False)) n) n') m)
+
 renExp e = error $ "Non-exhaustive patterns in renExp: " ++ show e
