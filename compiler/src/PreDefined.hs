@@ -108,6 +108,9 @@ primIntSubCfun = "Prim.intSub" :>: scIntintint
 primIntMulCfun :: Assump
 primIntMulCfun = "Prim.intMul" :>: scIntintint
 
+primIntFromIntegerCfun :: Assump
+primIntFromIntegerCfun = "Prim.intFromInteger" :>: Forall [] ([] :=> (tInteger `fn` tInt))
+
 showConNameCfun :: Assump
 showConNameCfun  = "Prim.showConName" :>: Forall [Star] ([] :=> (TGen 0 `fn` tString))
 
@@ -132,6 +135,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun
                 , primIntLeCfun, primIntEqCfun
                 , primIntAddCfun, primIntSubCfun
                 , primIntMulCfun
+                , primIntFromIntegerCfun
                 , showConNameCfun
                 , integerShowCfun, intShowCfun
                 , errorCfun
@@ -163,6 +167,7 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.intAdd", "Prim.intAdd")
                  , ("Prim.intSub", "Prim.intSub")
                  , ("Prim.intMul", "Prim.intMul")
+                 , ("Prim.intFromInteger", "Prim.intFromInteger")
                  , ("Prim.showConName", "Prim.showConName")
                  , ("Prim.integerShow", "Prim.integerShow")
                  , ("Prim.intShow", "Prim.intShow")

@@ -56,6 +56,10 @@ instance Monad IO where
   (>>=)  = Prim.bindIO
   fail s = Prim.failIO s
 
+-- identity function
+id   :: a -> a
+id x = x
+
 infixr 0 $
 ($) :: (a -> b) -> a -> b
 f $ x = f x
@@ -193,11 +197,13 @@ class (Eq a) => Num a where
   (*) :: a -> a -> a
   negate :: a -> a
   negate x = 0 - x
+  fromInteger :: Integer -> a
 
 instance Num Integer where
   (+)  = Prim.integerAdd
   (-)  = Prim.integerSub
   (*)  = Prim.integerMul
+  fromInteger = id
 
 instance Ord Integer where
   (<=) = Prim.integerLe
@@ -216,7 +222,8 @@ instance Num Int where
   (+)  = Prim.intAdd
   (-)  = Prim.intSub
   (*)  = Prim.intMul
-
+  fromInteger = Prim.intFromInteger
+    
 instance Ord Int where
   (<=) = Prim.intLe
 
