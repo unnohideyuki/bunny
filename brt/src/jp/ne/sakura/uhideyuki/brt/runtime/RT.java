@@ -91,8 +91,10 @@ class EvalApply {
 	AtomExpr e = (AtomExpr) code;
 	Literal x = (Literal) e.a;
 
-	if (x instanceof LitInt) {
+	if (x instanceof LitInt){
 	    code = new AtomExpr(new Var(new BoxedIntObj((LitInt)x)));
+	} else if (x instanceof LitInteger){
+	    code = new AtomExpr(new Var(new BoxedIntegerObj((LitInteger)x)));
 	} else if (x instanceof LitChar){
 	    code = new AtomExpr(new Var(new BoxedCharObj((LitChar)x)));
 	} else {

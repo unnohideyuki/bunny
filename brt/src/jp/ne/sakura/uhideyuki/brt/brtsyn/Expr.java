@@ -19,6 +19,12 @@ public abstract class Expr {
 	return r;
     }
 
+    public Boolean isBoxedInteger(){
+	Boolean r = (this.isVar() &&
+		     ((Var)((AtomExpr)this).a).obj instanceof BoxedIntegerObj);
+	return r;
+    }
+
     public Boolean isBoxedChar(){
 	Boolean r = (this.isVar() &&
 		     ((Var)((AtomExpr)this).a).obj instanceof BoxedCharObj);

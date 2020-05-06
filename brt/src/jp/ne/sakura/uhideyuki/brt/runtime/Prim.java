@@ -169,15 +169,15 @@ class IntegerShowFunc implements LambdaForm {
 
 	if (x instanceof AtomExpr && 
 	    ((AtomExpr)x).a instanceof Var &&
-	    ((Var)((AtomExpr)x).a).obj instanceof BoxedIntObj){
-	    return show$Integer((BoxedIntObj) ((Var)((AtomExpr)x).a).obj);
+	    ((Var)((AtomExpr)x).a).obj instanceof BoxedIntegerObj){
+	    return show$Integer((BoxedIntegerObj) ((Var)((AtomExpr)x).a).obj);
 	} else {
 	    return new ErrExpr("IntegerShowFunc: must not occur");
 	}
     }
     
-    private static Expr show$Integer(BoxedIntObj x){
-	return RTLib.fromJString(String.valueOf(x.value));
+    private static Expr show$Integer(BoxedIntegerObj x){
+	return RTLib.fromJString(x.value.toString());
     }
 }
 
@@ -257,15 +257,15 @@ class IntegerLe implements LambdaForm {
 	Expr lhs = RT.eval(args[0]);
 	Expr rhs = RT.eval(args[1]);
 
-	assert lhs.isBoxedInt();
-	assert rhs.isBoxedInt();
+	assert lhs.isBoxedInteger();
+	assert rhs.isBoxedInteger();
 
-	BoxedIntObj il =
-	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
-	BoxedIntObj ir =
-	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
+	BoxedIntegerObj il =
+	    (BoxedIntegerObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntegerObj ir =
+	    (BoxedIntegerObj)((Var)((AtomExpr)rhs).a).obj;
 
-	if (il.value <= ir.value){
+	if (il.value.compareTo(ir.value) <= 0){
 	    return Prim.mkTrue();
 	} else {
 	    return Prim.mkFalse();
@@ -281,15 +281,15 @@ class IntegerEq implements LambdaForm {
 	Expr lhs = RT.eval(args[0]);
 	Expr rhs = RT.eval(args[1]);
 
-	assert lhs.isBoxedInt();
-	assert rhs.isBoxedInt();
+	assert lhs.isBoxedInteger();
+	assert rhs.isBoxedInteger();
 
-	BoxedIntObj il =
-	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
-	BoxedIntObj ir =
-	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
+	BoxedIntegerObj il =
+	    (BoxedIntegerObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntegerObj ir =
+	    (BoxedIntegerObj)((Var)((AtomExpr)rhs).a).obj;
 
-	if (il.value == ir.value){
+	if (il.value.compareTo(ir.value) == 0){
 	    return Prim.mkTrue();
 	} else {
 	    return Prim.mkFalse();
@@ -305,15 +305,15 @@ class IntegerAdd implements LambdaForm {
 	Expr lhs = RT.eval(args[0]);
 	Expr rhs = RT.eval(args[1]);
 
-	assert lhs.isBoxedInt();
-	assert rhs.isBoxedInt();
+	assert lhs.isBoxedInteger();
+	assert rhs.isBoxedInteger();
 
-	BoxedIntObj il =
-	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
-	BoxedIntObj ir =
-	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
+	BoxedIntegerObj il =
+	    (BoxedIntegerObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntegerObj ir =
+	    (BoxedIntegerObj)((Var)((AtomExpr)rhs).a).obj;
 
-	LitInt r = new LitInt(il.value + ir.value);
+	LitInteger r = new LitInteger(il.value.add(ir.value));
 
 	return new AtomExpr(r);
     }
@@ -327,15 +327,15 @@ class IntegerSub implements LambdaForm {
 	Expr lhs = RT.eval(args[0]);
 	Expr rhs = RT.eval(args[1]);
 
-	assert lhs.isBoxedInt();
-	assert rhs.isBoxedInt();
+	assert lhs.isBoxedInteger();
+	assert rhs.isBoxedInteger();
 
-	BoxedIntObj il =
-	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
-	BoxedIntObj ir =
-	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
+	BoxedIntegerObj il =
+	    (BoxedIntegerObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntegerObj ir =
+	    (BoxedIntegerObj)((Var)((AtomExpr)rhs).a).obj;
 
-	LitInt r = new LitInt(il.value - ir.value);
+	LitInteger r = new LitInteger(il.value.subtract(ir.value));
 
 	return new AtomExpr(r);
     }
@@ -349,15 +349,15 @@ class IntegerMul implements LambdaForm {
 	Expr lhs = RT.eval(args[0]);
 	Expr rhs = RT.eval(args[1]);
 
-	assert lhs.isBoxedInt();
-	assert rhs.isBoxedInt();
+	assert lhs.isBoxedInteger();
+	assert rhs.isBoxedInteger();
 
-	BoxedIntObj il =
-	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
-	BoxedIntObj ir =
-	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
+	BoxedIntegerObj il =
+	    (BoxedIntegerObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntegerObj ir =
+	    (BoxedIntegerObj)((Var)((AtomExpr)rhs).a).obj;
 
-	LitInt r = new LitInt(il.value * ir.value);
+	LitInteger r = new LitInteger(il.value.multiply(ir.value));
 
 	return new AtomExpr(r);
     }
@@ -482,12 +482,12 @@ class IntFromInteger implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 	Expr x = RT.eval(args[0]);
-	assert x.isBoxedInt();
+	assert x.isBoxedInteger();
 
-	BoxedIntObj ix =
-	    (BoxedIntObj)((Var)((AtomExpr)x).a).obj;
+	BoxedIntegerObj ix =
+	    (BoxedIntegerObj)((Var)((AtomExpr)x).a).obj;
 
-	return new AtomExpr(new LitInt(ix.value));
+	return new AtomExpr(new LitInt(ix.value.longValue()));
     }
 }
 

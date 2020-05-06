@@ -161,8 +161,8 @@ public class RTLib {
 
     public static Expr fromChar(char c){ return mkExpr(c); }
 
-    public static Expr fromInteger(Integer i){
-	return new AtomExpr(new LitInt(i));
+    public static Expr mkLitInteger(String s){
+	return new AtomExpr(new LitInteger(s));
     }
 
     public static Dictionary extrDict(AtomExpr e){
