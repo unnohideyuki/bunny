@@ -177,7 +177,7 @@ class IntegerShowFunc implements LambdaForm {
     }
     
     private static Expr show$Integer(BoxedIntObj x){
-	return RTLib.fromJString(x.value.toString());
+	return RTLib.fromJString(String.valueOf(x.value));
     }
 }
 
@@ -197,7 +197,7 @@ class IntShowFunc implements LambdaForm {
     }
     
     private static Expr show$Int(BoxedIntObj x){
-	return RTLib.fromJString(x.value.toString());
+	return RTLib.fromJString(String.valueOf(x.value));
     }
 }
 
