@@ -18,7 +18,8 @@ renProg ::
 renProg m = do
   let body = snd (A.body m)
       modid = fromModname $ A.modname m
-  (ds, cds, ids) <- scanDecls body
+  (ds0, cds, ids) <- scanDecls body
+  let ds = if modid == "Main" then mainRestrict ++ ds0 else ds0
   ctbs <- renClassDecls cds
   let bgs' = toBg ctbs
       as2 = map (\(n, scm, _) -> n :>: scm) $ fst $ head bgs'
@@ -30,6 +31,23 @@ renProg m = do
   let bgs = toBg $ tbs ++ itbs
       bgs'' = toBg $ ctbs ++ tbs ++ itbs
   return (bgs, bgs'', as2, dicts, ctab)
+  where -- type restriction for main,
+        -- main# :: IO ()
+        -- main# = main >> return ()
+        mainRestrict =
+          [ (A.TypeSigDecl
+              [Name "main#" (0,0) False]
+              (Nothing,
+               A.AppTy (A.Tycon (Name "IO" (0,0) True)) (A.Tycon (Name "()" (0,0) True))))
+          , (A.ValDecl
+              (A.VarExp (Name "main#" (0,1) False))
+              (A.UnguardedRhs
+                (A.InfixExp (A.VarExp (Name "main" (0,0) False))
+                            (Name ">>" (0,0) False)
+                            (A.FunAppExp (A.VarExp (Name "return" (0,0) False))
+                                         (A.VarExp (Name "()" (0,0) True)))) []))
+          ]
+
 
 semProgram :: A.Module -> (Subst, Int, [Assump])
            -> RN ([BindGroup], [Assump], [DictDef] ,[(Id, Id)], ClassEnv)
