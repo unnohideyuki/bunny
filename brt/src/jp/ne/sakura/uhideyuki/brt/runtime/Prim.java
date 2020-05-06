@@ -126,6 +126,10 @@ public class Prim {
 	return RTLib.mkFun(new IntFromInteger());
     }
 
+    public static Expr mkintegerFromInt(){
+	return RTLib.mkFun(new IntegerFromInt());
+    }
+
     // (,) = Prelude.(,)
     public static class PairFunc implements LambdaForm {
 	public int arity(){ return 2;}
@@ -488,6 +492,20 @@ class IntFromInteger implements LambdaForm {
 	    (BoxedIntegerObj)((Var)((AtomExpr)x).a).obj;
 
 	return new AtomExpr(new LitInt(ix.value.longValue()));
+    }
+}
+
+class IntegerFromInt implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedInt();
+
+	BoxedIntObj ix =
+	    (BoxedIntObj)((Var)((AtomExpr)x).a).obj;
+
+	return new AtomExpr(new LitInteger(ix.value));
     }
 }
 

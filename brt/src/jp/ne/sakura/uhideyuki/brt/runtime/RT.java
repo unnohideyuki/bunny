@@ -31,7 +31,7 @@ class EvalApply {
 
     public Boolean runStep(){
 	/**** trace ****/
-	System.err.println("runStep:" + code.inspect());
+	// System.err.println("runStep:" + code.inspect());
 
 	if (code instanceof ErrExpr){
 	    ErrExpr e = (ErrExpr) code;

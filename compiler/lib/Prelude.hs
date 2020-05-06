@@ -218,6 +218,20 @@ instance Show Integer where
           showlist' [x] =  "[" ++ Prim.integerShow x ++ "]"
           showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ Prim.integerShow t) (show x) xs ++ "]"
 
+instance Enum Integer where
+  succ = (+1)
+  pred = (+ (-1))
+  toEnum = Prim.integerFromInt
+  fromEnum = Prim.intFromInteger
+  enumFrom n = n : enumFrom (n+1)
+  enumFromTo x y | x > y     = []
+                 | otherwise = x : enumFromTo (x+1) y
+  enumFromThen x y = x : enumFromThen y (2*y-x)
+  enumFromThenTo x y z | x == y && z >= x           = x : enumFromThenTo x y z
+                       | x == z                     = [x]
+                       | compare x y /= compare x z = []
+                       | otherwise                  = x : enumFromThenTo y (2*y-x) z
+
 instance Num Int where
   (+)  = Prim.intAdd
   (-)  = Prim.intSub

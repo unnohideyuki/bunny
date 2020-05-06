@@ -5,6 +5,7 @@ public class LitInteger extends Literal {
     public BigInteger value; 
     public LitInteger(String s){ value = new BigInteger(s); }
     public LitInteger(BigInteger v){ value = v; }
+    public LitInteger(long v){ value = BigInteger.valueOf(v); }
     public Boolean equals(Literal x){ return value.compareTo(((LitInteger)x).value) == 0; }
 
     public String inspect(){
