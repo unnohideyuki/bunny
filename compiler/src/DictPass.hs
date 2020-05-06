@@ -107,16 +107,10 @@ getTy (Var (TermVar _ qt@(ps :=> _))) =
                                          checkPreds ps
                | otherwise = checkPreds ps
 
-getTy (Lit (LitChar _ qt)) = return qt
-getTy (Lit (LitFrac _ qt)) = return qt
-getTy (Lit (LitStr  _ qt)) = return qt
-
-getTy e@(Lit (LitInt  _ qt@(_ :=> v))) = do
-  st <- get
-  let tvars = tcIntegerTVars st
-      st' = st{tcIntegerTVars = (v:tvars)}
-  put st'
-  return qt
+getTy (Lit (LitChar _ t)) = return ([] :=> t)
+getTy (Lit (LitFrac _ t)) = return ([] :=> t)
+getTy (Lit (LitStr  _ t)) = return ([] :=> t)
+getTy (Lit (LitInt  _ t)) = return ([] :=> t)
 
 getTy (App f e) = do
   (qf :=> tf) <- getTy f
@@ -158,10 +152,10 @@ tyScrut s as = do
 
         altty (LitAlt l, _, _) = return $
                                  case l of
-                                   LitInt  _ ( _ :=> t) -> t
-                                   LitChar _ ( _ :=> t) -> t
-                                   LitFrac _ ( _ :=> t) -> t
-                                   LitStr  _ ( _ :=> t) -> t
+                                   LitInt  _ t -> t
+                                   LitChar _ t -> t
+                                   LitFrac _ t -> t
+                                   LitStr  _ t -> t
 
         altty _ = do n <- newNum
                      return $ TVar (Tyvar ("a" ++ show n) Star)
@@ -212,7 +206,7 @@ mkTcState ce pss subst num =
 tcExpr :: Expr -> Qual Type -> TC Expr
 
 tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
-  | null qv || isTVar t' e || isArg n {- todo:too suspicious! -} = return e
+  | null qv || isArg n {- todo:too suspicious! -} = return e
   | otherwise = findApplyDict e (qv :=> t') qt
   where isTVar x@(TVar _) y = True
         isTVar x y          = False

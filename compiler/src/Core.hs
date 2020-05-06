@@ -12,10 +12,10 @@ data Var = TermVar Id (Qual Type)
          {- | TypeVar Id Kind -} -- unused
          deriving (Show, Eq)
 
-data Literal = LitInt  Integer (Qual Type)
-             | LitChar Char    (Qual Type)
-             | LitFrac Double  (Qual Type)
-             | LitStr  String  (Qual Type)
+data Literal = LitInt  Integer Type
+             | LitChar Char    Type
+             | LitFrac Double  Type
+             | LitStr  String  Type
              deriving (Show, Eq)
 
 data Expr = Var Var

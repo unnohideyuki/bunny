@@ -205,15 +205,18 @@ trExpr2 (Ty.Var n) = do
 
 trExpr2 (Ty.Lit (Ty.LitStr s)) = return e
   where
-    e = Lit $ LitStr s ([] :=> tString)
+    e = Lit $ LitStr s tString
 
 trExpr2 (Ty.Lit (Ty.LitChar c)) = return e
   where
-    e = Lit $ LitChar c ([] :=> tChar)
+    e = Lit $ LitChar c tChar
 
 trExpr2 (Ty.Lit (Ty.LitInt n)) = do
   v <- newTVar' Star
-  return (Lit (LitInt n ([IsIn "Prelude.Num" v] :=> v)))
+  let qty = [IsIn "Prelude.Num" v] :=> (tInteger `fn` v)
+      f = Var (TermVar "Prelude.fromInteger" qty)
+      i = Lit (LitInt n tInteger)
+  return (App f i)
 
 trExpr2 (Ty.Ap e1 e2) = do
   e1' <- trExpr2 e1
