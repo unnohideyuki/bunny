@@ -27,8 +27,7 @@ instance (Show a, Show b) => Show (a, b) where
   show (a, b) = "(" ++ show a ++ "," ++ show b ++ ")"
 
 class Enum a where
-  succ           :: a -> a
-  pred           :: a -> a
+  succ, pred     :: a -> a
   toEnum         :: Int -> a
   fromEnum       :: a -> Int
   enumFrom       :: a -> [a]           -- [n..]
@@ -143,20 +142,16 @@ instance Ord Ordering where
 -- Equality and Ordered classes
 
 class Eq a where
-  (==),(/=) :: a -> a -> Bool
+  (==), (/=) :: a -> a -> Bool
   -- Minimal Complete Definition:
   -- (==) or (/=)
   x /= y = not (x == y)
   x == y = not (x /= y)
 
 class (Eq a) => Ord a where
-  (<) :: a -> a -> Bool
-  (<=) :: a -> a -> Bool
-  (>=) :: a -> a -> Bool
-  (>) :: a -> a -> Bool
-  compare :: a -> a -> Ordering
-  max :: a -> a -> a
-  min :: a -> a -> a
+  compare              :: a -> a -> Ordering
+  (<), (<=), (>=), (>) :: a -> a -> Bool
+  max, min             :: a -> a -> a
   -- Minimal complete definition:
   --   (<=) or compare
   compare x y
@@ -192,12 +187,13 @@ instance Show Char where
 showLitChar c = (++) [c]
 
 class (Eq a) => Num a where
-  (+) :: a -> a -> a
-  (-) :: a -> a -> a
-  (*) :: a -> a -> a
-  negate :: a -> a
+  (+), (-), (*) :: a -> a -> a
+  negate        :: a -> a
+  fromInteger   :: Integer -> a
+  -- Minimal complete definition:
+  --  All, except negate or (-)
+  x - y    = x + nagate y
   negate x = 0 - x
-  fromInteger :: Integer -> a
 
 instance Num Integer where
   (+)  = Prim.integerAdd
