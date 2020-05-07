@@ -221,30 +221,27 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
           itvars <- tcIntegerTVars <$> get
           let itvars' = fmap (apply s) itvars
           let  mkdicts [] ds = return ds
-               mkdicts (IsIn n2 (TVar x) : qs) ds =
-                 case apply s (TVar x) of
-                   appty@(TAp _ _) -> do d <- appTy2dict n2 appty
-                                         mkdicts qs (d:ds)
-                   ty              -> do d <- simpleTy2dict n2 ty
-                                         mkdicts qs (d:ds)
+               mkdicts (IsIn n2 v : qs) ds =
+                 do d <- ty2dict n2 (apply s v)
+                    mkdicts qs (d:ds)
                mkdicts _ _ = error "mkdicts: must not occur"
 
-               appTy2dict n2 (TAp (TCon (Tycon n1 _)) ty) = do
+               ty2dict n2 (TAp (TCon (Tycon n1 _)) ty) = do
                  let cdd = Var (DictVar n1 n2)
-                 cdds <- mapM (simpleTy2dict n2) [ty]
+                 cdds <- mapM (ty2dict n2) [ty]
                  return $ Var (CompositDict cdd cdds)
 
-               appTy2dict n2 ty = do
+               ty2dict n2 ty@(TAp _ _) = do
                  let (n1, ts) = extr' ty []
                      cdd = Var (DictVar n1 n2)
                  -- todo: the order of cdds shold be reordered
-                 cdds <- mapM (simpleTy2dict n2) ts
+                 cdds <- mapM (ty2dict n2) ts
                  return $ Var (CompositDict cdd cdds)
                  where extr' (TCon (Tycon n1 _)) ts = (n1, ts)
                        extr' (TAp t1 t2) ts         = extr' t1 (t2:ts)
 
-               simpleTy2dict n2 (TCon (Tycon n1 _)) = return $ Var (DictVar n1 n2)
-               simpleTy2dict n2 (TVar y) =
+               ty2dict n2 (TCon (Tycon n1 _)) = return $ Var (DictVar n1 n2)
+               ty2dict n2 (TVar y) =
                  do v <- lookupDictArg (n2, y)
                     pss <- getPss
                     case v of
@@ -254,8 +251,6 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
                               | otherwise ->
                                 error ("Error: dictionary not found: "
                                         ++ n ++ ", " ++ show (n2,y,pss))
-
-
 
           dicts <- mkdicts qv [] -- mkdicts returns dictionaries in reverse order
           return (foldr (flip App) e dicts)
