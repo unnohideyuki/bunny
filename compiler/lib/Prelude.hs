@@ -212,8 +212,8 @@ instance Show Integer where
   showList xs = (++) (showlist' xs)
     where showlist' [] = "[]"
           showlist' [x] =  "[" ++ Prim.integerShow x ++ "]"
-          showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ Prim.integerShow t) (show x) xs ++ "]"
-
+          showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ show t) (show x) xs ++ "]"
+  
 instance Enum Integer where
   succ = (+1)
   pred = (+ (-1))
@@ -245,7 +245,7 @@ instance Show Int where
   showList xs = (++) (showlist' xs)
     where showlist' [] = "[]"
           showlist' [x] =  "[" ++ Prim.intShow x ++ "]"
-          showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ Prim.intShow t) (show x) xs ++ "]"
+          showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ show t) (show x) xs ++ "]"
 
 instance Enum Int where
   succ = (+1)

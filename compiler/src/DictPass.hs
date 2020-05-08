@@ -203,57 +203,49 @@ mkTcState :: ClassEnv -> [(Pred, Id)] -> Subst -> Int -> TcState
 mkTcState ce pss subst num =
   TcState{tcCe=ce, tcPss=pss, tcSubst=subst, tcNum=num, tcIntegerTVars=[]}
 
-tcExpr :: Expr -> Qual Type -> TC Expr
+findApplyDict e (qv :=> t') (_ :=> t) = do
+  unify' t' t
+  s <- getSubst
+  itvars <- tcIntegerTVars <$> get
+  let itvars' = fmap (apply s) itvars
+  let  mkdicts [] ds = return ds
+       mkdicts (IsIn n2 v : qs) ds =
+         do d <- ty2dict n2 (apply s v)
+            mkdicts qs (d:ds)
 
+       ty2dict n2 (TAp (TCon (Tycon n1 _)) ty) = do
+         let cdd = Var (DictVar n1 n2)
+         cdds <- mapM (ty2dict n2) [ty]
+         return $ Var (CompositDict cdd cdds)
+
+       ty2dict n2 ty@(TAp _ _) = do
+         let (n1, ts) = extr' ty []
+             cdd = Var (DictVar n1 n2)
+         -- todo: the order of cdds shold be reordered
+         cdds <- mapM (ty2dict n2) ts
+         return $ Var (CompositDict cdd cdds)
+         where extr' (TCon (Tycon n1 _)) ts = (n1, ts)
+               extr' (TAp t1 t2) ts         = extr' t1 (t2:ts)
+
+       ty2dict n2 (TCon (Tycon n1 _)) = return $ Var (DictVar n1 n2)
+       ty2dict n2 (TVar y) =
+         do v <- lookupDictArg (n2, y)
+            pss <- getPss
+            case v of
+              Just v' -> return (Var v')
+              Nothing | (TVar y) `elem` itvars' ->
+                        return (Var (DictVar "Prelude.Integer" n2))
+                      | otherwise ->
+                        error ("Error: dictionary not found: " ++ show (n2,y,pss))
+  dicts <- mkdicts qv [] -- mkdicts returns dictionaries in reverse order
+  return (foldr (flip App) e dicts)
+
+tcExpr :: Expr -> Qual Type -> TC Expr
 tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
   | null qv || isArg n {- todo:too suspicious! -} = return e
   | otherwise = findApplyDict e (qv :=> t') qt
-  where isTVar x@(TVar _) y = True
-        isTVar x y          = False
-        notFunTy (TAp (TAp (TCon (Tycon "(->)" _)) _) _) = False
-        notFunTy _                                       = True
-        isArg ('_':_) = True
+  where isArg ('_':_) = True
         isArg _       = False
-
-        findApplyDict e (qv :=> t') (_ :=> t) = do
-          unify' t' t
-          s <- getSubst
-          itvars <- tcIntegerTVars <$> get
-          let itvars' = fmap (apply s) itvars
-          let  mkdicts [] ds = return ds
-               mkdicts (IsIn n2 v : qs) ds =
-                 do d <- ty2dict n2 (apply s v)
-                    mkdicts qs (d:ds)
-               mkdicts _ _ = error "mkdicts: must not occur"
-
-               ty2dict n2 (TAp (TCon (Tycon n1 _)) ty) = do
-                 let cdd = Var (DictVar n1 n2)
-                 cdds <- mapM (ty2dict n2) [ty]
-                 return $ Var (CompositDict cdd cdds)
-
-               ty2dict n2 ty@(TAp _ _) = do
-                 let (n1, ts) = extr' ty []
-                     cdd = Var (DictVar n1 n2)
-                 -- todo: the order of cdds shold be reordered
-                 cdds <- mapM (ty2dict n2) ts
-                 return $ Var (CompositDict cdd cdds)
-                 where extr' (TCon (Tycon n1 _)) ts = (n1, ts)
-                       extr' (TAp t1 t2) ts         = extr' t1 (t2:ts)
-
-               ty2dict n2 (TCon (Tycon n1 _)) = return $ Var (DictVar n1 n2)
-               ty2dict n2 (TVar y) =
-                 do v <- lookupDictArg (n2, y)
-                    pss <- getPss
-                    case v of
-                      Just v' -> return (Var v')
-                      Nothing | (TVar y) `elem` itvars' ->
-                                return (Var (DictVar "Prelude.Integer" n2))
-                              | otherwise ->
-                                error ("Error: dictionary not found: "
-                                        ++ n ++ ", " ++ show (n2,y,pss))
-
-          dicts <- mkdicts qv [] -- mkdicts returns dictionaries in reverse order
-          return (foldr (flip App) e dicts)
 
 tcExpr e@(Lit _) _ = do return e
 
