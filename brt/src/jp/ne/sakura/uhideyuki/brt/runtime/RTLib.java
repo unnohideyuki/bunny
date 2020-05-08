@@ -81,7 +81,12 @@ public class RTLib {
 	while(isList(x)){
 	    AtomExpr e = (AtomExpr) head(x);
 	    assert(((AtomExpr)e).a instanceof Var);
+
+	    if (! (((Var)((AtomExpr)e).a).obj instanceof BoxedCharObj)){
+		System.err.println("Not a BuxedCharObj:" + e.inspect());
+	    }
 	    assert(((Var)((AtomExpr)e).a).obj instanceof BoxedCharObj);
+
 	    BoxedCharObj c = (BoxedCharObj)((Var)((AtomExpr)e).a).obj;
 	    t.append(c.value);
 	    x = tail(x);

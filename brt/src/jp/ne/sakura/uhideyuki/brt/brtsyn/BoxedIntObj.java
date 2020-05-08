@@ -4,6 +4,6 @@ public class BoxedIntObj extends HeapObj {
     public long value;
     public BoxedIntObj(LitInt x){ value = x.value; }
     public String inspect(){
-	return String.valueOf(value);
+	return String.valueOf(value) + " :: Int";
     }
 }

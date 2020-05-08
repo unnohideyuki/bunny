@@ -181,7 +181,7 @@ class EvalApply {
 	    DefaultAlt dalt = getDefaultAlt(alts);
 	    assert dalt != null;
 	    AtomExpr[] a = new AtomExpr[1];
-	    a[0] = (AtomExpr) scrut; // is is safe when scrut.isLitOrValue()
+	    a[0] = (AtomExpr) scrut; // it is safe when scrut.isLitOrValue()
 	    code = new FunAppExpr(dalt.e, a, -1);
 	    return true;
 	}
