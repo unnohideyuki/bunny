@@ -130,6 +130,70 @@ integerQuotRem  = "Prim.integerQuotRem" :>:
 intQuotRem :: Assump
 intQuotRem  = "Prim.intQuotRem" :>: Forall [] ([] :=> (tInt `fn` tInt `fn` pair tInt tInt))
 
+scDoubledoublebool :: Scheme
+scDoubledoublebool = Forall [] ([] :=> (tDouble `fn` tDouble `fn` tBool))
+
+scDoubledoubledouble :: Scheme
+scDoubledoubledouble =
+  Forall [] ([] :=> (tDouble `fn` tDouble `fn` tDouble))
+
+primDoubleLeCfun :: Assump
+primDoubleLeCfun = "Prim.doubleLe" :>: scDoubledoublebool
+
+primDoubleEqCfun :: Assump
+primDoubleEqCfun = "Prim.doubleEq" :>: scDoubledoublebool
+
+primDoubleAddCfun :: Assump
+primDoubleAddCfun = "Prim.doubleAdd" :>: scDoubledoubledouble
+
+primDoubleSubCfun :: Assump
+primDoubleSubCfun = "Prim.doubleSub" :>: scDoubledoubledouble
+
+primDoubleMulCfun :: Assump
+primDoubleMulCfun = "Prim.doubleMul" :>: scDoubledoubledouble
+
+primDoubleSignumCfun :: Assump
+primDoubleSignumCfun = "Prim.doubleSignum" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
+primDoubleFromIntegerCfun :: Assump
+primDoubleFromIntegerCfun = "Prim.doubleFromInteger" :>:
+                            Forall [] ([] :=> (tInteger `fn` tDouble))
+
+primDoubleShowCfun :: Assump
+primDoubleShowCfun  = "Prim.doubleShow" :>: Forall [] ([] :=> (tDouble `fn` tString))
+
+scFloatfloatbool :: Scheme
+scFloatfloatbool = Forall [] ([] :=> (tFloat `fn` tFloat `fn` tBool))
+
+scFloatfloatfloat :: Scheme
+scFloatfloatfloat =
+  Forall [] ([] :=> (tFloat `fn` tFloat `fn` tFloat))
+
+primFloatLeCfun :: Assump
+primFloatLeCfun = "Prim.floatLe" :>: scFloatfloatbool
+
+primFloatEqCfun :: Assump
+primFloatEqCfun = "Prim.floatEq" :>: scFloatfloatbool
+
+primFloatAddCfun :: Assump
+primFloatAddCfun = "Prim.floatAdd" :>: scFloatfloatfloat
+
+primFloatSubCfun :: Assump
+primFloatSubCfun = "Prim.floatSub" :>: scFloatfloatfloat
+
+primFloatMulCfun :: Assump
+primFloatMulCfun = "Prim.floatMul" :>: scFloatfloatfloat
+
+primFloatSignumCfun :: Assump
+primFloatSignumCfun = "Prim.floatSignum" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
+primFloatFromIntegerCfun :: Assump
+primFloatFromIntegerCfun = "Prim.floatFromInteger" :>:
+                            Forall [] ([] :=> (tInteger `fn` tFloat))
+
+primFloatShowCfun :: Assump
+primFloatShowCfun  = "Prim.floatShow" :>: Forall [] ([] :=> (tFloat `fn` tString))
+
 overloadedCfun :: Assump
 overloadedCfun = "#overloaded#" :>:
   Forall [Star, Star] ([] :=> (TGen 0 `fn` tString `fn` TGen 1))
@@ -150,6 +214,14 @@ primConsMems  = [ unitCfun, nilCfun, consCfun
                 , showConNameCfun
                 , integerShowCfun, intShowCfun
                 , integerQuotRem, intQuotRem
+                , primDoubleLeCfun, primDoubleEqCfun
+                , primDoubleAddCfun, primDoubleSubCfun, primDoubleMulCfun
+                , primDoubleSignumCfun, primDoubleFromIntegerCfun
+                , primDoubleShowCfun
+                , primFloatLeCfun, primFloatEqCfun
+                , primFloatAddCfun, primFloatSubCfun, primFloatMulCfun
+                , primFloatSignumCfun, primFloatFromIntegerCfun
+                , primFloatShowCfun
                 , errorCfun
                 , "Prim.putStrLn" :>:
                   Forall []
@@ -186,6 +258,22 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.intShow", "Prim.intShow")
                  , ("Prim.integerQuotRem", "Prim.integerQuotRem")
                  , ("Prim.intQuotRem", "Prim.intQuotRem")
+                 , ("Prim.doubleLe", "Prim.doubleLe")
+                 , ("Prim.doubleEq", "Prim.doubleEq")
+                 , ("Prim.doubleAdd", "Prim.doubleAdd")
+                 , ("Prim.doubleSub", "Prim.doubleSub")
+                 , ("Prim.doubleMul", "Prim.doubleMul")
+                 , ("Prim.doubleSignum", "Prim.doubleSignum")
+                 , ("Prim.doubleFromInteger", "Prim.doubleFromInteger")
+                 , ("Prim.doubleShow", "Prim.doubleShow")
+                 , ("Prim.floatLe", "Prim.floatLe")
+                 , ("Prim.floatEq", "Prim.floatEq")
+                 , ("Prim.floatAdd", "Prim.floatAdd")
+                 , ("Prim.floatSub", "Prim.floatSub")
+                 , ("Prim.floatMul", "Prim.floatMul")
+                 , ("Prim.floatSignum", "Prim.floatSignum")
+                 , ("Prim.floatFromInteger", "Prim.floatFromInteger")
+                 , ("Prim.floatShow", "Prim.floatShow")
                  , ("#overloaded#", "#overloaded#")
                  ]
 
@@ -246,4 +334,6 @@ initialTypeConsts =
   , ("Integer", tInteger)
   , ("IO", tIO)
   , ("String", tString)
+  , ("Double", tDouble)
+  , ("Float", tFloat)
   ]

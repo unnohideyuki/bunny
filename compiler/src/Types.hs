@@ -19,9 +19,9 @@ tInt      = TCon (Tycon "Prelude.Int" Star)
 tInteger :: Type
 tInteger  = TCon (Tycon "Prelude.Integer" Star)
 tFloat   :: Type
-tFloat    = TCon (Tycon "Float" Star)
+tFloat    = TCon (Tycon "Prelude.Float" Star)
 tDouble  :: Type
-tDouble   = TCon (Tycon "Double" Star)
+tDouble   = TCon (Tycon "Prelude.Double" Star)
 
 tBool    :: Type
 tBool     = TCon (Tycon "Prelude.Bool" Star)

@@ -97,6 +97,10 @@ class EvalApply {
 	    code = new AtomExpr(new Var(new BoxedIntegerObj((LitInteger)x)));
 	} else if (x instanceof LitChar){
 	    code = new AtomExpr(new Var(new BoxedCharObj((LitChar)x)));
+	} else if (x instanceof LitDouble){
+	    code = new AtomExpr(new Var(new BoxedDoubleObj((LitDouble)x)));
+	} else if (x instanceof LitFloat){
+	    code = new AtomExpr(new Var(new BoxedFloatObj((LitFloat)x)));
 	} else {
 	    code = new ErrExpr("non-exaustive cases in evalLiteral.");
 	}

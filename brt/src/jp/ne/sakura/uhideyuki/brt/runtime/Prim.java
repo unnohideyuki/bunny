@@ -130,6 +130,70 @@ public class Prim {
 	return RTLib.mkFun(new IntegerFromInt());
     }
 
+    public static Expr mkdoubleLe(){
+	return RTLib.mkFun(new DoubleLe());
+    }
+
+    public static Expr mkdoubleEq(){
+	return RTLib.mkFun(new DoubleEq());
+    }
+
+    public static Expr mkdoubleAdd(){
+	return RTLib.mkFun(new DoubleAdd());
+    }
+
+    public static Expr mkdoubleSub(){
+	return RTLib.mkFun(new DoubleSub());
+    }
+
+    public static Expr mkdoubleMul(){
+	return RTLib.mkFun(new DoubleMul());
+    }
+
+    public static Expr mkdoubleSignum(){
+	return RTLib.mkFun(new DoubleSignum());
+    }
+
+    public static Expr mkdoubleFromInteger(){
+	return RTLib.mkFun(new DoubleFromInteger());
+    }
+
+    public static Expr mkdoubleShow(){
+	return RTLib.mkFun(new DoubleShow());
+    }
+
+    public static Expr mkfloatLe(){
+	return RTLib.mkFun(new FloatLe());
+    }
+
+    public static Expr mkfloatEq(){
+	return RTLib.mkFun(new FloatEq());
+    }
+
+    public static Expr mkfloatAdd(){
+	return RTLib.mkFun(new FloatAdd());
+    }
+
+    public static Expr mkfloatSub(){
+	return RTLib.mkFun(new FloatSub());
+    }
+
+    public static Expr mkfloatMul(){
+	return RTLib.mkFun(new FloatMul());
+    }
+
+    public static Expr mkfloatSignum(){
+	return RTLib.mkFun(new FloatSignum());
+    }
+
+    public static Expr mkfloatFromInteger(){
+	return RTLib.mkFun(new FloatFromInteger());
+    }
+
+    public static Expr mkfloatShow(){
+	return RTLib.mkFun(new FloatShow());
+    }
+
     // (,) = Prelude.(,)
     public static class PairFunc implements LambdaForm {
 	public int arity(){ return 2;}
@@ -509,3 +573,338 @@ class IntegerFromInt implements LambdaForm {
     }
 }
 
+class DoubleLe implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedDouble();
+	assert rhs.isBoxedDouble();
+
+	BoxedDoubleObj il =
+	    (BoxedDoubleObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedDoubleObj ir =
+	    (BoxedDoubleObj)((Var)((AtomExpr)rhs).a).obj;
+
+	if (il.value <= ir.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class DoubleEq implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedDouble();
+	assert rhs.isBoxedDouble();
+
+	BoxedDoubleObj il =
+	    (BoxedDoubleObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedDoubleObj ir =
+	    (BoxedDoubleObj)((Var)((AtomExpr)rhs).a).obj;
+
+	if (il.value == ir.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class DoubleAdd implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedDouble();
+	assert rhs.isBoxedDouble();
+
+	BoxedDoubleObj il =
+	    (BoxedDoubleObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedDoubleObj ir =
+	    (BoxedDoubleObj)((Var)((AtomExpr)rhs).a).obj;
+
+	LitDouble r = new LitDouble(il.value + ir.value);
+
+	return new AtomExpr(r);
+    }
+}
+
+class DoubleSub implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedDouble();
+	assert rhs.isBoxedDouble();
+
+	BoxedDoubleObj il =
+	    (BoxedDoubleObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedDoubleObj ir =
+	    (BoxedDoubleObj)((Var)((AtomExpr)rhs).a).obj;
+
+	LitDouble r = new LitDouble(il.value - ir.value);
+
+	return new AtomExpr(r);
+    }
+}
+
+class DoubleMul implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedDouble();
+	assert rhs.isBoxedDouble();
+
+	BoxedDoubleObj il =
+	    (BoxedDoubleObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedDoubleObj ir =
+	    (BoxedDoubleObj)((Var)((AtomExpr)rhs).a).obj;
+
+	LitDouble r = new LitDouble(il.value * ir.value);
+
+	return new AtomExpr(r);
+    }
+}
+
+class DoubleSignum implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedDouble();
+
+	BoxedDoubleObj ix =
+	    (BoxedDoubleObj)((Var)((AtomExpr)x).a).obj;
+
+	if (ix.value > 0){
+	    return new AtomExpr(new LitDouble(1.0));
+	} else if (ix.value == 0) {
+	    return new AtomExpr(new LitDouble(0.0));
+	} else {
+	    return new AtomExpr(new LitDouble(-1.0));
+	}
+    }
+}
+
+class DoubleFromInteger implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedInteger();
+
+	BoxedIntegerObj ix =
+	    (BoxedIntegerObj)((Var)((AtomExpr)x).a).obj;
+
+	return new AtomExpr(new LitDouble(ix.value.doubleValue()));
+    }
+}
+
+class DoubleShow implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+
+	if (x instanceof AtomExpr && 
+	    ((AtomExpr)x).a instanceof Var &&
+	    ((Var)((AtomExpr)x).a).obj instanceof BoxedDoubleObj){
+	    return show$Double((BoxedDoubleObj) ((Var)((AtomExpr)x).a).obj);
+	} else {
+	    return new ErrExpr("DoubleShow: must not occur");
+	}
+    }
+    
+    private static Expr show$Double(BoxedDoubleObj x){
+	return RTLib.fromJString(String.valueOf(x.value).replace("E","e"));
+    }
+}
+
+class FloatLe implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedFloat();
+	assert rhs.isBoxedFloat();
+
+	BoxedFloatObj il =
+	    (BoxedFloatObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedFloatObj ir =
+	    (BoxedFloatObj)((Var)((AtomExpr)rhs).a).obj;
+
+	if (il.value <= ir.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class FloatEq implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedFloat();
+	assert rhs.isBoxedFloat();
+
+	BoxedFloatObj il =
+	    (BoxedFloatObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedFloatObj ir =
+	    (BoxedFloatObj)((Var)((AtomExpr)rhs).a).obj;
+
+	if (il.value == ir.value){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class FloatAdd implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedFloat();
+	assert rhs.isBoxedFloat();
+
+	BoxedFloatObj il =
+	    (BoxedFloatObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedFloatObj ir =
+	    (BoxedFloatObj)((Var)((AtomExpr)rhs).a).obj;
+
+	LitFloat r = new LitFloat(il.value + ir.value);
+
+	return new AtomExpr(r);
+    }
+}
+
+class FloatSub implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedFloat();
+	assert rhs.isBoxedFloat();
+
+	BoxedFloatObj il =
+	    (BoxedFloatObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedFloatObj ir =
+	    (BoxedFloatObj)((Var)((AtomExpr)rhs).a).obj;
+
+	LitFloat r = new LitFloat(il.value - ir.value);
+
+	return new AtomExpr(r);
+    }
+}
+
+class FloatMul implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedFloat();
+	assert rhs.isBoxedFloat();
+
+	BoxedFloatObj il =
+	    (BoxedFloatObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedFloatObj ir =
+	    (BoxedFloatObj)((Var)((AtomExpr)rhs).a).obj;
+
+	LitFloat r = new LitFloat(il.value * ir.value);
+
+	return new AtomExpr(r);
+    }
+}
+
+class FloatSignum implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedFloat();
+
+	BoxedFloatObj ix =
+	    (BoxedFloatObj)((Var)((AtomExpr)x).a).obj;
+
+	if (ix.value > 0){
+	    return new AtomExpr(new LitFloat(1.0f));
+	} else if (ix.value == 0) {
+	    return new AtomExpr(new LitFloat(0.0f));
+	} else {
+	    return new AtomExpr(new LitFloat(-1.0f));
+	}
+    }
+}
+
+class FloatFromInteger implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedInteger();
+
+	BoxedIntegerObj ix =
+	    (BoxedIntegerObj)((Var)((AtomExpr)x).a).obj;
+
+	return new AtomExpr(new LitFloat(ix.value.floatValue()));
+    }
+}
+
+class FloatShow implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+
+	if (x instanceof AtomExpr && 
+	    ((AtomExpr)x).a instanceof Var &&
+	    ((Var)((AtomExpr)x).a).obj instanceof BoxedFloatObj){
+	    return show$Float((BoxedFloatObj) ((Var)((AtomExpr)x).a).obj);
+	} else {
+	    return new ErrExpr("FloatShow: must not occur");
+	}
+    }
+    
+    private static Expr show$Float(BoxedFloatObj x){
+	return RTLib.fromJString(String.valueOf(x.value).replace("E","e"));
+    }
+}

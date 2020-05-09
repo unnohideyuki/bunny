@@ -31,6 +31,18 @@ public abstract class Expr {
 	return r;
     }
 
+    public Boolean isBoxedDouble(){
+	Boolean r = (this.isVar() &&
+		     ((Var)((AtomExpr)this).a).obj instanceof BoxedDoubleObj);
+	return r;
+    }
+
+    public Boolean isBoxedFloat(){
+	Boolean r = (this.isVar() &&
+		     ((Var)((AtomExpr)this).a).obj instanceof BoxedFloatObj);
+	return r;
+    }
+
     public Boolean isBoxedValue(){
 	return isBoxedInt() || isBoxedChar();
     }

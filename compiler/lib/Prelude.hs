@@ -303,6 +303,48 @@ instance Enum Int where
                        | compare x y /= compare x z = []
                        | otherwise                  = x : enumFromThenTo y (2*y-x) z
 
+instance Eq Double where
+  (==) = Prim.doubleEq
+
+instance Ord Double where
+  (<=) = Prim.doubleLe
+
+instance Num Double where
+  (+) = Prim.doubleAdd
+  (-) = Prim.doubleSub
+  (*) = Prim.doubleMul
+  signum = Prim.doubleSignum
+  fromInteger = Prim.doubleFromInteger
+
+instance Show Double where
+  show = Prim.doubleShow
+  showList xs = (++) (showlist' xs)
+    where showlist' [] = "[]"
+          showlist' [x] =  "[" ++ show x ++ "]"
+          showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ show t) (show x) xs ++ "]"
+          showlist' :: [Double] -> [Char]
+
+instance Eq Float where
+  (==) = Prim.floatEq
+
+instance Ord Float where
+  (<=) = Prim.floatLe
+
+instance Num Float where
+  (+) = Prim.floatAdd
+  (-) = Prim.floatSub
+  (*) = Prim.floatMul
+  signum = Prim.floatSignum
+  fromInteger = Prim.floatFromInteger
+
+instance Show Float where
+  show = Prim.floatShow
+  showList xs = (++) (showlist' xs)
+    where showlist' [] = "[]"
+          showlist' [x] =  "[" ++ show x ++ "]"
+          showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ show t) (show x) xs ++ "]"
+          showlist' :: [Float] -> [Char]
+
 print x = putStrLn (show x)
 
 otherwise = True
