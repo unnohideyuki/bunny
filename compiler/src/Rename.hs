@@ -144,13 +144,13 @@ renClassDecls dcls = do
           dcls
   return $ concat tbss
   where
+    extr_sc Nothing                                  = []
+    extr_sc (Just (A.ParTy (A.AppTy (A.Tycon i) _))) = [origName i]
+    extr_sc (Just t) = error $ "extr_sc: " ++ show t
+
     clsadd (maybe_sc, A.AppTy (A.Tycon n) _) = do
       cname <- qname $ origName n
-      sps <- case maybe_sc of
-               Just sc -> do s <- qname $
-                                  (\(A.ParTy (A.AppTy (A.Tycon i) _)) -> origName i) sc
-                             return [s]
-               Nothing -> return []
+      sps <- mapM qname (extr_sc maybe_sc)
       st <- get
       let ce = rnCe st
           ce' = fromMaybe (error $ "addClass failed: " ++ show (cname, ce))

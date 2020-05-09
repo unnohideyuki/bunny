@@ -189,17 +189,50 @@ showLitChar c = (++) [c]
 class (Eq a) => Num a where
   (+), (-), (*) :: a -> a -> a
   negate        :: a -> a
+  signum        :: a -> a
   fromInteger   :: Integer -> a
   -- Minimal complete definition:
   --  All, except negate or (-)
   x - y    = x + nagate y
   negate x = 0 - x
 
+{-
+class (Enum a) => Integral a where
+  quot, rem       :: a -> a -> a
+  div, mod        :: a -> a -> a
+  quotRem, divMod :: a -> a -> (a, a)
+  toInteger       :: a -> Integer
+  -- Minimal complete definition: quotRem, toInteger
+  n `quot` d = q where (,) q r = quotRem n d
+  n `rem`  d = r where (,) q r = quotRem n d
+  n `div`  d = q where (,) q r = divMod n d
+  n `mod`  d = r where (,) q r = divMod n d
+  divMod n d = if sinum r == - signum d then (q-1, r+d) else (q, r)
+    where (,) q r = quotRem n d
+-}
+
+signum' :: Integer -> Integer
+signum' x | x > 0  = 1
+          | x == 0 = 0
+          | x < 0  = -1
+
+signum'' :: Int -> Int
+signum'' x | x > 0  = 1
+           | x == 0 = 0
+           | x < 0  = -1
+
 instance Num Integer where
   (+)  = Prim.integerAdd
   (-)  = Prim.integerSub
   (*)  = Prim.integerMul
+  signum = signum'
   fromInteger = id
+
+{-
+instance Integral Integer where
+  quotRem = Prim.integerQuotRem
+  toInteger = id
+-}
 
 instance Ord Integer where
   (<=) = Prim.integerLe
@@ -233,8 +266,15 @@ instance Num Int where
   (+)  = Prim.intAdd
   (-)  = Prim.intSub
   (*)  = Prim.intMul
+  signum = signum''
   fromInteger = Prim.intFromInteger
-    
+
+{-
+instance Integral Int where
+  quotRem = Prim.intQuotRem
+  toInteger = Prim.integerFromInt
+-}
+
 instance Ord Int where
   (<=) = Prim.intLe
 

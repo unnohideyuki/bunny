@@ -123,6 +123,13 @@ integerShowCfun  = "Prim.integerShow" :>: Forall [] ([] :=> (tInteger `fn` tStri
 intShowCfun :: Assump
 intShowCfun  = "Prim.intShow" :>: Forall [] ([] :=> (tInt `fn` tString))
 
+integerQuotRem :: Assump
+integerQuotRem  = "Prim.integerQuotRem" :>:
+                  Forall [] ([] :=> (tInteger `fn` tInteger `fn` pair tInteger tInteger))
+
+intQuotRem :: Assump
+intQuotRem  = "Prim.intQuotRem" :>: Forall [] ([] :=> (tInt `fn` tInt `fn` pair tInt tInt))
+
 overloadedCfun :: Assump
 overloadedCfun = "#overloaded#" :>:
   Forall [Star, Star] ([] :=> (TGen 0 `fn` tString `fn` TGen 1))
@@ -142,6 +149,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun
                 , primIntegerFromIntCfun
                 , showConNameCfun
                 , integerShowCfun, intShowCfun
+                , integerQuotRem, intQuotRem
                 , errorCfun
                 , "Prim.putStrLn" :>:
                   Forall []
@@ -176,6 +184,8 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.showConName", "Prim.showConName")
                  , ("Prim.integerShow", "Prim.integerShow")
                  , ("Prim.intShow", "Prim.intShow")
+                 , ("Prim.integerQuotRem", "Prim.integerQuotRem")
+                 , ("Prim.intQuotRem", "Prim.intQuotRem")
                  , ("#overloaded#", "#overloaded#")
                  ]
 
