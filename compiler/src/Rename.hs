@@ -330,7 +330,9 @@ renDecls decls = do tbss <- mapM renDecl decls
   where
     renDecl (A.ValDecl expr rhs) = do
       enterNewLevel
-      (n, pats) <- renFExp expr
+      -- trace (show expr) $ return ()
+      expr' <- removeInfix expr
+      (n, pats) <- renFExp expr'
       rexp      <- renRhs  rhs
       exitLevel
       return [(n, Nothing, [(pats, rexp)])]
@@ -341,6 +343,36 @@ renDecls decls = do tbss <- mapM renDecl decls
       ps <- renSigvar maybe_sigvar kdict
       t <- renSigdoc sigdoc kdict
       return [(n, Just (ps :=> t), []) | n <- ns']
+
+    removeInfix :: A.Exp -> RN A.Exp
+    removeInfix e@(A.VarExp n) = return e
+
+    removeInfix (A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
+      e' <- resolveFixity rest op2 e2 op1 e1
+      removeInfix e'
+
+    removeInfix (A.InfixExp le op re) =
+      removeInfix (A.FunAppExp (A.FunAppExp (A.VarExp op) le) re)
+
+    removeInfix (A.FunAppExp f e) = do f' <- removeInfix f
+                                       e' <- removeInfix e
+                                       return (A.FunAppExp f' e')
+
+    removeInfix (A.ParExp e) = removeInfix e
+
+    removeInfix (A.TupleExp es) = do es' <- mapM (\me -> case me of
+                                                  Just e -> do e' <- removeInfix e
+                                                               return (Just e')
+                                                  Nothing -> return Nothing)
+                                         es
+                                     return (A.TupleExp es')
+
+    removeInfix e@(A.LitExp _) = return e
+    removeInfix A.WildcardPat = return A.WildcardPat
+
+    removeInfix e@(A.ListExp es) = removeInfix $ expandList es
+
+    removeInfix e = error $ "removeInfix :" ++ show e
 
 kiExpr :: A.Type -> [(Id, Kind)] -> [(Id, Kind)]
 
@@ -439,12 +471,6 @@ renFExp f@(A.FunAppExp _ _) = renfexp' f []
       return (qn, pat:pats)
     renfexp' _ _ = error "renfexp': unexpected"
 
-renFExp (A.InfixExp le op re) = do
-  qname_op <- qname (origName op)
-  lpat <- renPat le
-  rpat <- renPat re
-  return (qname_op, [lpat, rpat])
-
 renFExp e = error $ "renFExp" ++ show e
 
 expandList :: [A.Exp] -> A.Exp
@@ -474,7 +500,10 @@ renPat (A.FunAppExp f f') = renPCon (A.FunAppExp f f') []
           renPCon (A.FunAppExp e e') (pat:pats)
         renPCon (A.FunAppExp (A.VarExp n) e') pats = do
           qn <- qname (origName n)
-          Just a <- findCMs qn
+          maybe_a <- findCMs qn
+          let a = case maybe_a of
+                Just a' -> a'
+                Nothing -> error $ "findCMs failed: " ++ show qn
           pat' <- renPat e'
           return $ PCon a (pat':pats)
         renPCon _ _ = error "renPCon: unexpected"
@@ -532,6 +561,7 @@ resolveFixity :: A.Exp -> Name -> A.Exp -> Name -> A.Exp -> RN A.Exp
 resolveFixity rest op2 e2 op1 e1 = do
   (prec1, fix1) <- lookupInfixOp op1
   (prec2, fix2) <- lookupInfixOp op2
+  -- trace (show (op1, prec1, op2, fix1, prec2, fix2)) $ return ()
   if prec1 == prec2 && (fix1 /= fix2 || fix1 == A.Infix)
     then fail "fixty resolution error."
     else if prec1 > prec2 || (prec1 == prec2 && fix1 == A.Infixr)

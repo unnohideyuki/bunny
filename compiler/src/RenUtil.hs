@@ -155,10 +155,9 @@ regFixity f i (n:ns) = do reg (trFixity f i) n; regFixity f i ns
         trFixity A.Infixr = Fixity RightAssoc
         trFixity A.Infix  = Fixity NoAssoc
         reg finfo name = do
-          (lv:_) <- getLvs
           ifxenv <- getIfxenv
-          let qn = lvPrefix lv ++ "." ++ origName name
-              ifxenv' = insert qn finfo ifxenv
+          qn <- renameVar name
+          let  ifxenv' = insert qn finfo ifxenv
           if defined (tabLookup qn ifxenv)
             then fail $ "duplicate fixity declaration:" ++ qn
             else putIfxenv ifxenv'
@@ -167,6 +166,7 @@ extrName :: A.Exp -> Name
 extrName (A.VarExp name)       = name
 extrName (A.FunAppExp f _)     = extrName f
 extrName (A.InfixExp _ name _) = name
+extrName (A.ParExp e)          = extrName e
 extrName e                     = error $ "unexpected exp:" ++ show e
 
 lookupInfixOp :: Name -> RN (Int, A.Fixity)
