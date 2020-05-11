@@ -121,9 +121,15 @@ newNum = do
 
 qname   :: Id -> RN Id
 qname name = do
+  maybe_qn <- maybeQname name
+  return $ fromMaybe (error $ "qname not found: " ++ show name) maybe_qn
+
+maybeQname   :: Id -> RN (Maybe Id)
+maybeQname name = do
   lvs <- getLvs
-  return $ findQName name lvs
-  where findQName n [] = error $ "qname not found: " ++ n
+  let r = findQName name lvs
+  return $ if null r then Nothing else Just r
+  where findQName n [] = ""
         findQName n (lv:lvs) =
           fromMaybe (findQName n lvs) (tabLookup n (lvDict lv))
 
@@ -171,13 +177,16 @@ extrName e                     = error $ "unexpected exp:" ++ show e
 
 lookupInfixOp :: Name -> RN (Int, A.Fixity)
 lookupInfixOp op = do
-  op_qname <- qname (origName op)
-  st <- get
-  case tabLookup op_qname (rnIfxenv st) of
-    Just (Fixity LeftAssoc  x) -> return (x, A.Infixl)
-    Just (Fixity RightAssoc x) -> return (x, A.Infixr)
-    Just (Fixity NoAssoc    x) -> return (x, A.Infix)
-    Nothing                    -> return (9, A.Infixl)
+  maybe_op_qname <- maybeQname (origName op)
+  case maybe_op_qname of
+    Nothing -> return (9, A.Infixl)
+    Just op_qname -> do
+      st <- get
+      case tabLookup op_qname (rnIfxenv st) of
+        Just (Fixity LeftAssoc  x) -> return (x, A.Infixl)
+        Just (Fixity RightAssoc x) -> return (x, A.Infixr)
+        Just (Fixity NoAssoc    x) -> return (x, A.Infix)
+        Nothing                    -> return (9, A.Infixl)
 
 findCMs   :: Id -> RN (Maybe Assump)
 findCMs qn = do

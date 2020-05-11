@@ -26,10 +26,60 @@ scanDecls :: [A.Decl] -> RN ([A.ValueDecl], [A.ClassDecl], [A.InstDecl])
 scanDecls ds = do
   r <- mapM scandecl ds
   let (dss, cdss, idss) = unzip3 r
-  return (concat dss, concat cdss, concat idss)
+      ds = concat dss
+      cds = concat cdss
+      ids = concat idss
+  ds' <- mapM scanValueDecl2 ds
+  cds' <- mapM scanClassDecl2 cds
+  ids' <- mapM scanInstDecl2 ids
+  return (ds', cds', ids')
   where
-    scandecl (A.VDecl d@(A.ValDecl e _)) = do _ <- renameVar (extrName e)
-                                              return ([d], [], [])
+    scanValueDecl2 (A.ValDecl expr rhs) = do
+      expr' <- removeInfix expr
+      renameVar (extrName expr')
+      return (A.ValDecl expr' rhs)
+
+    scanValueDecl2 e = return e
+
+    scanClassDecl2 (A.ClassDecl hdr ds) = do
+      ds' <- mapM (\(A.VDecl d) -> A.VDecl <$> scanValueDecl2 d) ds
+      return (A.ClassDecl hdr ds')
+
+    scanInstDecl2 (A.InstDecl ctx t ds) = do
+      ds' <- mapM (\(A.VDecl d) -> A.VDecl <$> scanValueDecl2 d) ds
+      return (A.InstDecl ctx t ds')
+
+    removeInfix :: A.Exp -> RN A.Exp
+    removeInfix e@(A.VarExp n) = return e
+
+    removeInfix (A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
+      e' <- resolveFixity rest op2 e2 op1 e1
+      removeInfix e'
+
+    removeInfix (A.InfixExp le op re) =
+      removeInfix (A.FunAppExp (A.FunAppExp (A.VarExp op) le) re)
+
+    removeInfix (A.FunAppExp f e) = do f' <- removeInfix f
+                                       e' <- removeInfix e
+                                       return (A.FunAppExp f' e')
+
+    removeInfix (A.ParExp e) = removeInfix e
+
+    removeInfix (A.TupleExp es) = do es' <- mapM (\me -> case me of
+                                                  Just e -> do e' <- removeInfix e
+                                                               return (Just e')
+                                                  Nothing -> return Nothing)
+                                         es
+                                     return (A.TupleExp es')
+
+    removeInfix e@(A.LitExp _) = return e
+    removeInfix A.WildcardPat = return A.WildcardPat
+
+    removeInfix e@(A.ListExp es) = removeInfix $ expandList es
+
+    removeInfix e = error $ "removeInfix :" ++ show e
+
+    scandecl (A.VDecl d@(A.ValDecl e _)) = do return ([d], [], [])
 
     scandecl (A.VDecl d@(A.TypeSigDecl _ _)) = return ([d], [], [])
 
@@ -37,8 +87,8 @@ scanDecls ds = do
       _ <- renameVar n
       mapM_ colname' ds'
       return ([], [d], [])
-      where colname' (A.VDecl (A.ValDecl e _))      =
-              renameVar (extrName e) >> return ()
+      where colname' (A.VDecl (A.ValDecl e _))      = return ()
+              -- renameVar (extrName e) >> return ()
             colname' (A.VDecl (A.TypeSigDecl ns _)) = mapM_ renameVar ns
 
     {- TODO: consider followin patterns.
@@ -330,9 +380,7 @@ renDecls decls = do tbss <- mapM renDecl decls
   where
     renDecl (A.ValDecl expr rhs) = do
       enterNewLevel
-      -- trace (show expr) $ return ()
-      expr' <- removeInfix expr
-      (n, pats) <- renFExp expr'
+      (n, pats) <- renFExp expr
       rexp      <- renRhs  rhs
       exitLevel
       return [(n, Nothing, [(pats, rexp)])]
@@ -343,36 +391,6 @@ renDecls decls = do tbss <- mapM renDecl decls
       ps <- renSigvar maybe_sigvar kdict
       t <- renSigdoc sigdoc kdict
       return [(n, Just (ps :=> t), []) | n <- ns']
-
-    removeInfix :: A.Exp -> RN A.Exp
-    removeInfix e@(A.VarExp n) = return e
-
-    removeInfix (A.InfixExp (A.InfixExp rest op2 e2) op1 e1) = do
-      e' <- resolveFixity rest op2 e2 op1 e1
-      removeInfix e'
-
-    removeInfix (A.InfixExp le op re) =
-      removeInfix (A.FunAppExp (A.FunAppExp (A.VarExp op) le) re)
-
-    removeInfix (A.FunAppExp f e) = do f' <- removeInfix f
-                                       e' <- removeInfix e
-                                       return (A.FunAppExp f' e')
-
-    removeInfix (A.ParExp e) = removeInfix e
-
-    removeInfix (A.TupleExp es) = do es' <- mapM (\me -> case me of
-                                                  Just e -> do e' <- removeInfix e
-                                                               return (Just e')
-                                                  Nothing -> return Nothing)
-                                         es
-                                     return (A.TupleExp es')
-
-    removeInfix e@(A.LitExp _) = return e
-    removeInfix A.WildcardPat = return A.WildcardPat
-
-    removeInfix e@(A.ListExp es) = removeInfix $ expandList es
-
-    removeInfix e = error $ "removeInfix :" ++ show e
 
 kiExpr :: A.Type -> [(Id, Kind)] -> [(Id, Kind)]
 
@@ -471,7 +489,7 @@ renFExp f@(A.FunAppExp _ _) = renfexp' f []
       return (qn, pat:pats)
     renfexp' _ _ = error "renfexp': unexpected"
 
-renFExp e = error $ "renFExp" ++ show e
+renFExp e = error $ "renFExp: " ++ show e
 
 expandList :: [A.Exp] -> A.Exp
 expandList = foldr (A.FunAppExp . A.FunAppExp aCons) aNil
