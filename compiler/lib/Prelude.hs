@@ -108,6 +108,12 @@ not :: Bool -> Bool
 not True  = False
 not False = True
 
+fst :: (a, b) -> a
+fst (x, y) = x
+
+snd :: (a, b) -> b
+snd (x, y) = y
+
 -- Ordering type
 data Ordering = LT | EQ | GT
 --              deriving (Eq, Ord, Enum, Read, Show, Bounded)
@@ -196,13 +202,18 @@ class (Eq a) => Num a where
   x - y    = x + nagate y
   negate x = 0 - x
 
-{-
+
 class (Enum a) => Integral a where
   quot, rem       :: a -> a -> a
   div, mod        :: a -> a -> a
   quotRem, divMod :: a -> a -> (a, a)
   toInteger       :: a -> Integer
   -- Minimal complete definition: quotRem, toInteger
+  n `quot` d = fst $ quotRem n d
+  n `rem`  d = snd $ quotRem n d
+  n `div`  d = fst $ divMod n d
+  n `mod`  d = snd $ divMod n d
+{-
   n `quot` d = q where (,) q r = quotRem n d
   n `rem`  d = r where (,) q r = quotRem n d
   n `div`  d = q where (,) q r = divMod n d
@@ -228,11 +239,15 @@ instance Num Integer where
   signum = signum'
   fromInteger = id
 
-{-
 instance Integral Integer where
   quotRem = Prim.integerQuotRem
   toInteger = id
--}
+  divMod n d = if signum r == - signum d then (q-1, r+d) else qr
+    where qr :: (Integer, Integer)
+          qr  = quotRem n d
+          q = fst qr
+          r = snd qr
+
 
 instance Ord Integer where
   (<=) = Prim.integerLe
@@ -269,11 +284,14 @@ instance Num Int where
   signum = signum''
   fromInteger = Prim.intFromInteger
 
-{-
 instance Integral Int where
   quotRem = Prim.intQuotRem
   toInteger = Prim.integerFromInt
--}
+  divMod n d = if signum r == - signum d then (q-1, r+d) else qr
+    where qr :: (Int, Int)
+          qr  = quotRem n d
+          q = fst qr
+          r = snd qr
 
 instance Ord Int where
   (<=) = Prim.intLe

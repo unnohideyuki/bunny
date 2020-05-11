@@ -102,6 +102,10 @@ public class Prim {
 	return RTLib.mkFun(new IntegerMul());
     }
 
+    public static Expr mkintegerQuotRem(){
+	return RTLib.mkFun(new IntegerQuotRem());
+    }
+
     public static Expr mkintLe(){
 	return RTLib.mkFun(new IntLe());
     }
@@ -120,6 +124,10 @@ public class Prim {
 
     public static Expr mkintMul(){
 	return RTLib.mkFun(new IntMul());
+    }
+
+    public static Expr mkintQuotRem(){
+	return RTLib.mkFun(new IntQuotRem());
     }
 
     public static Expr mkintFromInteger(){
@@ -431,6 +439,30 @@ class IntegerMul implements LambdaForm {
     }
 }
 
+class IntegerQuotRem implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedInteger();
+	assert rhs.isBoxedInteger();
+
+	BoxedIntegerObj il =
+	    (BoxedIntegerObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntegerObj ir =
+	    (BoxedIntegerObj)((Var)((AtomExpr)rhs).a).obj;
+
+	LitInteger q = new LitInteger(il.value.divide(ir.value));
+	LitInteger r = new LitInteger(il.value.remainder(ir.value));
+
+	AtomExpr[] a = {new AtomExpr(q), new AtomExpr(r)};
+	return new AtomExpr(new Var(new ConObj(new Cotr("Prelude.(,)"), a)));
+    }
+}
+
 class IntLe implements LambdaForm {
     public int arity(){ return 2; }
     public Expr call(AtomExpr[] args){
@@ -542,6 +574,30 @@ class IntMul implements LambdaForm {
 	LitInt r = new LitInt(il.value * ir.value);
 
 	return new AtomExpr(r);
+    }
+}
+
+class IntQuotRem implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr lhs = RT.eval(args[0]);
+	Expr rhs = RT.eval(args[1]);
+
+	assert lhs.isBoxedInt();
+	assert rhs.isBoxedInt();
+
+	BoxedIntObj il =
+	    (BoxedIntObj)((Var)((AtomExpr)lhs).a).obj;
+	BoxedIntObj ir =
+	    (BoxedIntObj)((Var)((AtomExpr)rhs).a).obj;
+
+	LitInt q = new LitInt(il.value / ir.value);
+	LitInt r = new LitInt(il.value % ir.value);
+
+	AtomExpr[] a = {new AtomExpr(q), new AtomExpr(r)};
+	return new AtomExpr(new Var(new ConObj(new Cotr("Prelude.(,)"), a)));
     }
 }
 

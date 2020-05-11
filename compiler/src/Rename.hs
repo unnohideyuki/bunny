@@ -29,24 +29,52 @@ scanDecls ds = do
       ds = concat dss
       cds = concat cdss
       ids = concat idss
-  ds' <- mapM scanValueDecl2 ds
+  ds' <- concat <$> mapM scanValueDecl2 ds
   cds' <- mapM scanClassDecl2 cds
   ids' <- mapM scanInstDecl2 ids
   return (ds', cds', ids')
   where
+    scanValueDecl2 (A.ValDecl (A.AsPat n expr) rhs) = do
+      ds <- trAsPat n expr rhs
+      ds' <- concat <$> mapM scanValueDecl2 ds
+      return ds'
+        where trAsPat n (A.ParExp e) rhs = trAsPat n e rhs
+              trAsPat n (A.FunAppExp (A.FunAppExp c a) b) rhs = do
+                let d1 = A.ValDecl (A.VarExp n) rhs
+                    a1 = A.VarExp (Name "_a1" (0,0) False)
+                    a2 = A.VarExp (Name "_a2" (0,0) False)
+                    cab = A.FunAppExp (A.FunAppExp c a1) a2
+                    e2 = A.CaseExp (A.VarExp n) [A.Match cab (A.UnguardedRhs a1 [])]
+                    e3 = A.CaseExp (A.VarExp n) [A.Match cab (A.UnguardedRhs a2 [])]
+                    d2 = A.ValDecl a (A.UnguardedRhs e2 [])
+                    d3 = A.ValDecl b (A.UnguardedRhs e3 [])
+                  in return [d1, d2, d3]
+              trAsPat n (A.TupleExp [Just a, Just b]) rhs = do
+                let d1 = A.ValDecl (A.VarExp n) rhs
+                    a1 = A.VarExp (Name "_a1" (0,0) False)
+                    a2 = A.VarExp (Name "_a2" (0,0) False)
+                    cab = A.TupleExp [Just a1, Just a2]
+                    e2 = A.CaseExp (A.VarExp n) [A.Match cab (A.UnguardedRhs a1 [])]
+                    e3 = A.CaseExp (A.VarExp n) [A.Match cab (A.UnguardedRhs a2 [])]
+                    d2 = A.ValDecl a (A.UnguardedRhs e2 [])
+                    d3 = A.ValDecl b (A.UnguardedRhs e3 [])
+                  in return [d1, d2, d3]
+
     scanValueDecl2 (A.ValDecl expr rhs) = do
       expr' <- removeInfix expr
       renameVar (extrName expr')
-      return (A.ValDecl expr' rhs)
+      return [A.ValDecl expr' rhs]
 
-    scanValueDecl2 e = return e
+    scanValueDecl2 e = return [e]
 
     scanClassDecl2 (A.ClassDecl hdr ds) = do
-      ds' <- mapM (\(A.VDecl d) -> A.VDecl <$> scanValueDecl2 d) ds
+      dss' <- mapM (\(A.VDecl d) -> scanValueDecl2 d) ds
+      let ds' = map A.VDecl $ concat dss'
       return (A.ClassDecl hdr ds')
 
     scanInstDecl2 (A.InstDecl ctx t ds) = do
-      ds' <- mapM (\(A.VDecl d) -> A.VDecl <$> scanValueDecl2 d) ds
+      dss' <- mapM (\(A.VDecl d) -> scanValueDecl2 d) ds
+      let ds' = map A.VDecl $ concat dss'
       return (A.InstDecl ctx t ds')
 
     removeInfix :: A.Exp -> RN A.Exp
