@@ -6,7 +6,7 @@ import           PreDefined                 (ConstructorInfo, initialConsts)
 import           Symbol
 import           Types
 import           Typing                     (Assump (..), Pred (..), Qual (..),
-                                             Scheme (..), find, inst)
+                                             Scheme (..), find, inst, tv)
 import qualified Typing                     as Ty (Expr (..), Literal (..),
                                                    Pat (..))
 
@@ -120,8 +120,9 @@ transVdef (n, Pat.Lambda ns expr) = do
       vs = zipWith f ns ts
       qf = case qt of
         (qf' :=> _) -> qf'
-      f n' t' = TermVar n' (qf :=> t')
-      as' = [n' :>: Forall [] (qf :=> t') | (n', t') <- zip ns ts]
+      f n' t' = let qf' = filter (\pr -> head (tv pr) `elem` tv t') qf
+                in TermVar n' (qf' :=> t')
+      as' = [n' :>: Forall [] (qf' :=> t') | TermVar n' (qf' :=> t') <- vs]
   appendAs as'
   expr' <- transExpr expr
   appendBind (n, lam' vs expr')
