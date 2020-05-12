@@ -20,28 +20,36 @@ import           Debug.Trace
 normQTy :: Qual Type -> Qual Type
 normQTy (qs :=> t) = let
   tvs = tv t
-  qs' = filter (\(IsIn _ (TVar x)) -> elem x tvs) (nub qs)
+  -- qs' = filter (\(IsIn _ (TVar x)) -> elem x tvs) (nub qs)
+  qs' = filter (\pr -> head (tv pr) `elem` tvs) (nub qs)
   in
    qs' :=> t
 
-tcBind :: Bind -> ClassEnv -> Maybe TcState -> Bind
-tcBind (Rec bs) ce maybest = Rec $ map tcbind bs
+tcBind :: Bind -> ClassEnv -> Maybe TcState -> (Bind, TcState)
+tcBind (Rec bs) ce maybest = tbloop st0 bs []
   where
-    tcbind (v@(TermVar n qt@(qs :=> _)), e)
-      | isOVExpr e = (v, e)
+    tbloop :: TcState -> [(Var, Expr)] -> [(Var, Expr)] -> (Bind, TcState)
+    tbloop st []     res = (Rec res, st)
+    tbloop st (b:bs) res = let (ve, st') = tcbind b st
+                           in tbloop st' bs (ve:res)
+
+    st0 = case maybest of
+            Just st' -> st'
+            Nothing  -> mkTcState ce [] nullSubst 0
+
+    tcbind :: (Var, Expr) -> TcState -> ((Var, Expr), TcState)
+    tcbind (v@(TermVar n qt@(qs :=> _)), e) st
+      | isOVExpr e = ((v, e), st)
       | otherwise =
         let pss = (zip qs (repeat n))
-            st = case maybest of
-              Just st' -> let pss' = tcPss st'
-                              subst = tcSubst st'
-                              num = tcNum st'
-                          in mkTcState ce (pss ++ pss') subst num
-              Nothing -> mkTcState ce pss nullSubst 0
-            (e', _) = runState (tcExpr e qt) st
+            pss' = tcPss st
+            st' = st{tcPss=(pss++pss')}
+            (e', st'') = runState (tcExpr e qt) st'
+            num = tcNum st''
         in
-         if null qs then (v, e')
-         else (v, Lam (mkVs n qs) e')
-    tcbind _ = error "tcbind: must not occur."
+         if null qs then ((v, e'), st{tcNum=num})
+         else ((v, Lam (mkVs n qs) e'), st{tcNum=num})
+    tcbind _ _ = error "tcbind: must not occur."
 
 isOVExpr :: Expr -> Bool -- whether (#overloaded# a b) form or not
 isOVExpr (App (App (Var (TermVar "#overloaded#" _)) _) _) = True
@@ -241,7 +249,7 @@ findApplyDict e (qv :=> t') (_ :=> t) = do
   return (foldr (flip App) e dicts)
 
 tcExpr :: Expr -> Qual Type -> TC Expr
-tcExpr e@(Var (TermVar n (qv :=> t'))) qt -- why ignore qs?
+tcExpr e@(Var (TermVar n (qv :=> t'))) qt
   | null qv || isArg n {- todo:too suspicious! -} = return e
   | otherwise = findApplyDict e (qv :=> t') qt
   where isArg ('_':_) = True
@@ -264,13 +272,14 @@ tcExpr e@(Lam vs ebody) (qs :=> t) = do
   unify' t' t
   qt <- getTy ebody
   s <- getSubst
-  ebody' <- tcExpr ebody (apply s qt)
+  ebody' <- tcExpr ebody (normQTy (apply s qt))
   return $ Lam vs ebody'
 
 tcExpr (Let bs e) qt = do
   st <- get
-  let bs' = tcBind bs (tcCe st) (Just st)
-  e' <- tcExpr e qt
+  let (bs', st') = tcBind bs (tcCe st) (Just st)
+  put st'
+  e' <- tcExpr e (normQTy qt)
   return $ Let bs' e'
 
 tcExpr e@(Case scrut v as) (ps :=> t) = do
