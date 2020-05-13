@@ -257,12 +257,7 @@ instance Eq Integer where
 
 instance Show Integer where
   show = Prim.integerShow
-  showList xs = (++) (showlist' xs)
-    where showlist' [] = "[]"
-          showlist' [x] =  "[" ++ show x ++ "]"
-          showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ show t) (show x) xs ++ "]"
-          showlist' :: [Integer] -> [Char]
-  
+
 instance Enum Integer where
   succ = (+1)
   pred = (+ (-1))
@@ -301,11 +296,6 @@ instance Eq Int where
 
 instance Show Int where
   show = Prim.intShow
-  showList xs = (++) (showlist' xs)
-    where showlist' [] = "[]"
-          showlist' [x] =  "[" ++ show x ++ "]"
-          showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ show t) (show x) xs ++ "]"
-          showlist' :: [Int] -> [Char]
 
 instance Enum Int where
   succ = (+1)
