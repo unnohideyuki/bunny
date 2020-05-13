@@ -88,8 +88,8 @@ appendAs as' = do
 
 appendBind :: (Id, Expr) -> TRC ()
 appendBind (n, e) = do
-  st <- get
   t <- typeLookup n
+  st <- get -- this must be after the typeLookup above.
   let Rec bs = trcBind st
       bs' = bs ++ [(TermVar n t, e)]
   put st{trcBind = Rec bs'}
