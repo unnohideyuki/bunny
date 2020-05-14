@@ -199,7 +199,7 @@ overloadedCfun = "#overloaded#" :>:
   Forall [Star, Star] ([] :=> (TGen 0 `fn` tString `fn` TGen 1))
 
 primConsMems :: [Assump]
-primConsMems  = [ unitCfun, nilCfun, consCfun
+primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun
                 , leMfun, gtMfun
                 , primRetCfun, primBindCfun, primFailCfun
                 , primCharLeCfun, primCharEqCfun
