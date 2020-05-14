@@ -209,18 +209,12 @@ class (Enum a) => Integral a where
   quotRem, divMod :: a -> a -> (a, a)
   toInteger       :: a -> Integer
   -- Minimal complete definition: quotRem, toInteger
-  n `quot` d = fst $ quotRem n d
-  n `rem`  d = snd $ quotRem n d
-  n `div`  d = fst $ divMod n d
-  n `mod`  d = snd $ divMod n d
-{-
-  n `quot` d = q where (,) q r = quotRem n d
-  n `rem`  d = r where (,) q r = quotRem n d
-  n `div`  d = q where (,) q r = divMod n d
-  n `mod`  d = r where (,) q r = divMod n d
-  divMod n d = if sinum r == - signum d then (q-1, r+d) else (q, r)
-    where (,) q r = quotRem n d
--}
+  n `quot` d = q where p@(q,r) = quotRem n d
+  n `rem`  d = r where p@(q,r) = quotRem n d
+  n `div`  d = q where p@(q,r) = divMod n d
+  n `mod`  d = r where p@(q,r) = divMod n d
+  divMod n d = if signum r == - signum d then (q-1, r+d) else p
+    where p@(q,r) = quotRem n d
 
 signum' :: Integer -> Integer
 signum' x | x > 0  = 1
@@ -242,12 +236,6 @@ instance Num Integer where
 instance Integral Integer where
   quotRem = Prim.integerQuotRem
   toInteger = id
-  divMod n d = if signum r == - signum d then (q-1, r+d) else qr
-    where qr :: (Integer, Integer)
-          qr  = quotRem n d
-          q = fst qr
-          r = snd qr
-
 
 instance Ord Integer where
   (<=) = Prim.integerLe
@@ -282,11 +270,6 @@ instance Num Int where
 instance Integral Int where
   quotRem = Prim.intQuotRem
   toInteger = Prim.integerFromInt
-  divMod n d = if signum r == - signum d then (q-1, r+d) else qr
-    where qr :: (Int, Int)
-          qr  = quotRem n d
-          q = fst qr
-          r = snd qr
 
 instance Ord Int where
   (<=) = Prim.intLe
