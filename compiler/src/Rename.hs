@@ -49,13 +49,14 @@ scanDecls ds = do
                     d2 = A.ValDecl a (A.UnguardedRhs e2 [])
                     d3 = A.ValDecl b (A.UnguardedRhs e3 [])
                   in return [d1, d2, d3]
-              trAsPat n (A.TupleExp [Just a, Just b]) rhs = do
+              trAsPat n (A.TupleExp [Just a, Just b]) rhs@(A.UnguardedRhs rexp []) = do
                 let d1 = A.ValDecl (A.VarExp n) rhs
                     a1 = A.VarExp (Name "_a1" (0,0) False)
                     a2 = A.VarExp (Name "_a2" (0,0) False)
                     cab = A.TupleExp [Just a1, Just a2]
-                    e2 = A.CaseExp (A.VarExp n) [A.Match cab (A.UnguardedRhs a1 [])]
-                    e3 = A.CaseExp (A.VarExp n) [A.Match cab (A.UnguardedRhs a2 [])]
+                    -- work around (068, 2020-05-14)
+                    e2 = A.CaseExp rexp [A.Match cab (A.UnguardedRhs a1 [])]
+                    e3 = A.CaseExp rexp [A.Match cab (A.UnguardedRhs a2 [])]
                     d2 = A.ValDecl a (A.UnguardedRhs e2 [])
                     d3 = A.ValDecl b (A.UnguardedRhs e3 [])
                   in return [d1, d2, d3]
