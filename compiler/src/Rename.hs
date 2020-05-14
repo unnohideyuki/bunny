@@ -19,7 +19,7 @@ import           Control.Exception          (assert)
 import           Control.Monad              (mapM, when)
 import           Control.Monad.State.Strict (get, put)
 import           Data.List                  (concatMap, foldl', notElem, sort)
-import           Data.Maybe                 (fromMaybe)
+import           Data.Maybe                 (fromJust, fromMaybe)
 import           Debug.Trace
 
 scanDecls :: [A.Decl] -> RN ([A.ValueDecl], [A.ClassDecl], [A.InstDecl])
@@ -40,32 +40,51 @@ scanDecls ds = do
       return ds'
         where trAsPat n (A.ParExp e) rhs = trAsPat n e rhs
               trAsPat n (A.FunAppExp (A.FunAppExp c a) b) rhs@(A.UnguardedRhs rexp []) = do
-                let d1 = A.ValDecl (A.VarExp n) rhs
+                let d1 = if origName n /= "_"
+                         then [A.ValDecl (A.VarExp n) rhs]
+                         else []
                     a1 = A.VarExp (Name "_a1" (0,0) False)
                     a2 = A.VarExp (Name "_a2" (0,0) False)
                     cab = A.FunAppExp (A.FunAppExp c a1) a2
                     -- work around (068, 2020-05-14)
                     e2 = A.CaseExp rexp [A.Match cab (A.UnguardedRhs a1 [])]
                     e3 = A.CaseExp rexp [A.Match cab (A.UnguardedRhs a2 [])]
-                    d2 = A.ValDecl a (A.UnguardedRhs e2 [])
-                    d3 = A.ValDecl b (A.UnguardedRhs e3 [])
-                  in return [d1, d2, d3]
-              trAsPat n (A.TupleExp [Just a, Just b]) rhs@(A.UnguardedRhs rexp []) = do
-                let d1 = A.ValDecl (A.VarExp n) rhs
-                    a1 = A.VarExp (Name "_a1" (0,0) False)
-                    a2 = A.VarExp (Name "_a2" (0,0) False)
-                    cab = A.TupleExp [Just a1, Just a2]
-                    -- work around (068, 2020-05-14)
-                    e2 = A.CaseExp rexp [A.Match cab (A.UnguardedRhs a1 [])]
-                    e3 = A.CaseExp rexp [A.Match cab (A.UnguardedRhs a2 [])]
-                    d2 = A.ValDecl a (A.UnguardedRhs e2 [])
-                    d3 = A.ValDecl b (A.UnguardedRhs e3 [])
-                  in return [d1, d2, d3]
+                    d2 = case a of
+                      A.WildcardPat -> []
+                      _             -> [A.ValDecl a (A.UnguardedRhs e2 [])]
+                    d3 = case b of
+                      A.WildcardPat -> []
+                      _             -> [A.ValDecl b (A.UnguardedRhs e3 [])]
+                  in return $ concat [d1, d2, d3]
+              trAsPat n (A.TupleExp xs) rhs = do
+                let xs' = map fromJust xs
+                    cn = "(" ++ replicate (length xs - 1) ',' ++ ")"
+                    c = (A.VarExp (Name cn (0,0) True))
+                    e = foldl' A.FunAppExp c xs'
+                  in trAsPat n e rhs
+              trAsPat n (A.ListExp xs) rhs = do
+                let cons = (A.VarExp (Name ":" (0,0) True))
+                    nil = (A.VarExp (Name "[]" (0,0) True))
+                    f a b = A.FunAppExp (A.FunAppExp cons a) b
+                    e = foldr f nil xs
+                  in trAsPat n e rhs
+              trAsPat n e@(A.InfixExp _ _ _) rhs = do
+                e' <- removeInfix e
+                trAsPat n e' rhs
+              trAsPat n e rhs =
+                error $ "trAsPat: " ++ show n ++ " " ++ show e
 
     scanValueDecl2 (A.ValDecl expr rhs) = do
       expr' <- removeInfix expr
-      renameVar (extrName expr')
-      return [A.ValDecl expr' rhs]
+      if isConPat expr'
+        then scanValueDecl2 (A.ValDecl (A.AsPat (Name "_" (0,0) False) expr') rhs)
+        else do renameVar (extrName expr')
+                return [A.ValDecl expr' rhs]
+      where isConPat (A.ListExp _)                = True
+            isConPat (A.TupleExp _)               = True
+            isConPat (A.FunAppExp (A.VarExp n) _) = isConName n
+            isConPat (A.FunAppExp f _)            = isConPat f
+            isConPat _                            = False
 
     scanValueDecl2 e = return [e]
 
