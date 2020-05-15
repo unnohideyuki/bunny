@@ -247,14 +247,13 @@ dsgAlts n alts@((pats,_):_) ci =
   let
     k = length pats
     us = [Pat.mkVar n i| i <- [1..k]]
+    alts' = map (\(pats, e) -> (map wild2Var pats, e)) alts
 
-    alts' = rmWild alts [] -- for temporary fix (#t002), see the note p.212
-    rmWild [] as         = reverse as
-    rmWild (([Ty.PWildcard], e'):als') as =
-      rmWild als' (([Ty.PVar "_"], e'):as)
-    rmWild (([Ty.PWildcard,Ty.PWildcard], e'):als') as =
-      rmWild als' (([Ty.PVar "_", Ty.PVar "_"], e'):as)
-    rmWild (alt:als') as = rmWild als' (alt:as)
+    wild2Var :: Ty.Pat -> Ty.Pat
+    wild2Var Ty.PWildcard      = Ty.PVar "_"
+    wild2Var (Ty.PCon as pats) = Ty.PCon as (map wild2Var pats)
+    wild2Var pat               = pat
+
     e = Pat.reduceMatch ci n k us alts' Pat.Error
   in
    Pat.Lambda us e

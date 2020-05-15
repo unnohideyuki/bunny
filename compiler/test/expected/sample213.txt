@@ -1,0 +1,4 @@
+PWildcard * 1
+0, PWildcard
+PWildcard, 1
+PWildcard * 2
