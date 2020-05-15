@@ -309,11 +309,6 @@ instance Num Double where
 
 instance Show Double where
   show = Prim.doubleShow
-  showList xs = (++) (showlist' xs)
-    where showlist' [] = "[]"
-          showlist' [x] =  "[" ++ show x ++ "]"
-          showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ show t) (show x) xs ++ "]"
-          showlist' :: [Double] -> [Char]
 
 instance Eq Float where
   (==) = Prim.floatEq
@@ -330,11 +325,6 @@ instance Num Float where
 
 instance Show Float where
   show = Prim.floatShow
-  showList xs = (++) (showlist' xs)
-    where showlist' [] = "[]"
-          showlist' [x] =  "[" ++ show x ++ "]"
-          showlist' (x:xs) = "[" ++ foldl (\s t -> s ++ "," ++ show t) (show x) xs ++ "]"
-          showlist' :: [Float] -> [Char]
 
 print x = putStrLn (show x)
 

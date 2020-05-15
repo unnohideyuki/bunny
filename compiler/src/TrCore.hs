@@ -143,10 +143,9 @@ transVdefs (vd:vds) = do
 
 transExpr :: Pat.Expression -> TRC Expr
 
-transExpr (Pat.Fatbar e Pat.Error) = transExpr e
 transExpr (Pat.OtherExpression e) = trExpr2 e
+-- transExpr e@(Pat.Case n cs) = transExpr (Pat.Fatbar e Pat.Error)
 
--- TODO: I should have naming rules about cs, cs', n, i etc.
 transExpr (Pat.Case n cs) = do
   vt <- typeLookup n
   let scrut = Var (TermVar n vt)
@@ -154,7 +153,10 @@ transExpr (Pat.Case n cs) = do
   alts <- trClauses cs []
   return $ Case scrut case_bndr alts
   where
-    trClauses [] alts = return alts
+    trClauses [] alts = do
+      -- defAlt <- mkDefAlt
+      -- return (defAlt:alts)
+      return alts
     trClauses (Pat.Clause (i :>: scm) ns expr : cs') alts = do
       qt <- freshInst' scm
       let
@@ -171,27 +173,14 @@ transExpr (Pat.Case n cs) = do
       -- TODO: qt is the type of the constructor. Should it be the type of lhs?
       let alt = (DataAlt (DataCon i vs qt), [], expr')
       trClauses cs' (alt:alts)
-
-    {- for temporary fix (#t001) -}
-    trClauses (Pat.DefaultClause i expr : cs') alts = do
-      expr' <- transExpr expr
+    {-
+    mkDefAlt = do
       a <- newTVar' Star
-      let v = TermVar i ([] :=> a)
-          alt = (DEFAULT, [v], expr')
-      trClauses cs' (alt:alts)
+      e' <- transExpr e
+      return (DEFAULT, [TermVar n ([] :=> a)], e')
+    -}
 
-{- TODO: fix this.
-   This is a temprary fix (#t001) to support default alts.
-   See the note page 212.
--}
-transExpr (Pat.Fatbar e (Pat.Case n cs)) = transExpr $ Pat.Case n cs'
-  where cs' = addDefAlt cs []
-        defcls = Pat.DefaultClause n e
-        addDefAlt [] ncs = reverse (defcls:ncs)
-        addDefAlt (cl@(Pat.Clause _ _ expr):cls) ncs = case expr of
-          Pat.Error -> addDefAlt cls ncs
-          _         -> addDefAlt cls (cl:ncs)
-        addDefAlt _ _ = error "addDefAlt: not expected to reach here."
+transExpr (Pat.Fatbar e@(Pat.OtherExpression _) _) = transExpr e
 
 transExpr Pat.Error = do a <- newTVar' Star
                          return $ Var (TermVar "Prim.neErr" ([] :=> a))
@@ -263,6 +252,8 @@ dsgAlts n alts@((pats,_):_) ci =
     rmWild [] as         = reverse as
     rmWild (([Ty.PWildcard], e'):als') as =
       rmWild als' (([Ty.PVar "_"], e'):as)
+    rmWild (([Ty.PWildcard,Ty.PWildcard], e'):als') as =
+      rmWild als' (([Ty.PVar "_", Ty.PVar "_"], e'):as)
     rmWild (alt:als') as = rmWild als' (alt:as)
     e = Pat.reduceMatch ci n k us alts' Pat.Error
   in

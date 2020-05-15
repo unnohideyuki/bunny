@@ -37,8 +37,7 @@ subst expr vnew vold =
 type Equation = ([Pat], Expression)
 
 isVar :: Equation -> Bool
-isVar (PVar _:_, _) = True
-isVar _             = False
+isVar = not . isCon
 
 isCon :: Equation -> Bool
 isCon (PCon _ _:_, _) = True
@@ -46,7 +45,7 @@ isCon _               = False
 
 getCon :: Equation -> Assump
 getCon (PCon a _:_, _) = a
-getCon _               = error "getCon: must not occur"
+getCon x               = error $ "getCon: must not occur: " ++ show x
 
 -- Note: Starting with "_" guarantees that will be treated as a local variable
 mkVar :: String -> Int -> Variable

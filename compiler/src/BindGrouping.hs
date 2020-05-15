@@ -127,7 +127,7 @@ bindMap tbs' rh = bmap tbs' rh Map.empty
         i = fromMaybe (error $ "Must not happen. Vertex Id not found: " ++ name)
               (Map.lookup name h)
         tb' = case Map.lookup i d of
-          Just (_, _, alts') -> (name, Nothing, alts++alts')
+          Just (_, _, alts') -> (name, Nothing, alts'++alts)
           Nothing            -> tb
 
         d' = Map.insert i tb' d
