@@ -1,4 +1,6 @@
-rm results/*.txt
+trap 'jobs -p | xargs kill' SIGINT
+
+rm -f results/*.txt
 
 ./sub-run-para.sh 4 0 &
 ./sub-run-para.sh 4 1 &
