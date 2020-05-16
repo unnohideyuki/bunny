@@ -24,7 +24,7 @@ renProg m = do
   let bgs' = toBg ctbs
       as2 = map (\(n, scm, _) -> n :>: scm) $ fst $ head bgs'
   let dicts = map (trCdecl modid) cds
-  putCDicts dicts
+  appendCDicts dicts
   (itbs, ctab) <- renInstDecls ids
   tbs <- renDecls ds
   -- NOTE#1: followings are not clear! see the note page 233.

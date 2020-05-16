@@ -84,10 +84,11 @@ getCDicts = do
   st <- get
   return $ rnCdicts st
 
-putCDicts :: [DictDef] -> RN()
-putCDicts dicts= do
+appendCDicts :: [DictDef] -> RN()
+appendCDicts dicts= do
   st <- get
-  put st{rnCdicts = [(ddId d, d) | d <-dicts]}
+  let cdicts0 = rnCdicts st
+  put st{rnCdicts = cdicts0 ++ [(ddId d, d) | d <-dicts]}
 
 lookupCDicts :: Id -> RN DictDef
 lookupCDicts n = do
