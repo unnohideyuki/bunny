@@ -11,7 +11,7 @@ objs = src/Lexer.o src/Parser.o src/PreDefined.o \
        src/PPTypes.o src/PPCore.o
 all: $(execs)
 
-OPTIONS = -Wall -XHaskell2010
+OPTIONS = -Wall -XHaskell2010 -XNoMonadFailDesugaring
 
 SHELL = /bin/bash
 
