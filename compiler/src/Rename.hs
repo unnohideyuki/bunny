@@ -245,6 +245,8 @@ renClassDecls dcls = do
   where
     extr_sc Nothing                                  = []
     extr_sc (Just (A.ParTy (A.AppTy (A.Tycon i) _))) = [origName i]
+    extr_sc (Just (A.TupleTy ts))                    =
+      map (\(A.AppTy (A.Tycon i) _) -> origName i) ts
     extr_sc (Just t) = error $ "extr_sc: " ++ show t
 
     clsadd (maybe_sc, A.AppTy (A.Tycon n) _) = do

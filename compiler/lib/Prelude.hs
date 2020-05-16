@@ -192,7 +192,7 @@ instance Show Char where
 -- todo: should convert to printable characters
 showLitChar c = (++) [c]
 
-class (Eq a) => Num a where
+class (Eq a, Show a) => Num a where
   (+), (-), (*) :: a -> a -> a
   negate        :: a -> a
   signum        :: a -> a
