@@ -36,6 +36,9 @@ clean:
 rt:	
 	cd ../brt; make
 
-check:	$(execs) rt
+check-single:	$(execs) rt
 	cd test; ./run-test.sh
+
+check:	$(execs) rt
+	cd test; ./para-run-test.sh
 
