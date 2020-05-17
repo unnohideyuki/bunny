@@ -3,8 +3,8 @@
 s=$1
 bname=`basename $s .hs`
 
-echo "# 1. test-compile"
-./test-compile.sh $s
+echo "# 1. tcompile"
+./tcompile.sh $s
 if [ $? -ne 0 ];then
   exit 1
 fi

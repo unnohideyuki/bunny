@@ -1,5 +1,5 @@
 #!/bin/bash 
-# usage (eg.) : compile0 sample0
+# usage (eg.) : tcompile.sh  sample0 [options]
 
 source_file=$1
 shift
