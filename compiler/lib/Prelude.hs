@@ -1,7 +1,59 @@
 module Prelude where
 
-infixr 5 :
+infixr 9 .
+infixl 7 *, /, `quot`, `rem`, `div`, `mod`
+infixl 6 +, -
 
+infixr 5 :
+infix  4 ==, /=, <, <=, >=, >
+infixr 3 &&
+infixl 1 >>, >>=
+infixr 0 $
+
+-- Standard types, classes, instances and related functions
+
+-- Equality and Ordered classes
+  
+class Eq a where
+  (==), (/=) :: a -> a -> Bool
+  -- Minimal Complete Definition:
+  -- (==) or (/=)
+  x /= y = not (x == y)
+  x == y = not (x /= y)
+
+class (Eq a) => Ord a where
+  compare              :: a -> a -> Ordering
+  (<), (<=), (>=), (>) :: a -> a -> Bool
+  max, min             :: a -> a -> a
+  -- Minimal complete definition:
+  --   (<=) or compare
+  compare x y
+    | x == y    = EQ
+    | x <= y    = LT
+    | otherwise = GT
+  x <= y = compare x y /= GT
+  x <  y = compare x y == LT
+  x >= y = compare x y /= LT
+  x >  y = compare x y == GT
+  max x y
+    | x <= y    = y
+    | otherwise = x
+  min x y
+    | x <= y    = x
+    | otherwise = y
+
+-- Enumeration and Bounded classes
+
+class Enum a where
+  succ, pred     :: a -> a
+  toEnum         :: Int -> a
+  fromEnum       :: a -> Int
+  enumFrom       :: a -> [a]           -- [n..]
+  enumFromThen   :: a -> a -> [a]      -- [n,n',..]
+  enumFromTo     :: a -> a -> [a]      -- [n..m]
+  enumFromThenTo :: a -> a -> a -> [a] -- [n,n'..m]
+
+-- todo: Show cannot be declare after Num
 class Show a where
   show      :: a -> [Char]
   showsPrec :: Int -> a -> ([Char] -> [Char])
@@ -14,107 +66,112 @@ class Show a where
   showList (x:xs) = (:) '[' . showsPrec 0 x . showl xs
     where showl []     = (:) ']'
           showl (x:xs) = (:) ',' . showsPrec 0 x . showl xs
-  
-data Bool = False | True
 
-instance Show Bool where
-  show = Prim.showConName
+-- Numeric classes
 
-instance (Show a) => Show [a] where
-  showsPrec p = showList
+class (Eq a, Show a) => Num a where
+  (+), (-), (*) :: a -> a -> a
+  negate        :: a -> a
+  signum        :: a -> a
+  fromInteger   :: Integer -> a
+  -- Minimal complete definition:
+  --  All, except negate or (-)
+  x - y    = x + nagate y
+  negate x = 0 - x
 
-instance (Show a, Show b) => Show (a, b) where
-  show (a, b) = "(" ++ show a ++ "," ++ show b ++ ")"
+class (Enum a) => Integral a where
+  quot, rem       :: a -> a -> a
+  div, mod        :: a -> a -> a
+  quotRem, divMod :: a -> a -> (a, a)
+  toInteger       :: a -> Integer
+  -- Minimal complete definition: quotRem, toInteger
+  n `quot` d = q where (q,r) = quotRem n d
+  n `rem`  d = r where (q,r) = quotRem n d
+  n `div`  d = q where (q,r) = divMod n d
+  n `mod`  d = r where (q,r) = divMod n d
+  divMod n d = if signum r == - signum d then (q-1, r+d) else qr
+    where qr@(q,r) = quotRem n d
 
-class Enum a where
-  succ, pred     :: a -> a
-  toEnum         :: Int -> a
-  fromEnum       :: a -> Int
-  enumFrom       :: a -> [a]           -- [n..]
-  enumFromThen   :: a -> a -> [a]      -- [n,n',..]
-  enumFromTo     :: a -> a -> [a]      -- [n..m]
-  enumFromThenTo :: a -> a -> a -> [a] -- [n,n'..m]
+-- Numeric functions
 
-infixl 7 *, /, `quot`, `rem`, `div`, `mod`
-infixl 6 +, -
-
-infixl 1 >>, >>=
+-- Monadic classes
 
 class Monad m where
-  return :: a -> m a
   (>>=)  :: m a -> (a -> m b) -> m b
   (>>)   :: m a -> m b -> m b
-  fail   :: String -> m a
-
+  return :: a -> m a
+  fail   :: [Char] -> m a
   -- Minimal complete definition: (>>=), return
-  p >> q = p >>= \_ -> q
+  m >> k = m >>= \_ -> k
   fail s = error s
+
+-- Function type
+
+-- identity function
+id   :: a -> a
+id x = x
+
+-- constant function
+
+-- function composition
+(.) :: (b -> c) -> (a -> b) -> (a -> c)
+f . g = \x -> f (g x)
+
+-- flip f takes its (first) two arguments in the reverse order of f.
+
+-- right-associating infix application operators
+-- (useful in continuation-passing style)
+($) :: (a -> b) -> a -> b
+f $ x = f x
+
+-- Boolean type
+
+data Bool = False | True
+
+-- Boolean functions
+
+(&&) :: Bool -> Bool -> Bool
+True  && x = x
+False && x = False
+
+not :: Bool -> Bool
+not True  = False
+not False = True
+
+otherwise :: Bool
+otherwise =  True
+
+-- Character type
+
+instance Eq Char where
+  (==) = Prim.charEq
+
+instance Ord Char where
+  (<=) = Prim.charLe
+
+instance Show Char where
+  -- todo: escape
+  show c = ['\'', c, '\'']
+  showList cs = (:) '"' . showl cs
+    where showl "" = (:) '"'
+          -- showl ('"':cs) = (++) "\\\"" . showl cs
+          showl (c:cs) = showLitChar c . showl cs
+
+-- todo: should convert to printable characters
+showLitChar c = (++) [c]
+
+-- Maybe type
+-- Either type
+
+-- IO type
 
 instance Monad IO where
   return = Prim.retIO
   (>>=)  = Prim.bindIO
   fail s = Prim.failIO s
 
--- identity function
-id   :: a -> a
-id x = x
-
-infixr 0 $
-($) :: (a -> b) -> a -> b
-f $ x = f x
-
-infixr 9 .
-(.) :: (b -> c) -> (a -> b) -> (a -> c)
-(.) f g = \x -> f (g x)
-
-infixr 5 ++
-(++) :: [a] -> [a] -> [a]
-(++) []     ys = ys
-(++) (x:xs) ys = x : xs ++ ys
-
-concatMap  :: (a -> [b]) -> [a] -> [b]
-concatMap f = foldr ((++) . f) []
-
-head             :: [a] -> a
-head (x:xs)      =  x -- todo: wild card
-head []          =  error "Prelude.head: empty list"
-
-tail             :: [a] -> [a]
-tail (x:xs)      =  xs -- todo wild card
-tail []          =  error "Prelude.tail: empty list"
-
-take :: Int -> [a] -> [a]
-take n []     = []
-take n (x:xs) | n <= 0 = []
-              | otherwise = x : take (n-1) xs
-
-foldl            :: (a -> b -> a) -> a -> [b] -> a
-foldl f z []     =  z
-foldl f z (x:xs) =  foldl f (f z x) xs
-
-foldr :: (a -> b -> b) -> b -> [a] -> b
-foldr k z = go
-            where go []     = z
-                  go (y:ys) = y `k` go ys
-
-infix 4 ==, /=, <, <=, >=, >
-infixr 3 &&
-
-(&&) :: Bool -> Bool -> Bool
-True  && x = x
-False && x = False
-  
-not :: Bool -> Bool
-not True  = False
-not False = True
-
-fst :: (a, b) -> a
-fst (x, y) = x
-
-snd :: (a, b) -> b
-snd (x, y) = y
-
 -- Ordering type
+
 data Ordering = LT | EQ | GT
 --              deriving (Eq, Ord, Enum, Read, Show, Bounded)
 
@@ -145,120 +202,22 @@ instance Ord Ordering where
     (GT, EQ) -> False
     (GT, GT) -> True
 
--- Equality and Ordered classes
+instance Show Bool where
+  show = Prim.showConName
 
-class Eq a where
-  (==), (/=) :: a -> a -> Bool
-  -- Minimal Complete Definition:
-  -- (==) or (/=)
-  x /= y = not (x == y)
-  x == y = not (x /= y)
+instance (Show a) => Show [a] where
+  showsPrec p = showList
 
-class (Eq a) => Ord a where
-  compare              :: a -> a -> Ordering
-  (<), (<=), (>=), (>) :: a -> a -> Bool
-  max, min             :: a -> a -> a
-  -- Minimal complete definition:
-  --   (<=) or compare
-  compare x y
-    | x == y    = EQ
-    | x <= y    = LT
-    | otherwise = GT
-  x <= y = compare x y /= GT
-  x <  y = compare x y == LT
-  x >= y = compare x y /= LT
-  x >  y = compare x y == GT
-  max x y
-    | x <= y    = y
-    | otherwise = x
-  min x y
-    | x <= y    = x
-    | otherwise = y
+instance (Show a, Show b) => Show (a, b) where
+  show (a, b) = "(" ++ show a ++ "," ++ show b ++ ")"
 
-instance Ord Char where
-  (<=) = Prim.charLe
+-- Standard numeric types.
 
-instance Eq Char where
-  (==) = Prim.charEq
+instance Eq Int where
+  (==) = Prim.intEq
 
-instance Show Char where
-  -- todo: escape
-  show c = ['\'', c, '\'']
-  showList cs = (:) '"' . showl cs
-    where showl "" = (:) '"'
-          -- showl ('"':cs) = (++) "\\\"" . showl cs
-          showl (c:cs) = showLitChar c . showl cs
-
--- todo: should convert to printable characters
-showLitChar c = (++) [c]
-
-class (Eq a, Show a) => Num a where
-  (+), (-), (*) :: a -> a -> a
-  negate        :: a -> a
-  signum        :: a -> a
-  fromInteger   :: Integer -> a
-  -- Minimal complete definition:
-  --  All, except negate or (-)
-  x - y    = x + nagate y
-  negate x = 0 - x
-
-
-class (Enum a) => Integral a where
-  quot, rem       :: a -> a -> a
-  div, mod        :: a -> a -> a
-  quotRem, divMod :: a -> a -> (a, a)
-  toInteger       :: a -> Integer
-  -- Minimal complete definition: quotRem, toInteger
-  n `quot` d = q where (q,r) = quotRem n d
-  n `rem`  d = r where (q,r) = quotRem n d
-  n `div`  d = q where (q,r) = divMod n d
-  n `mod`  d = r where (q,r) = divMod n d
-  divMod n d = if signum r == - signum d then (q-1, r+d) else qr
-    where qr@(q,r) = quotRem n d
-
-signum' :: Integer -> Integer
-signum' x | x > 0  = 1
-          | x == 0 = 0
-          | x < 0  = -1
-
-signum'' :: Int -> Int
-signum'' x | x > 0  = 1
-           | x == 0 = 0
-           | x < 0  = -1
-
-instance Num Integer where
-  (+)  = Prim.integerAdd
-  (-)  = Prim.integerSub
-  (*)  = Prim.integerMul
-  signum = signum'
-  fromInteger = id
-
-instance Integral Integer where
-  quotRem = Prim.integerQuotRem
-  toInteger = id
-
-instance Ord Integer where
-  (<=) = Prim.integerLe
-
-instance Eq Integer where
-  (==) = Prim.integerEq
-
-instance Show Integer where
-  show = Prim.integerShow
-
-instance Enum Integer where
-  succ = (+1)
-  pred = (+ (-1))
-  toEnum = Prim.integerFromInt
-  fromEnum = Prim.intFromInteger
-  enumFrom n = n : enumFrom (n+1)
-  enumFromTo x y | x > y     = []
-                 | otherwise = x : enumFromTo (x+1) y
-  enumFromThen x y = x : enumFromThen y (2*y-x)
-  enumFromThenTo x y z | x == y && z >= x           = x : enumFromThenTo x y z
-                       | x == z                     = [x]
-                       | compare x y /= compare x z = []
-                       | otherwise                  = x : enumFromThenTo y (2*y-x) z
+instance Ord Int where
+  (<=) = Prim.intLe
 
 instance Num Int where
   (+)  = Prim.intAdd
@@ -267,18 +226,14 @@ instance Num Int where
   signum = signum''
   fromInteger = Prim.intFromInteger
 
+signum'' :: Int -> Int
+signum'' x | x > 0  = 1
+           | x == 0 = 0
+           | x < 0  = -1
+
 instance Integral Int where
   quotRem = Prim.intQuotRem
   toInteger = Prim.integerFromInt
-
-instance Ord Int where
-  (<=) = Prim.intLe
-
-instance Eq Int where
-  (==) = Prim.intEq
-
-instance Show Int where
-  show = Prim.intShow
 
 instance Enum Int where
   succ = (+1)
@@ -294,21 +249,48 @@ instance Enum Int where
                        | compare x y /= compare x z = []
                        | otherwise                  = x : enumFromThenTo y (2*y-x) z
 
-instance Eq Double where
-  (==) = Prim.doubleEq
 
-instance Ord Double where
-  (<=) = Prim.doubleLe
+instance Show Int where
+  show = Prim.intShow
 
-instance Num Double where
-  (+) = Prim.doubleAdd
-  (-) = Prim.doubleSub
-  (*) = Prim.doubleMul
-  signum = Prim.doubleSignum
-  fromInteger = Prim.doubleFromInteger
+instance Eq Integer where
+  (==) = Prim.integerEq
 
-instance Show Double where
-  show = Prim.doubleShow
+instance Ord Integer where
+  (<=) = Prim.integerLe
+
+instance Num Integer where
+  (+)  = Prim.integerAdd
+  (-)  = Prim.integerSub
+  (*)  = Prim.integerMul
+  signum = signum'
+  fromInteger = id
+
+signum' :: Integer -> Integer
+signum' x | x > 0  = 1
+          | x == 0 = 0
+          | x < 0  = -1
+
+instance Integral Integer where
+  quotRem = Prim.integerQuotRem
+  toInteger = id
+
+instance Enum Integer where
+  succ = (+1)
+  pred = (+ (-1))
+  toEnum = Prim.integerFromInt
+  fromEnum = Prim.intFromInteger
+  enumFrom n = n : enumFrom (n+1)
+  enumFromTo x y | x > y     = []
+                 | otherwise = x : enumFromTo (x+1) y
+  enumFromThen x y = x : enumFromThen y (2*y-x)
+  enumFromThenTo x y z | x == y && z >= x           = x : enumFromThenTo x y z
+                       | x == z                     = [x]
+                       | compare x y /= compare x z = []
+                       | otherwise                  = x : enumFromThenTo y (2*y-x) z
+
+instance Show Integer where
+  show = Prim.integerShow
 
 instance Eq Float where
   (==) = Prim.floatEq
@@ -326,6 +308,72 @@ instance Num Float where
 instance Show Float where
   show = Prim.floatShow
 
+instance Eq Double where
+  (==) = Prim.doubleEq
+
+instance Ord Double where
+  (<=) = Prim.doubleLe
+
+instance Num Double where
+  (+) = Prim.doubleAdd
+  (-) = Prim.doubleSub
+  (*) = Prim.doubleMul
+  signum = Prim.doubleSignum
+  fromInteger = Prim.doubleFromInteger
+
+instance Show Double where
+  show = Prim.doubleShow
+
+-- Lists
+-- Functor, Monad
+
+-- Tuples
+-- componet projections for pairs:
+fst :: (a, b) -> a
+fst (x, y) = x
+
+snd :: (a, b) -> b
+snd (x, y) = y
+
+-- PreludeList
+infixr 5 ++
+
+-- Map and append
+(++) :: [a] -> [a] -> [a]
+(++) []     ys = ys
+(++) (x:xs) ys = x : xs ++ ys
+
+concatMap  :: (a -> [b]) -> [a] -> [b]
+concatMap f = foldr ((++) . f) []
+
+head             :: [a] -> a
+head (x:xs)      =  x -- todo: wild card
+head []          =  error "Prelude.head: empty list"
+
+tail             :: [a] -> [a]
+tail (x:xs)      =  xs -- todo wild card
+tail []          =  error "Prelude.tail: empty list"
+
+-- foldl
+foldl            :: (a -> b -> a) -> a -> [b] -> a
+foldl f z []     =  z
+foldl f z (x:xs) =  foldl f (f z x) xs
+
+-- foldr
+foldr :: (a -> b -> b) -> b -> [a] -> b
+foldr k z = go
+            where go []     = z
+                  go (y:ys) = y `k` go ys
+
+-- take
+take :: Int -> [a] -> [a]
+take n []     = []
+take n (x:xs) | n <= 0 = []
+              | otherwise = x : take (n-1) xs
+
+-- takeWhile ...
+
+-- PreludeIO
+
 print x = putStrLn (show x)
 
-otherwise = True
