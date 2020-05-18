@@ -79,7 +79,7 @@ class (Eq a, Show a) => Num a where
   x - y    = x + nagate y
   negate x = 0 - x
 
-class (Enum a) => Integral a where
+class (Num a, Ord a, Enum a) => Integral a where
   quot, rem       :: a -> a -> a
   div, mod        :: a -> a -> a
   quotRem, divMod :: a -> a -> (a, a)
@@ -93,6 +93,34 @@ class (Enum a) => Integral a where
     where qr@(q,r) = quotRem n d
 
 -- Numeric functions
+
+subtract :: (Num a) => a -> a -> a
+subtract =  flip (-)
+
+even, odd :: (Integral a) => a -> Bool
+even n    =  n `rem` 2 == 0
+odd       = not . even
+
+{-
+gcd     :: (Integral a) => a -> a -> a
+gcd 0 0 =  error "Prelude.gcd: gcd 0 0 is undefined"
+gcd x y =  gcd' (abs x) (abs y)
+           where gcd' x 0 = x
+                 gcd' x y = gcd' y (x `rem` y)
+
+lcm     :: (Integral a) => a -> a -> a
+lcm _ 0 =  0
+lcm 0 _ =  0
+lcm x y =  abs ((x `quot` (gcd x y)) * y)
+
+(^)   :: (Num a, Integral b) => a -> b -> a
+x ^ 0 =  1
+x ^ n | n > 0 = f x (n-1) x
+                where f _ 0 y = y
+                      f n x y = g n x where
+                        g n x | even n = g (x*x) (n `quot` 2)
+                              | otherwise = f x (n-1) (x*y)
+-}
 
 -- Monadic classes
 
@@ -118,6 +146,8 @@ id x = x
 f . g = \x -> f (g x)
 
 -- flip f takes its (first) two arguments in the reverse order of f.
+flip       :: (a -> b -> c) -> b -> a -> c
+flip f x y =  f y x
 
 -- right-associating infix application operators
 -- (useful in continuation-passing style)
