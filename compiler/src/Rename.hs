@@ -616,10 +616,12 @@ renRhs (A.UnguardedRhs e ds) =
 
 renRhs (A.GuardedRhs gs decls) =
   let eFail = A.VarExp (Name {origName="Prim.FAIL", namePos=(0,0), isConName = False})
-      cnvGs []                         = eFail
+      fail_local = A.VarExp (Name {origName="_fail", namePos=(0,0), isConName = False})
+      cnvGs []                         = fail_local
       -- todo cnvGs support most simple case that has only one statement.
       cnvGs (([A.ExpStmt e1], e2):gs') = A.IfExp e1 e2 (cnvGs gs')
-  in renExp $ A.LetExp decls (cnvGs gs)
+      faildecl = A.VDecl (A.ValDecl fail_local (A.UnguardedRhs eFail []))
+  in renExp $ A.LetExp (faildecl:decls) (cnvGs gs)
 
 renRhs rhs = do
   st <- get
