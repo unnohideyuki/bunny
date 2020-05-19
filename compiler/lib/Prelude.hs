@@ -396,10 +396,10 @@ foldr k z = go
                   go (y:ys) = y `k` go ys
 
 -- take
-take :: Int -> [a] -> [a]
-take n []     = []
-take n (x:xs) | n <= 0 = []
-              | otherwise = x : take (n-1) xs
+take              :: Int -> [a] -> [a]
+take n _ | n <= 0 =  []
+take n []         =  []
+take n (x:xs)     =  x : take (n-1) xs
 
 -- takeWhile ...
 
