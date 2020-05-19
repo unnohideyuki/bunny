@@ -615,9 +615,8 @@ renRhs (A.UnguardedRhs e ds) =
   renRhs (A.UnguardedRhs (A.LetExp ds e) [])
 
 renRhs (A.GuardedRhs gs decls) =
-  let err = A.FunAppExp (A.VarExp (Name {origName="error", namePos=(0,0), isConName = False}))
-                        (A.LitExp (A.LitString "Non-exaustive patterns" (0,0)))
-      cnvGs []                         = err
+  let eFail = A.VarExp (Name {origName="Prim.FAIL", namePos=(0,0), isConName = False})
+      cnvGs []                         = eFail
       -- todo cnvGs support most simple case that has only one statement.
       cnvGs (([A.ExpStmt e1], e2):gs') = A.IfExp e1 e2 (cnvGs gs')
   in renExp $ A.LetExp decls (cnvGs gs)

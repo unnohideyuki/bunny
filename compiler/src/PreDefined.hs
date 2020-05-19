@@ -35,6 +35,9 @@ gtMfun = "Prim.>" :>:
   Forall [Star]
   ([IsIn cOrd (TGen 0)] :=> (TGen 0 `fn` TGen 0 `fn` tBool))
 
+eFAILCfun :: Assump
+eFAILCfun = "Prim.FAIL" :>: Forall [Star] ([] :=> (TGen 0))
+
 errorCfun :: Assump
 errorCfun = "Prim.error" :>: Forall [Star] ([] :=> (tString `fn` TGen 0))
 
@@ -223,6 +226,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun
                 , primFloatSignumCfun, primFloatFromIntegerCfun
                 , primFloatShowCfun
                 , errorCfun
+                , eFAILCfun
                 , "Prim.putStrLn" :>:
                   Forall []
                    ([] :=> (TAp tList tChar `fn` TAp tIO tUnit))
@@ -235,6 +239,7 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.[]", "Prim.[]")
                  , ("[]", "Prelude.[]")
                  , (":", "Prelude.:")
+                 , ("Prim.FAIL", "Prim.FAIL")
                  , ("error", "Prim.error")
                  , ("Prim.retIO", "Prim.retIO")
                  , ("Prim.bindIO", "Prim.bindIO")

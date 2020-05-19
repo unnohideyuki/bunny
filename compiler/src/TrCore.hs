@@ -144,7 +144,6 @@ transVdefs (vd:vds) = do
 transExpr :: Pat.Expression -> TRC Expr
 
 transExpr (Pat.OtherExpression e) = trExpr2 e
--- transExpr e@(Pat.Case n cs) = transExpr (Pat.Fatbar e Pat.Error)
 
 transExpr (Pat.Case n cs) = do
   vt <- typeLookup n
@@ -180,10 +179,34 @@ transExpr (Pat.Case n cs) = do
       return (DEFAULT, [TermVar n ([] :=> a)], e')
     -}
 
-transExpr (Pat.Fatbar e@(Pat.OtherExpression _) _) = transExpr e
+transExpr (Pat.Fatbar (Pat.OtherExpression e) f) = do
+  f' <- transExpr f
+  r <- trExpr2 e
+  let r' = replaceFailExpr f' r
+  return r'
+    where replaceFailExpr :: Expr -> Expr -> Expr
+          replaceFailExpr f (Var v) = replaceFailVar f v
+          replaceFailExpr _ l@(Lit _) = l
+          replaceFailExpr f (App e1 e2) = let e1' = replaceFailExpr f e1
+                                              e2' = replaceFailExpr f e2
+                                          in App e1' e2'
+          replaceFailExpr f (Lam vs e) = Lam vs (replaceFailExpr f e)
+          replaceFailExpr f (Let b e) = Let (replaceFailBind f b) (replaceFailExpr f e)
+          replaceFailExpr f (Case s v as) = Case s v (map (replaceFailAlt f) as)
 
-transExpr Pat.Error = do a <- newTVar' Star
-                         return $ Var (TermVar "Prim.neErr" ([] :=> a))
+
+          replaceFailVar f (TermVar n _) | n == "Prim.FAIL" = f
+          replaceFailVar _ v             = Var v
+
+          replaceFailBind f (Rec bs) =
+            let bs' = map (\(v, e) -> (v, replaceFailExpr f e)) bs
+            in Rec bs'
+
+          replaceFailAlt f (altcon, vs, e) = (altcon, vs, replaceFailExpr f e)
+
+
+--transExpr Pat.Error = do a <- newTVar' Star
+--                         return $ Var (TermVar "Prim.neErr" ([] :=> a))
 
 transExpr e = error $ "Non-exaustive Patterns in transExpr: " ++ show e
 
@@ -254,7 +277,9 @@ dsgAlts n alts@((pats,_):_) ci =
     wild2Var (Ty.PCon as pats) = Ty.PCon as (map wild2Var pats)
     wild2Var pat               = pat
 
-    e = Pat.reduceMatch ci n k us alts' Pat.Error
+    e = Pat.reduceMatch ci n k us alts' eFail
+
+    eFail = Pat.OtherExpression (Ty.Var "Prim.FAIL")
   in
    Pat.Lambda us e
 
