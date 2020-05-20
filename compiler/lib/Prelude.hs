@@ -21,6 +21,12 @@ class Eq a where
   x /= y = not (x == y)
   x == y = not (x /= y)
 
+instance (Eq a) => Eq [a] where
+  [] == [] = True
+  _  == [] = False
+  [] == _  = False
+  (x:xs) == (y:ys) = x == y && xs == ys
+
 class (Eq a) => Ord a where
   compare              :: a -> a -> Ordering
   (<), (<=), (>=), (>) :: a -> a -> Bool
@@ -72,7 +78,7 @@ class Show a where
 class (Eq a, Show a) => Num a where
   (+), (-), (*) :: a -> a -> a
   negate        :: a -> a
-  signum        :: a -> a
+  abs, signum   :: a -> a
   fromInteger   :: Integer -> a
   -- Minimal complete definition:
   --  All, except negate or (-)
@@ -101,7 +107,6 @@ even, odd :: (Integral a) => a -> Bool
 even n    =  n `rem` 2 == 0
 odd       = not . even
 
-{-
 gcd     :: (Integral a) => a -> a -> a
 gcd 0 0 =  error "Prelude.gcd: gcd 0 0 is undefined"
 gcd x y =  gcd' (abs x) (abs y)
@@ -113,13 +118,15 @@ lcm _ 0 =  0
 lcm 0 _ =  0
 lcm x y =  abs ((x `quot` (gcd x y)) * y)
 
-(^)   :: (Num a, Integral b) => a -> b -> a
-x ^ 0 =  1
-x ^ n | n > 0 = f x (n-1) x
-                where f _ 0 y = y
-                      f n x y = g n x where
-                        g n x | even n = g (x*x) (n `quot` 2)
-                              | otherwise = f x (n-1) (x*y)
+{-
+(^)           :: (Num a, Integral b) => a -> b -> a
+x ^ 0         =  1
+x ^ n | n > 0 =  f x (n-1) x
+                 where f _ 0 y = y
+                       f n x y = g n x where
+                         g n x | even n = g (x*x) (n `quot` 2)
+                               | otherwise = f x (n-1) (x*y)
+_ ^ _         =  error "Prelude.^: negative exponent"
 -}
 
 -- Monadic classes
@@ -255,6 +262,8 @@ instance Num Int where
   (*)  = Prim.intMul
   signum = signum''
   fromInteger = Prim.intFromInteger
+  abs x | x >= 0    = x
+        | otherwise = -x
 
 signum'' :: Int -> Int
 signum'' x | x > 0  = 1
@@ -295,6 +304,8 @@ instance Num Integer where
   (*)  = Prim.integerMul
   signum = signum'
   fromInteger = id
+  abs x | x >= 0    = x
+        | otherwise = -x
 
 signum' :: Integer -> Integer
 signum' x | x > 0  = 1
@@ -334,6 +345,8 @@ instance Num Float where
   (*) = Prim.floatMul
   signum = Prim.floatSignum
   fromInteger = Prim.floatFromInteger
+  abs x | x >= 0    = x
+        | otherwise = -x
 
 instance Show Float where
   show = Prim.floatShow
@@ -350,6 +363,8 @@ instance Num Double where
   (*) = Prim.doubleMul
   signum = Prim.doubleSignum
   fromInteger = Prim.doubleFromInteger
+  abs x | x >= 0    = x
+        | otherwise = -x
 
 instance Show Double where
   show = Prim.doubleShow

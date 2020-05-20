@@ -429,10 +429,56 @@ renDecls :: [A.ValueDecl] -> RN [TempBind]
 renDecls decls = do tbss <- mapM renDecl decls
                     return $ concat tbss
   where
+    checkLitPatterns expr rhs = do
+      (expr', vs) <- checklit expr []
+      if null vs
+        then return (expr, rhs)
+        else do st <- get
+                let num = rnNum st
+                put st{rnNum = num + 1}
+                let v = A.VarExp (Name ("_y" ++ show num) (0, 0) False)
+                    lete = A.LetExp [A.VDecl (A.ValDecl v rhs)] v
+                    eqs = map (\(v, e) -> A.InfixExp v (Name "==" (0,0) False) e) vs
+                    eq = foldl'
+                      (\b a -> A.InfixExp b (Name "&&" (0,0) False) a)
+                      (head eqs)
+                      (tail eqs)
+                    rhs' = A.GuardedRhs [([A.ExpStmt eq], lete)] []
+                return (expr', rhs')
+        where checklit :: A.Exp -> [(A.Exp, A.Exp)] -> RN (A.Exp, [(A.Exp, A.Exp)])
+              checklit (A.ParExp e) res = checklit e res
+              checklit (A.TupleExp es) res = do
+                let f Nothing  = return (Nothing, [])
+                    f (Just e) = do (e', vs) <- checklit e []
+                                    return (Just e', vs)
+                (es', vss) <- unzip <$> mapM f es
+                return (A.TupleExp es', res ++ concat vss)
+              checklit e@(A.LitExp _) res = do
+                st <- get
+                let num = rnNum st
+                put st{rnNum = num + 1}
+                let v = A.VarExp (Name ("_x" ++ show num) (0, 0) False)
+                return (v, (v, e):res)
+              checklit (A.FunAppExp e1 e2) res = do
+                (e1', res') <- checklit e1 res
+                (e2', res'') <- checklit e2 res'
+                return (A.FunAppExp e1' e2', res'')
+              checklit (A.UMinusExp l@(A.LitExp _)) res = do
+                (e', [(v, e)])<- checklit l []
+                return (e', (v, A.UMinusExp e):res)
+              checklit (A.AsPat n e) res = do
+                (e', res') <- checklit e res
+                return (A.AsPat n e', res')
+              checklit (A.ListExp es) res = do
+                (es', rss) <- unzip <$> mapM (\e -> checklit e []) es
+                return (A.ListExp es', res ++ concat rss)
+              checklit e res = return (e, res)
+
     renDecl (A.ValDecl expr rhs) = do
+      (expr', rhs') <- checkLitPatterns expr rhs
       enterNewLevel
-      (n, pats) <- renFExp expr
-      rexp      <- renRhs  rhs
+      (n, pats) <- renFExp expr'
+      rexp      <- renRhs  rhs'
       exitLevel
       return [(n, Nothing, [(pats, rexp)])]
 
@@ -585,13 +631,6 @@ renPat (A.TupleExp [Just e1, Just e2]) = do
 renPat (A.ListExp es) = renPat $ expandList es
 
 renPat A.WildcardPat = return PWildcard
-
-renPat (A.LitExp (A.LitString s _)) = renPat (lit2exp s)
-  where lit2exp []     = A.VarExp (Name "[]" (0,0) True)
-        lit2exp (c:cs) = A.InfixExp
-                         (A.LitExp (A.LitChar c (0,0)))
-                         (Name ":" (0,0) True)
-                         (lit2exp cs)
 
 renPat e = error $ "renPat: " ++ show e
 

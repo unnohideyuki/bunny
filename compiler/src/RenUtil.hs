@@ -74,6 +74,7 @@ data RnState = RnState { rnModid   :: !Id
                        , rnCdicts  :: ![(Id, DictDef)]
                        , rnConsts  :: !ConstructorInfo
                        , rnTConsts :: ![(Id, Type)]
+                       , rnNum     :: !Int
                        }
                deriving Show
 

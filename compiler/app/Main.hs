@@ -38,6 +38,7 @@ initRnState =
            , rnCdicts = []
            , rnConsts = emptyConstInfo
            , rnTConsts = initialTypeConsts
+           , rnNum = 0
            }
 
 tiAs :: (a, b, c) -> c
