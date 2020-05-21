@@ -11,7 +11,7 @@ import           Typing                     (Assump (..), ClassEnv (..),
 
 import           Control.Monad
 import           Control.Monad.State.Strict (State, get, put, runState)
-import           Data.List                  (nub)
+import           Data.List                  (nub, or)
 import           Data.List.Split            (splitOn)
 import           Data.Maybe                 (fromMaybe)
 import           Debug.Trace
@@ -171,7 +171,7 @@ tyScrut s as = do
 tyapp :: Type -> Type -> TC Type
 tyapp ta tb = do
   n <- newNum
-  let a = TVar (Tyvar ("a" ++ show n) Star)
+  let a = TVar (Tyvar ("b" ++ show n) Star)
       tf = tb `fn` a
       s = fromMaybe
           (error $ "do not unified in tyapp:\n\t" ++ show ta ++
@@ -197,10 +197,10 @@ lookupDictArg (c, y) = do
   ce <- getCe
   let d = zip (map (\((IsIn i t), _) -> (i, apply s t)) pss) [(0::Int)..]
       lookupDict (k, tv) (((c, tv'), i):d')
-        | tv == tv' && (k == c  || k `elem` super ce c) = Just i
+        | tv == tv' && c `isin` k = Just i
         | otherwise = lookupDict (k, tv) d'
       lookupDict _ [] = Nothing
-
+      c1 `isin` c2 = (c1 == c2)|| (or $ map (`isin` c2) (super ce c1))
       ret = case lookupDict (c, TVar y) d of
         Nothing -> Nothing
         Just j  -> let (_, n) = pss !! j

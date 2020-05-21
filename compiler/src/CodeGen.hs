@@ -8,7 +8,7 @@ import           Symbol
 import           Typing                     (ClassEnv (..), super)
 
 import           Control.Monad.State.Strict
-import           Data.List                  (find, intercalate)
+import           Data.List                  (find, intercalate, nub)
 import           Data.List.Split            (splitOn)
 import qualified Data.Map                   as Map
 import           Data.Maybe                 (fromJust, fromMaybe)
@@ -486,7 +486,8 @@ emitInsts dest dicts ((qin, qcn):ctab) ce = do
   let ms = ddMethods $ fromJust $ find ((== qcn). ddId) dicts
       msM = map mangle ms
       pdname = cls2dictNameM qcn
-      supers = super ce qcn
+      f c = c : concatMap f (super ce c)
+      supers = nub $ concatMap f (super ce qcn)
       sdname = map cls2dictNameM supers
       dname = cls2dictNameM $ qin ++ "@" ++ qcn
       mname = modname qin
