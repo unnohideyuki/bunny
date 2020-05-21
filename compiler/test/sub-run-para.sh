@@ -23,7 +23,7 @@ function dotest(){
   if [ -f err/$bname ];then
       if [ $s -eq 0 ] ;then
 	  echo -n "C" # should not be compiled but done.
-	  echo "$f: compile" >> errors.txt
+	  echo "$f: compile" >> $errors
 	  return 1
       else
 	  echo -n "."
@@ -32,7 +32,7 @@ function dotest(){
   else
       if [ $s -ne 0 ] ;then
 	  echo -n "c" # compile error
-	  echo "$f: compile" >> errors.txt
+	  echo "$f: compile" >> $errors
 	  return 1
       fi
   fi
