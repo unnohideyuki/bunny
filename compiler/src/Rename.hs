@@ -39,16 +39,13 @@ scanDecls ds = do
       ds' <- concat <$> mapM scanValueDecl2 ds
       return ds'
         where trAsPat n (A.ParExp e) rhs = trAsPat n e rhs
-              trAsPat n (A.FunAppExp (A.FunAppExp c a) b) rhs@(A.UnguardedRhs rexp []) = do
-                let d1 = if origName n /= "_"
-                         then [A.ValDecl (A.VarExp n) rhs]
-                         else []
-                    a1 = A.VarExp (Name "_a1" (0,0) False)
-                    a2 = A.VarExp (Name "_a2" (0,0) False)
+              trAsPat n (A.FunAppExp (A.FunAppExp c a) b) rhs = do
+                let d1 = [A.ValDecl (A.VarExp n) rhs]
+                    a1 = A.VarExp (Name "_a#1" (0,0) False)
+                    a2 = A.VarExp (Name "_a#2" (0,0) False)
                     cab = A.FunAppExp (A.FunAppExp c a1) a2
-                    -- work around (068, 2020-05-14)
-                    e2 = A.CaseExp rexp [A.Match cab (A.UnguardedRhs a1 [])]
-                    e3 = A.CaseExp rexp [A.Match cab (A.UnguardedRhs a2 [])]
+                    e2 = A.CaseExp (A.VarExp n) [A.Match cab (A.UnguardedRhs a1 [])]
+                    e3 = A.CaseExp (A.VarExp n) [A.Match cab (A.UnguardedRhs a2 [])]
                     d2 = case a of
                       A.WildcardPat -> []
                       _             -> [A.ValDecl a (A.UnguardedRhs e2 [])]
@@ -77,7 +74,11 @@ scanDecls ds = do
     scanValueDecl2 (A.ValDecl expr rhs) = do
       expr' <- removeInfix expr
       if isConPat expr'
-        then scanValueDecl2 (A.ValDecl (A.AsPat (Name "_" (0,0) False) expr') rhs)
+        then do st <- get
+                let num = rnNum st
+                put st{rnNum = num + 1}
+                let vn = (Name ("_p#" ++ show num) (0,0) False)
+                scanValueDecl2 (A.ValDecl (A.AsPat vn expr') rhs)
         else do renameVar (extrName expr')
                 return [A.ValDecl expr' rhs]
       where isConPat (A.ListExp _)                = True
@@ -703,7 +704,12 @@ renExp (A.LetExp ds e) = do
   e' <- renExp e
   exitLevel
   let bgs = toBg tbs
-  assert (length bgs == 1) $ return (Let (head bgs) e') -- TODO: (head bgs) is temporary
+      (es, iss) = head bgs
+      f []        bdy = bdy
+      f (is:iss') bdy = Let ([],[is]) (f iss' bdy)
+  if null es
+    then return $ f iss e'
+    else return (Let (head bgs) e')
 
 -- List comprehension
 -- [e | True] = [e]
