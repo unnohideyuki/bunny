@@ -804,7 +804,7 @@ renExp (A.UMinusExp e) = do
   renExp (A.FunAppExp f_negate e)
 
 renExp (A.ExpWithTySig e sig) =
-  let x_name = (Name "x" (0,0) False)
+  let x_name = (Name "_x#" (0,0) False)
       x_valdecl = A.VDecl (A.ValDecl (A.VarExp x_name) (A.UnguardedRhs e []))
       x_tysigdecl = A.VDecl (A.TypeSigDecl [x_name] sig)
   in renExp (A.LetExp [x_tysigdecl, x_valdecl] (A.VarExp x_name))
