@@ -38,7 +38,7 @@ tcBind (Rec bs) ce maybest = tbloop st0 bs []
             Nothing  -> mkTcState ce [] nullSubst 0
 
     tcbind :: (Var, Expr) -> TcState -> ((Var, Expr), TcState)
-    tcbind (v@(TermVar n qt@(qs :=> _)), e) st
+    tcbind (v@(TermVar n qt@(qs :=> t)), e) st
       | isOVExpr e = ((v, e), st)
       | otherwise =
         let pss = (zip qs (repeat n))
@@ -46,9 +46,10 @@ tcBind (Rec bs) ce maybest = tbloop st0 bs []
             st' = st{tcPss=(pss++pss')}
             (e', st'') = runState (tcExpr e qt) st'
             num = tcNum st''
+            s = tcSubst st''
         in
-         if null qs then ((v, e'), st{tcNum=num})
-         else ((v, Lam (mkVs n qs) e'), st{tcNum=num})
+         if null qs then ((v, e'), st{tcNum=num, tcSubst=s})
+         else ((v, Lam (mkVs n qs) e'), st{tcNum=num, tcSubst=s})
     tcbind _ _ = error "tcbind: must not occur."
 
 isOVExpr :: Expr -> Bool -- whether (#overloaded# a b) form or not
@@ -202,7 +203,7 @@ lookupDictArg (c, y) = do
       lookupDict _ [] = Nothing
       c1 `isin` c2 = (c1 == c2)|| (or $ map (`isin` c2) (super ce c1))
       ret = case lookupDict (c, TVar y) d of
-        Nothing -> Nothing
+        Nothing -> trace (show (y,d)) Nothing
         Just j  -> let (_, n) = pss !! j
                    in Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen 100)
   return ret
@@ -241,7 +242,8 @@ findApplyDict e (qv :=> t') (_ :=> t) = do
             pss <- getPss
             case v of
               Just v' -> return (Var v')
-              Nothing | (TVar y) `elem` itvars' ->
+              Nothing | (TVar y) `elem` itvars' -> do
+                        unify' (TVar y) tInteger
                         return (Var (DictVar "Prelude.Integer" n2))
                       | otherwise ->
                         error ("Error: dictionary not found: " ++ show (n2,y,pss))
