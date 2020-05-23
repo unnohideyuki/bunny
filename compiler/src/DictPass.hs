@@ -21,15 +21,20 @@ normQTy :: Qual Type -> Qual Type
 normQTy (qs :=> t) = let
   tvs = tv t
   -- qs' = filter (\(IsIn _ (TVar x)) -> elem x tvs) (nub qs)
-  qs' = filter (\pr -> head (tv pr) `elem` tvs) (nub qs)
+  qs' = filter
+        (\pr -> case tv pr of
+            [] -> True
+            xs -> (head xs) `elem` tvs
+        )
+        (nub qs)
   in
-   qs' :=> t
+    qs' :=> t
 
 tcBind :: Bind -> ClassEnv -> Maybe TcState -> (Bind, TcState)
 tcBind (Rec bs) ce maybest = tbloop st0 bs []
   where
     tbloop :: TcState -> [(Var, Expr)] -> [(Var, Expr)] -> (Bind, TcState)
-    tbloop st []     res = (Rec res, st)
+    tbloop st []     res = (Rec (reverse res), st)
     tbloop st (b:bs) res = let (ve, st') = tcbind b st
                            in tbloop st' bs (ve:res)
 
@@ -41,15 +46,33 @@ tcBind (Rec bs) ce maybest = tbloop st0 bs []
     tcbind (v@(TermVar n qt@(qs :=> t)), e) st
       | isOVExpr e = ((v, e), st)
       | otherwise =
-        let pss = (zip qs (repeat n))
-            pss' = tcPss st
-            st' = st{tcPss=(pss++pss')}
-            (e', st'') = runState (tcExpr e qt) st'
-            num = tcNum st''
-            s = tcSubst st''
+        let pss' = tcPss st
+
+            (qtr@(qsr :=> tr), st2) = runState (getTy e) st
+            qtr'@(qsr' :=> _)  = normQTy qtr
+
+            cnd = case qt of
+              ([] :=> (TVar _)) -> not (null (tv qsr'))
+              _                 -> False
+
+            qt'@(qs' :=> t') = if cnd
+                  then qtr'
+                  else qt
+
+            pss = (zip qs' (repeat n))
+
+            rqty0 = tcReplaceQty st2
+            rqty = if cnd
+                   then [(n, qtr')]
+                   else []
+
+            v' = (TermVar n qt')
+
+            st' = st2{tcPss=(pss++pss'), tcReplaceQty=rqty0++rqty}
+            (e', st'') = runState (tcExpr e qt') st'
         in
-         if null qs then ((v, e'), st{tcNum=num, tcSubst=s})
-         else ((v, Lam (mkVs n qs) e'), st{tcNum=num, tcSubst=s})
+          if null qs' then ((v', e'), st''{tcPss=pss'})
+          else ((v', Lam (mkVs n qs') e'), st''{tcPss=pss'})
     tcbind _ _ = error "tcbind: must not occur."
 
 isOVExpr :: Expr -> Bool -- whether (#overloaded# a b) form or not
@@ -65,6 +88,7 @@ data TcState = TcState { tcCe           :: ClassEnv
                        , tcSubst        :: Subst
                        , tcNum          :: Int
                        , tcIntegerTVars :: [Type]
+                       , tcReplaceQty   :: [(Id, Qual Type)]
                        }
                deriving Show
 
@@ -78,8 +102,7 @@ newNum = do
   return n
 
 getSubst :: TC Subst
-getSubst = do st <- get
-              return $ tcSubst st
+getSubst = tcSubst <$> get
 
 putSubst :: Subst -> TC ()
 putSubst s = do st <- get
@@ -96,17 +119,20 @@ unify' t1 t2 = do s <- getSubst
                   extSubst u
 
 getPss :: TC [(Pred, Id)]
-getPss = do st <- get
-            return $ tcPss st
+getPss = tcPss <$> get
 
 getCe :: TC ClassEnv
 getCe = tcCe <$> get
 
 
 getTy :: Expr -> TC (Qual Type)
-getTy (Var (TermVar _ qt@(ps :=> _))) =
+getTy (Var (TermVar n qt@(ps :=> _))) =
   do checkPreds ps
-     return qt
+     st <- get
+     let d = tcReplaceQty st
+     case lookup n d of
+       Just x  -> return x
+       Nothing -> return qt
        where checkPreds :: [Pred] -> TC ()
              checkPreds [] = return ()
              checkPreds (IsIn n v:ps)
@@ -125,14 +151,18 @@ getTy (App f e) = do
   (qf :=> tf) <- getTy f
   (qe :=> te) <- getTy e
   t <- tyapp tf te
-  return $ normQTy ((qe++qf) :=> t)
+  s <- getSubst
+  let qt' = apply s ((qe++qf) :=> t)
+  return qt'
 
 getTy (Lam vs e) = do
   (qe :=> te) <-  getTy e
+  s <- getSubst
   let
     qv = concatMap (\(TermVar _ (ps :=> _)) -> ps)  vs
     ts = map (\(TermVar _ (_ :=> t')) -> t')  vs
-  return $ normQTy ((qe++qv) :=> foldr fn te ts)
+    qt = apply s ((qe++qv) :=> foldr fn te ts)
+  return qt
 
 getTy (Case scrut _ as) = do
   qts <- mapM (getTy.(\(_,_,e) -> e)) as
@@ -140,7 +170,7 @@ getTy (Case scrut _ as) = do
     qs = concatMap (\(q :=> _) -> q) qts
     ts = map (\(_ :=> t') -> t') qts
   t <- unifyTs ts
-  return $ normQTy (qs :=> t)
+  return (qs :=> t)
 
 getTy (Let _ e) = getTy e
 
@@ -203,14 +233,14 @@ lookupDictArg (c, y) = do
       lookupDict _ [] = Nothing
       c1 `isin` c2 = (c1 == c2)|| (or $ map (`isin` c2) (super ce c1))
       ret = case lookupDict (c, TVar y) d of
-        Nothing -> trace (show (y,d)) Nothing
+        Nothing -> Nothing
         Just j  -> let (_, n) = pss !! j
                    in Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen 100)
   return ret
 
 mkTcState :: ClassEnv -> [(Pred, Id)] -> Subst -> Int -> TcState
 mkTcState ce pss subst num =
-  TcState{tcCe=ce, tcPss=pss, tcSubst=subst, tcNum=num, tcIntegerTVars=[]}
+  TcState{tcCe=ce, tcPss=pss, tcSubst=subst, tcNum=num, tcIntegerTVars=[], tcReplaceQty=[]}
 
 findApplyDict e (qv :=> t') (_ :=> t) = do
   unify' t' t
@@ -252,7 +282,13 @@ findApplyDict e (qv :=> t') (_ :=> t) = do
 
 tcExpr :: Expr -> Qual Type -> TC Expr
 tcExpr e@(Var (TermVar n (qv :=> t'))) qt
-  | null qv || isArg n {- todo:too suspicious! -} = return e
+  | null qv || isArg n {- todo:too suspicious! -} = do
+      st <- get
+      let d = tcReplaceQty st
+      case lookup n d of
+        Just qt' -> findApplyDict e qt' qt
+        Nothing  -> return e
+
   | otherwise = findApplyDict e (qv :=> t') qt
   where isArg ('_':_) = True
         isArg _       = False
