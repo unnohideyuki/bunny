@@ -1,4 +1,4 @@
-trap 'jobs -p | xargs kill' SIGINT
+trap 'jobs -p | xargs kill; exit 1' SIGINT
 
 rm -f results/*.txt
 
