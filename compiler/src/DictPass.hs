@@ -83,12 +83,12 @@ mkVs :: Id -> [Pred] -> [Var]
 mkVs n ps = [TermVar (n ++ ".DARG" ++ show i) ([] :=> TGen 99)
             | (i, _) <- zip [(0::Int)..] ps]
 
-data TcState = TcState { tcCe           :: ClassEnv
-                       , tcPss          :: [(Pred, Id)]
-                       , tcSubst        :: Subst
-                       , tcNum          :: Int
-                       , tcIntegerTVars :: [Type]
-                       , tcReplaceQty   :: [(Id, Qual Type)]
+data TcState = TcState { tcCe           :: !ClassEnv
+                       , tcPss          :: ![(Pred, Id)]
+                       , tcSubst        :: !Subst
+                       , tcNum          :: !Int
+                       , tcIntegerTVars :: ![Type]
+                       , tcReplaceQty   :: ![(Id, Qual Type)]
                        }
                deriving Show
 
