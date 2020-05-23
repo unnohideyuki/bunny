@@ -40,14 +40,14 @@ function dotest(){
   ./jcompile jout/$bname/Sample.java
   if [ $? -ne 0 ];then
     echo -n "j" # Java compilation failed
-    echo "$f: java compile" >> errors.txt
+    echo "$f: java compile" >> $errors
     return 1
   fi
 
   ./run jout/$bname/Sample.java > results/$bname.txt 2> /dev/null
   if [ $? -ne 0 ];then
     echo -n "r" # Running $bname failed (or abend).
-    echo "$f: abort" >> errors.txt
+    echo "$f: abort" >> $errors
     return 1
   fi
   # cat results/$bname.txt
@@ -55,7 +55,7 @@ function dotest(){
   diff results/$bname.txt expected
   if [ $? -ne 0 ];then
     echo -n "U" # Unexpected result: $bname"
-    echo "$f: result check" >> errors.txt
+    echo "$f: result check" >> $errors
     return 1
   fi
 
