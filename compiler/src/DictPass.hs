@@ -286,7 +286,7 @@ tcExpr e@(Var (TermVar n (qv :=> t'))) qt
       st <- get
       let d = tcReplaceQty st
       case lookup n d of
-        Just qt' -> findApplyDict e qt' qt
+        Just qt' -> findApplyDict (Var (TermVar n qt')) qt' qt
         Nothing  -> return e
 
   | otherwise = findApplyDict e (qv :=> t') qt
