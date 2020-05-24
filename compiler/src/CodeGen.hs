@@ -10,7 +10,7 @@ import           Typing                     (ClassEnv (..), super)
 import           Control.Monad.State.Strict
 import           Data.List                  (find, intercalate, nub)
 import           Data.List.Split            (splitOn)
-import qualified Data.Map                   as Map
+import qualified Data.Map.Strict            as Map
 import           Data.Maybe                 (fromJust, fromMaybe)
 import           Debug.Trace
 import           System.IO

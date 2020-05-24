@@ -4,11 +4,11 @@ import           Symbol
 import           Types
 import           Typing
 
-import qualified Data.Graph as G
-import           Data.List  (concatMap, (\\))
-import qualified Data.Map   as Map
-import           Data.Maybe (fromMaybe)
-import qualified Data.Tree  as T
+import qualified Data.Graph      as G
+import           Data.List       (concatMap, (\\))
+import qualified Data.Map.Strict as Map
+import           Data.Maybe      (fromMaybe)
+import qualified Data.Tree       as T
 
 type TempBind = (Id, Maybe (Qual Type), [Alt])
 
