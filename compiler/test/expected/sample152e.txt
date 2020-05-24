@@ -1,0 +1,9 @@
+EQ
+LT
+LT
+GT
+EQ
+LT
+GT
+GT
+EQ

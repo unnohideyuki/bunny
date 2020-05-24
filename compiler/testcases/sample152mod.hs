@@ -59,6 +59,7 @@ main = do
   print $ max GT EQ
   print $ max GT GT
 
+{-
   print $ min LT LT
   print $ min LT EQ
   print $ min LT GT
@@ -68,8 +69,4 @@ main = do
   print $ min GT LT
   print $ min GT EQ
   print $ min GT GT
-
-
-
-
-
+-}
