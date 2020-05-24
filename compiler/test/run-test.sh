@@ -9,6 +9,14 @@ mkdir -p jout
 rm -f errors.txt
 touch errors.txt
 
+## Compilie lib/Prelude
+rm -rf jout/Prelude
+mkdir jout/Prelude
+../bin/bunnyc -d jout/Prelude --xno-implicit-prelude ../lib/Prelude.hs
+if [ $? -ne 0 ];then
+    exit 1
+fi
+
 function dotest(){
   f=$1
   bname=`basename $f .hs`

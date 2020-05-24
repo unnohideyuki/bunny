@@ -2,6 +2,14 @@ trap 'jobs -p | xargs kill; exit 1' SIGINT
 
 rm -f results/*.txt
 
+## Compilie lib/Prelude
+rm -rf jout/Prelude
+mkdir -p jout/Prelude
+../bin/bunnyc -d jout/Prelude --xno-implicit-prelude ../lib/Prelude.hs
+if [ $? -ne 0 ];then
+    exit 1
+fi
+
 ./sub-run-para.sh 4 0 &
 ./sub-run-para.sh 4 1 &
 ./sub-run-para.sh 4 2 &
