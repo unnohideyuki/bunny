@@ -9,6 +9,7 @@ import           Typing
 import           Control.Monad.State.Strict (State, get, put)
 import           Data.Char                  (isUpper)
 import           Data.List.Split            (splitOn)
+import qualified Data.Map.Strict            as Map
 import           Data.Maybe                 (fromMaybe)
 
 aTrue :: A.Exp
@@ -69,7 +70,7 @@ data RnState = RnState { rnModid   :: !Id
                        , rnTenv    :: !(Table Id)
                        , rnIfxenv  :: !(Table Fixity)
                        , rnCe      :: !ClassEnv
-                       , rnCms     :: ![Assump]
+                       , rnCms     :: !Assumps
                        , rnKdict   :: !(Table Kind)
                        , rnCdicts  :: ![(Id, DictDef)]
                        , rnConsts  :: !ConstructorInfo
@@ -194,14 +195,14 @@ findCMs   :: Id -> RN (Maybe Assump)
 findCMs qn = do
   st <- get
   return $ find' (rnCms st) qn
-  where find' [] _ = Nothing
-        find' (a@(n :>: _):as') qn' | n == qn'  = Just a
-                                    | otherwise = find' as' qn'
+  where find' as qn = case Map.lookup qn as of
+          Nothing -> Nothing
+          Just sc -> Just (qn :>: sc)
 
-appendCMs :: [Assump] -> RN ()
+appendCMs :: Assumps -> RN ()
 appendCMs as = do
   st <- get
-  put st{rnCms = rnCms st ++ as}
+  put st{rnCms = Map.union (rnCms st) as}
 
 enterNewLevelWith :: Id -> RN ()
 enterNewLevelWith n = do

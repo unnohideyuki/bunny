@@ -3,7 +3,14 @@ import           Symbol
 import           Types
 import           Typing
 
-import           Data.Maybe (fromMaybe)
+import qualified Data.Map.Strict as Map
+import           Data.Maybe      (fromMaybe)
+
+fromAssumpList :: [Assump] -> Assumps
+fromAssumpList xs = Map.fromList (map (\(i :>: sc) -> (i, sc)) xs)
+
+toAssumpList :: Assumps -> [Assump]
+toAssumpList as = map (\(i, sc) -> (i :>: sc)) (Map.toList as)
 
 -- Primitive Constructors and Member Functions
 unitCfun :: Assump

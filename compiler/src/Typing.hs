@@ -20,6 +20,7 @@ import           Control.Monad              (msum, zipWithM)
 import           Control.Monad.State.Strict (State, get, put, runState, state)
 import           Data.List                  (intersect, nub, partition, union,
                                              (\\))
+import qualified Data.Map.Strict            as Map
 import           Data.Maybe                 (fromMaybe)
 import           Debug.Trace
 
@@ -282,20 +283,32 @@ toScheme t = Forall [] ([] :=> t)
 
 data Assump = Id :>: Scheme deriving Show
 
+type Assumps = Map.Map Id Scheme
+
 instance Types Assump where
   apply s (i :>: sc) = i :>: apply s sc
   tv (_ :>: sc)      = tv sc
 
-find                   :: Monad m => Id -> [Assump] -> m Scheme
-find i []               = fail $ "unbound identifier: " ++ i
-find i ((i' :>: sc):as) = if i == i' then return sc else find i as
+-- Types interface for Assumps
+apply2As :: Subst -> Assumps -> Assumps
+apply2As s as = let as' = map (\(i,sc) -> i :>: sc) (Map.toList as)
+                    as'' = apply s as'
+                in Map.fromList (map (\(i :>: sc) -> (i, sc)) as'')
+tv2As :: Assumps -> [Tyvar]
+tv2As as      = let as' = map (\(i,sc) -> i :>: sc) (Map.toList as)
+                in tv as'
+
+find                   :: Monad m => Id -> Assumps -> m Scheme
+find i as = case Map.lookup i as of
+              Nothing -> fail $ "unbound identifier: " ++ i
+              Just sc -> return sc
 
 -------------------------------------------------------------------------------
 -- Type inference monad
 
-type TI a = State (Subst, Int, [Assump]) a
+type TI a = State (Subst, Int, Assumps) a
 
-runTI :: (Subst, Int, [Assump]) -> TI a -> a
+runTI :: (Subst, Int, Assumps) -> TI a -> a
 runTI st ti = x where (x, _) = runState ti st
 
 getSubst :: TI Subst
@@ -320,12 +333,12 @@ freshInst :: Scheme -> TI (Qual Type)
 freshInst (Forall ks qt) = do ts <- mapM newTVar ks
                               return (inst ts qt)
 
-appendAssump :: [Assump] -> TI ()
+appendAssump :: Assumps -> TI ()
 appendAssump as' = do
   (s, n, as) <- get
-  put (s, n, as ++ as')
+  put (s, n, Map.union as as')
 
-getAssump :: TI [Assump]
+getAssump :: TI Assumps
 getAssump = do
   (_, _, as) <- get
   return as
@@ -348,7 +361,7 @@ instance Instantiate Pred where
 -------------------------------------------------------------------------------
 -- Infer
 
-type Infer e t = ClassEnv -> [Assump] -> e -> TI ([Pred], t)
+type Infer e t = ClassEnv -> Assumps -> e -> TI ([Pred], t)
 
 -- Literals
 
@@ -374,19 +387,19 @@ data Pat = PVar Id
          | PCon Assump [Pat]
          deriving Show
 
-tiPat :: Pat -> TI ([Pred], [Assump], Type)
+tiPat :: Pat -> TI ([Pred], Assumps, Type)
 
 tiPat (PVar i) = do v <- newTVar Star
-                    return ([], [i :>: toScheme v], v)
+                    return ([], Map.fromList [(i, toScheme v)], v)
 
 tiPat PWildcard = do v <- newTVar Star
-                     return ([], [], v)
+                     return ([], Map.empty, v)
 
 tiPat (PAs i pat) = do (ps, as, t) <- tiPat pat
-                       return (ps, (i :>: toScheme t):as, t)
+                       return (ps, Map.insert i (toScheme t) as, t)
 
 tiPat (PLit l) = do (ps, t) <- tiLit l
-                    return (ps, [], t)
+                    return (ps, Map.empty, t)
 
 tiPat (PCon (_ :>: sc) pats) = do (ps, as, ts) <- tiPats pats
                                   t'           <- newTVar Star
@@ -394,10 +407,10 @@ tiPat (PCon (_ :>: sc) pats) = do (ps, as, ts) <- tiPats pats
                                   unify t (foldr fn t' ts)
                                   return (ps ++ qs, as, t')
 
-tiPats     :: [Pat] -> TI([Pred], [Assump], [Type])
+tiPats     :: [Pat] -> TI([Pred], Assumps, [Type])
 tiPats pats = do psasts <- mapM tiPat pats
                  let ps = concat [ps' | (ps', _, _) <- psasts]
-                     as = concat [as' | (_, as', _) <- psasts]
+                     as = Map.unions [as' | (_, as', _) <- psasts]
                      ts = [t | (_, _, t) <- psasts]
                  return (ps, as, ts)
 
@@ -424,7 +437,7 @@ tiExpr ce as (Ap e f)         = do (ps, te) <- tiExpr ce as e
                                    unify (tf `fn` t) te
                                    return (ps ++ qs, t)
 tiExpr ce as (Let bg e)       = do (ps, as') <- tiBindGroup ce as bg
-                                   (qs, t)   <- tiExpr ce (as' ++ as) e
+                                   (qs, t)   <- tiExpr ce (Map.union as' as) e
                                    let as'' = qualifyAs ps as'
                                    appendAssump as''
                                    return (ps ++ qs, t)
@@ -433,13 +446,13 @@ tiExpr ce as (Let bg e)       = do (ps, as') <- tiBindGroup ce as bg
 -- lacking qualifiers, that are added by qualifyAs.
 -- It might be a temporary fix because i don't know the best way to do it.
 -}
-qualifyAs :: [Pred] -> [Assump] -> [Assump]
-qualifyAs ps = fmap (qualas ps)
+qualifyAs :: [Pred] -> Assumps -> Assumps
+qualifyAs ps as = Map.fromList $ map (qualas ps) (Map.toList as)
   where
     qualas [] a = a
-    qualas (p@(IsIn _ t1@(TVar v)):ps1) a@(n :>: Forall ks (ps2 :=> t2)) =
+    qualas (p@(IsIn _ t1@(TVar v)):ps1) a@(n, Forall ks (ps2 :=> t2)) =
       if v `elem` tv t2 then
-        qualas ps1 (n :>: Forall (kind t1:ks) ((p:ps2) :=> t2))
+        qualas ps1 (n, Forall (kind t1:ks) ((p:ps2) :=> t2))
       else
         qualas ps1 a
     qualas _ _ = error "qualas:: unexpected"
@@ -490,10 +503,10 @@ type Alt = ([Pat], Expr)
 
 tiAlt :: Infer Alt Type
 tiAlt ce as (pats, e) = do (ps, as', ts) <- tiPats pats
-                           (qs, t)       <- tiExpr ce (as' ++ as) e
+                           (qs, t)       <- tiExpr ce (Map.union as' as) e
                            return (ps ++ qs, foldr fn t ts)
 
-tiAlts             :: ClassEnv -> [Assump] -> [Alt] -> Type -> TI [Pred]
+tiAlts             :: ClassEnv -> Assumps -> [Alt] -> Type -> TI [Pred]
 tiAlts ce as alts t = do psts <- mapM (tiAlt ce as) alts
                          mapM_ (unify t . snd) psts
                          return (concatMap fst psts)
@@ -552,14 +565,14 @@ defaultSubst  = withDefaults (\vps ts -> zip (map fst vps) ts)
 
 type Expl = (Id, Scheme, [Alt])
 
-tiExpl :: ClassEnv -> [Assump] -> Expl -> TI [Pred]
+tiExpl :: ClassEnv -> Assumps -> Expl -> TI [Pred]
 tiExpl ce as (_, sc, alts)
   = do (qs :=> t) <- freshInst sc
        ps         <- tiAlts ce as alts t
        s          <- getSubst
        let qs'     = apply s qs
            t'      = apply s t
-           fs      = tv (apply s as)
+           fs      = tv2As (apply2As s as)
            gs      = tv t' \\ fs
            sc'     = quantify gs (qs' :=> t')
            ps'     = filter (not.entail ce qs') (apply s ps)
@@ -579,44 +592,44 @@ restricted   :: [Impl] -> Bool
 restricted = any simple
   where simple (_, alts) = any (null.fst) alts
 
-tiImpls         :: Infer [Impl] [Assump]
+tiImpls         :: Infer [Impl] Assumps
 tiImpls ce as bs = do ts <- mapM (\_ -> newTVar Star) bs
                       let is    = map fst bs
                           scs   = map toScheme ts
-                          as'   = zipWith (:>:) is scs ++ as
+                          as'   = Map.union (Map.fromList (zipWith (,) is scs)) as
                           altss = map snd bs
                       pss <- zipWithM (tiAlts ce as') altss ts
                       s   <- getSubst
                       let ps' = apply s (concat pss)
                           ts' = apply s ts
-                          fs  = tv (apply s as)
+                          fs  = tv2As (apply2As s as)
                           vss = map tv ts'
                           gs  = foldr1 union vss \\ fs
                       (ds, rs) <- split ce fs (foldr1 intersect vss) ps'
                       if restricted bs then
                         let gs'  = gs \\ tv rs
                             scs' = map (quantify gs' . ([]:=>)) ts'
-                        in return (ds ++ rs, zipWith (:>:) is scs')
+                        in return (ds ++ rs, Map.fromList (zip is scs'))
                        else
                         let scs' = map (quantify gs . (rs:=>)) ts'
-                        in return (ds, zipWith (:>:) is scs')
+                        in return (ds, Map.fromList (zip is scs'))
 
 -------------------------------------------------------------------------------
 
 type BindGroup = ([Expl], [[Impl]])
 
-tiBindGroup :: Infer BindGroup [Assump]
+tiBindGroup :: Infer BindGroup Assumps
 tiBindGroup  ce as (es, iss) =
-  do let as' = [v :>: sc | (v, sc, _) <- es]
-     (ps, as'') <- tiSeq tiImpls ce (as' ++ as) iss
-     qss        <- mapM (tiExpl ce (as'' ++ as' ++ as)) es
-     return (ps ++ concat qss, as'' ++ as')
+  do let as' = Map.fromList [(v, sc) | (v, sc, _) <- es]
+     (ps, as'') <- tiSeq tiImpls ce (Map.union as' as) iss
+     qss        <- mapM (tiExpl ce (Map.union as'' (Map.union as' as))) es
+     return (ps ++ concat qss, Map.union as'' as')
 
-tiSeq                  :: Infer bg [Assump] -> Infer [bg] [Assump]
-tiSeq  _  _  _ []       = return ([], [])
+tiSeq                  :: Infer bg Assumps -> Infer [bg] Assumps
+tiSeq  _  _  _ []       = return ([], Map.empty)
 tiSeq ti ce as (bs:bss) = do (ps, as')  <- ti ce as bs
-                             (qs, as'') <- tiSeq ti ce (as' ++ as) bss
-                             return (ps ++ qs, as'' ++ as')
+                             (qs, as'') <- tiSeq ti ce (Map.union as' as) bss
+                             return (ps ++ qs, Map.union as'' as')
 
 -------------------------------------------------------------------------------
 -- TIProg: Type Inference for Whole Programs
@@ -624,23 +637,22 @@ tiSeq ti ce as (bs:bss) = do (ps, as')  <- ti ce as bs
 type Program = [BindGroup]
 
 tiProgram ::
-  ClassEnv -> [Assump] -> [BindGroup] -> (Subst, Int, [Assump]) -> [Assump]
+  ClassEnv -> Assumps -> [BindGroup] -> (Subst, Int, Assumps) -> Assumps
 tiProgram ce as bgs cont = runTI cont $
                            do (ps, as') <- tiSeq tiBindGroup ce as bgs
                               s         <- getSubst
                               rs        <- reduce ce (apply s ps)
                               s'        <- defaultSubst ce [] rs
                               as''      <- getAssump
-                              return (apply (s'@@s) as' ++ as'')
+                              return (apply2As (s'@@s) (Map.union as' as''))
 
-initialTI :: (Subst, Int, [Assump])
-initialTI = (nullSubst, 0, [])
+initialTI :: (Subst, Int, Assumps)
+initialTI = (nullSubst, 0, Map.empty)
 
 tiImportedProgram ::
-  ClassEnv -> [Assump] -> [BindGroup] -> (Subst, Int, [Assump])
-  -> (Subst, Int, [Assump])
+  ClassEnv -> Assumps -> [BindGroup] -> (Subst, Int, Assumps)
+  -> (Subst, Int, Assumps)
 tiImportedProgram ce as bgs st =
   runTI st $ do (_, as') <- tiSeq tiBindGroup ce as bgs
                 (s, n, _) <- get -- TODO: why not use [Assump] in the state
-                return (s, n, as ++ as')
-
+                return (s, n, Map.union as as')

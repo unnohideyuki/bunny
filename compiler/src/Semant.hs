@@ -10,11 +10,12 @@ import           Symbol
 import           Typing
 
 import           Control.Monad.State.Strict (get)
+import qualified Data.Map.Strict            as Map
 import           Debug.Trace
 
 renProg ::
   A.Module
-  -> RN ([BindGroup], [BindGroup], [Assump], [DictDef] ,[(Id, Id)])
+  -> RN ([BindGroup], [BindGroup], Assumps, [DictDef] ,[(Id, Id)])
 renProg m = do
   let body = snd (A.body m)
       modid = fromModname $ A.modname m
@@ -22,7 +23,7 @@ renProg m = do
   let ds = if modid == "Main" then mainRestrict ++ ds0 else ds0
   ctbs <- renClassDecls cds
   let bgs' = toBg ctbs
-      as2 = map (\(n, scm, _) -> n :>: scm) $ fst $ head bgs'
+      as2 = Map.fromList $ map (\(n, scm, _) -> (n, scm)) $ fst $ head bgs'
   let dicts = map (trCdecl modid) cds
   appendCDicts dicts
   (itbs, ctab) <- renInstDecls ids
@@ -49,21 +50,21 @@ renProg m = do
           ]
 
 
-semProgram :: A.Module -> (Subst, Int, [Assump])
-           -> RN ([BindGroup], [Assump], [DictDef] ,[(Id, Id)], ClassEnv)
+semProgram :: A.Module -> (Subst, Int, Assumps)
+           -> RN ([BindGroup], Assumps, [DictDef] ,[(Id, Id)], ClassEnv)
 semProgram m cont = do
   (bgs, bgs'', as2, dicts, ctab) <- renProg m
   st <- get
   let ce = rnCe st
       as = rnCms st
-  let as' = tiProgram ce (as ++ as2) bgs cont
-  return (bgs'', as' ++ as2, dicts, ctab, ce)
+  let as' = tiProgram ce (Map.union as as2) bgs cont
+  return (bgs'', Map.union as' as2, dicts, ctab, ce)
 
-semPrelude :: A.Module -> RN (Subst, Int, [Assump])
+semPrelude :: A.Module -> RN (Subst, Int, Assumps)
 semPrelude m = do
   (bgs, _, as2, _, _) <- renProg m
   st <- get
   let ce = rnCe st
       as = rnCms st
-  return $ tiImportedProgram ce (as ++ as2) bgs initialTI
+  return $ tiImportedProgram ce (Map.union as as2) bgs initialTI
 

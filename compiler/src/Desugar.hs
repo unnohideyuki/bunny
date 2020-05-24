@@ -6,7 +6,7 @@ import           Symbol
 import           TrCore
 import qualified Typing     as Ty
 
-dsgModule :: Id -> Ty.Program -> [Ty.Assump] -> ConstructorInfo -> Module
+dsgModule :: Id -> Ty.Program -> Ty.Assumps -> ConstructorInfo -> Module
 dsgModule modident bgs as ci =
   let
     [(es, iss)] = bgs

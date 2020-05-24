@@ -10,7 +10,7 @@ import           PreDefined
 import           Semant
 import           Symbol
 import qualified TrSTG                      as TR
-import           Typing                     (Assump, Subst, initialEnv,
+import           Typing                     (Assump, Assumps, Subst, initialEnv,
                                              initialTI)
 
 import           CompilerOpts
@@ -19,6 +19,7 @@ import           DDumpCore
 
 import           Control.Monad
 import           Control.Monad.State.Strict (runState)
+import qualified Data.Map.Strict            as Map
 import           Debug.Trace
 import           Options.Applicative
 import           System.IO
@@ -33,7 +34,7 @@ initRnState =
            , rnTenv = Symbol.empty
            , rnIfxenv = ifxenv
            , rnCe = initialEnv
-           , rnCms = primConsMems
+           , rnCms = fromAssumpList primConsMems
            , rnKdict = Symbol.empty
            , rnCdicts = []
            , rnConsts = emptyConstInfo
@@ -47,7 +48,7 @@ tiAs (_, _, as) = as
 debugmes :: Bool -> String -> IO ()
 debugmes verbose_mode message = when verbose_mode $ hPutStr stderr message
 
-implicitPrelude :: String -> Bool -> IO ((Subst, Int, [Assump]), RnState)
+implicitPrelude :: String -> Bool -> IO ((Subst, Int, Assumps), RnState)
 implicitPrelude prelude_dir verbose_mode = do
   debugmes verbose_mode "implicitPrelude ... "
   let src = prelude_dir ++ "/Prelude.hs"
@@ -66,9 +67,9 @@ implicitPrelude prelude_dir verbose_mode = do
         (cont, rnstate) = runState (semPrelude m) st
         as = rnCms rnstate
         as' = tiAs cont
-      in (cont, rnstate{rnCms = as ++ as'})
+      in (cont, rnstate{rnCms = Map.union as as'})
 
-doCompile :: RnState -> Absyn.Module -> String -> (Subst, Int, [Assump])
+doCompile :: RnState -> Absyn.Module -> String -> (Subst, Int, Assumps)
               -> Options -> IO ()
 doCompile st0 m dest cont opts = do
   let verbose_mode = optVerbose opts
@@ -78,11 +79,11 @@ doCompile st0 m dest cont opts = do
   let st = st0{rnModid = lvPrefix lv, rnLvs = lv : rnLvs st0}
       ((bgs, as, dicts, ctab, ce), st') = runState (semProgram m cont) st
 
-  when (optDdumpas opts) $ ddumpAssump as
+  when (optDdumpas opts) $ ddumpAssump (toAssumpList as)
 
   let ci = rnConsts st'
       ci' = concatConstInfo initialConsts ci
-  let cmod = dsgModule (rnModid st') bgs (as ++ rnCms st') ci' -- see memo#p-258
+  let cmod = dsgModule (rnModid st') bgs (Map.union as (rnCms st')) ci' -- see memo#p-258
   let b = case cmod of
         Module _ [x] -> x
         _            -> error "Must not occur, cmod must be a Module."

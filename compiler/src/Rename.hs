@@ -19,6 +19,7 @@ import           Control.Exception          (assert)
 import           Control.Monad              (mapM, when)
 import           Control.Monad.State.Strict (get, put)
 import           Data.List                  (concatMap, foldl', notElem, sort)
+import qualified Data.Map.Strict            as Map
 import           Data.Maybe                 (fromJust, fromMaybe)
 import           Debug.Trace
 
@@ -170,7 +171,7 @@ scanDecls ds = do
             return $ qn :>: toScheme t'
 
       as <- mapM renCs cs
-      appendCMs as
+      appendCMs (fromAssumpList as)
 
       da <- mapM parseConsts cs
       let dc = map (\(n, _) -> (n, as)) da

@@ -5,12 +5,14 @@ import qualified Pattern                    as Pat
 import           PreDefined                 (ConstructorInfo, initialConsts)
 import           Symbol
 import           Types
-import           Typing                     (Assump (..), Pred (..), Qual (..),
-                                             Scheme (..), find, inst, tv)
+import           Typing                     (Assump (..), Assumps, Pred (..),
+                                             Qual (..), Scheme (..), find, inst,
+                                             tv)
 import qualified Typing                     as Ty (Expr (..), Literal (..),
                                                    Pat (..))
 
 import           Control.Monad.State.Strict
+import qualified Data.Map.Strict            as Map
 import           Debug.Trace
 
 ptypes :: Type -> [Type]
@@ -29,7 +31,7 @@ ptypes t =
 
 -- Translation Monad
 
-data TrcState = TrcState { trcAs     :: [Assump]
+data TrcState = TrcState { trcAs     :: Assumps
                          , trcBind   :: Bind
                          , trcBstack :: [Bind]
                          , trcNum    :: Int
@@ -57,7 +59,7 @@ freshInst' (Forall ks qt) = do ts <- mapM newTVar' ks
                                return (inst ts qt)
 
 translateVdefs ::
-  [Assump] -> [(Id, Pat.Expression)] -> ConstructorInfo -> Bind
+  Assumps -> [(Id, Pat.Expression)] -> ConstructorInfo -> Bind
 translateVdefs as vdefs ci =
   let
     st = TrcState as (Rec []) [] 0 ci
@@ -71,20 +73,20 @@ typeLookup n = do
   sc <- find n as
   freshInst' sc
 
-getAs :: TRC [Assump]
+getAs :: TRC Assumps
 getAs = do
   st <- get
   return $ trcAs st
 
-putAs :: [Assump] -> TRC ()
+putAs :: Assumps -> TRC ()
 putAs as = do
   st <- get
   put st{trcAs = as}
 
-appendAs :: [Assump] -> TRC ()
+appendAs :: Assumps -> TRC ()
 appendAs as' = do
   as <- getAs
-  putAs (as' ++ as)
+  putAs (Map.union as' as)
 
 appendBind :: (Id, Expr) -> TRC ()
 appendBind (n, e) = do
@@ -122,7 +124,7 @@ transVdef (n, Pat.Lambda ns expr) = do
         (qf' :=> _) -> qf'
       f n' t' = let qf' = filter (\pr -> head (tv pr) `elem` tv t') qf
                 in TermVar n' (qf' :=> t')
-      as' = [n' :>: Forall [] (qf' :=> t') | TermVar n' (qf' :=> t') <- vs]
+      as' = Map.fromList [(n', Forall [] (qf' :=> t')) | TermVar n' (qf' :=> t') <- vs]
   appendAs as'
   expr' <- transExpr expr
   appendBind (n, lam' vs expr')
@@ -164,7 +166,7 @@ transExpr (Pat.Case n cs) = do
         ts = case qt of
           (_ :=> t') -> ptypes t'
         vs = map (\(n', t') -> TermVar n' ([] :=> t')) $ zip ns ts
-        as' = [n' :>: Forall ks ([] :=> t') | (n', t') <- zip ns ts]
+        as' = Map.fromList [(n', Forall ks ([] :=> t')) | (n', t') <- zip ns ts]
       as <- getAs
       appendAs as'
       expr' <- transExpr expr
