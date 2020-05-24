@@ -64,14 +64,14 @@ genBind (Bind (TermVar n) e) = do
   return $ gid st + 1
 genBind _ = error "genBind: must not occur"
 
-data GenSt = GenSt { str    :: String
-                   , idx    :: Int
+data GenSt = GenSt { str    :: !String
+                   , idx    :: !Int
                    , env    :: Map.Map Id Id
-                   , gid    :: Int
-                   , sstack :: [String]
-                   , istack :: [Int]
-                   , estack :: [Map.Map Id Id]
-                   , result :: String
+                   , gid    :: !Int
+                   , sstack :: ![String]
+                   , istack :: ![Int]
+                   , estack :: ![Map.Map Id Id]
+                   , result :: !String
                    }
 
 saveEnv :: GEN ()
