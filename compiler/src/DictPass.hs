@@ -46,33 +46,13 @@ tcBind (Rec bs) ce maybest = tbloop st0 bs []
     tcbind (v@(TermVar n qt@(qs :=> t)), e) st
       | isOVExpr e = ((v, e), st)
       | otherwise =
-        let pss' = tcPss st
-
-            (qtr@(qsr :=> tr), st2) = runState (getTy e) st
-            qtr'@(qsr' :=> _)  = normQTy qtr
-
-            cnd = case qt of
-              ([] :=> (TVar _)) -> not (null (tv qsr'))
-              _                 -> False
-
-            qt'@(qs' :=> t') = if cnd
-                  then qtr'
-                  else qt
-
-            pss = (zip qs' (repeat n))
-
-            rqty0 = tcReplaceQty st2
-            rqty = if cnd
-                   then [(n, qtr')]
-                   else []
-
-            v' = (TermVar n qt')
-
-            st' = st2{tcPss=(pss++pss'), tcReplaceQty=rqty0++rqty}
-            (e', st'') = runState (tcExpr e qt') st'
+        let pss = (zip qs (repeat n))
+            pss' = tcPss st
+            st' = st{tcPss=(pss++pss')}
+            (e', st'') = runState (tcExpr e qt) st'
         in
-          if null qs' then ((v', e'), st''{tcPss=pss'})
-          else ((v', Lam (mkVs n qs') e'), st''{tcPss=pss'})
+          if null qs then ((v, e'), st''{tcPss=pss'})
+          else ((v, Lam (mkVs n qs) e'), st''{tcPss=pss'})
     tcbind _ _ = error "tcbind: must not occur."
 
 isOVExpr :: Expr -> Bool -- whether (#overloaded# a b) form or not

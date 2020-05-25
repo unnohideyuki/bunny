@@ -657,7 +657,7 @@ renRhs (A.UnguardedRhs e ds) =
 
 renRhs (A.GuardedRhs gs decls) =
   let eFail = A.VarExp (Name {origName="Prim.FAIL", namePos=(0,0), isConName = False})
-      fail_local = A.VarExp (Name {origName="_fail", namePos=(0,0), isConName = False})
+      fail_local = A.VarExp (Name {origName="_fail#", namePos=(0,0), isConName = False})
       cnvGs []                         = fail_local
       -- todo cnvGs support most simple case that has only one statement.
       cnvGs (([A.ExpStmt e1], e2):gs') = A.IfExp e1 e2 (cnvGs gs')
@@ -705,12 +705,7 @@ renExp (A.LetExp ds e) = do
   e' <- renExp e
   exitLevel
   let bgs = toBg tbs
-      (es, iss) = head bgs
-      f []        bdy = bdy
-      f (is:iss') bdy = Let ([],[is]) (f iss' bdy)
-  if null es
-    then return $ f iss e'
-    else return (Let (head bgs) e')
+  return (Let (head bgs) e')
 
 -- List comprehension
 -- [e | True] = [e]

@@ -606,7 +606,7 @@ tiImpls ce as bs = do ts <- mapM (\_ -> newTVar Star) bs
                           vss = map tv ts'
                           gs  = foldr1 union vss \\ fs
                       (ds, rs) <- split ce fs (foldr1 intersect vss) ps'
-                      if restricted bs then
+                      if False && restricted bs then
                         let gs'  = gs \\ tv rs
                             scs' = map (quantify gs' . ([]:=>)) ts'
                         in return (ds ++ rs, Map.fromList (zip is scs'))

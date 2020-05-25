@@ -12,7 +12,9 @@ import qualified Typing                     as Ty (Expr (..), Literal (..),
                                                    Pat (..))
 
 import           Control.Monad.State.Strict
+import           Data.List.Split            (splitOn)
 import qualified Data.Map.Strict            as Map
+import           Data.Maybe
 import           Debug.Trace
 
 ptypes :: Type -> [Type]
@@ -36,9 +38,14 @@ data TrcState = TrcState { trcAs     :: Assumps
                          , trcBstack :: [Bind]
                          , trcNum    :: Int
                          , trcConsts :: ConstructorInfo
+                         , trcFailSc :: Scheme
                          }
 
 type TRC a = State TrcState a
+
+putFailSc :: Scheme -> TRC ()
+putFailSc sc = do st <- get
+                  put st{trcFailSc = sc}
 
 getCi :: TRC ConstructorInfo
 getCi = do
@@ -62,7 +69,7 @@ translateVdefs ::
   Assumps -> [(Id, Pat.Expression)] -> ConstructorInfo -> Bind
 translateVdefs as vdefs ci =
   let
-    st = TrcState as (Rec []) [] 0 ci
+    st = TrcState as (Rec []) [] 0 ci (Forall [] ([] :=> tUnit)) -- tUnit is dummy
     (_, st') = runState (transVdefs vdefs) st
   in
    trcBind st'
@@ -91,9 +98,13 @@ appendAs as' = do
 appendBind :: (Id, Expr) -> TRC ()
 appendBind (n, e) = do
   t <- typeLookup n
+  scfail <- trcFailSc <$> get
+  tfail <- freshInst' scfail
+  let isfail = last (splitOn "." n) == "_fail#"
+      t' = if isfail then tfail else t
   st <- get -- this must be after the typeLookup above.
   let Rec bs = trcBind st
-      bs' = bs ++ [(TermVar n t, e)]
+      bs' = bs ++ [(TermVar n t', e)]
   put st{trcBind = Rec bs'}
 
 pushBind :: TRC ()
@@ -112,11 +123,19 @@ popBind = do
   put st'
   return $ trcBind st
 
+calcFailSc :: Scheme -> [a] -> Scheme
+calcFailSc sc [] = sc -- todo: simplify ks and ps
+calcFailSc (Forall ks
+            (ps :=> TAp (TAp (TCon (Tycon "(->)" (Kfun Star (Kfun Star Star)))) _) t'))
+           (a:as)
+  = calcFailSc (Forall ks (ps :=> t')) as
+
 transVdef :: (Id, Pat.Expression) -> TRC ()
 transVdef (n, Pat.Lambda ns expr) = do
   as <- getAs
   sc <- find n as
   qt <- freshInst' sc
+  let failsc = calcFailSc sc ns
   let ts = case qt of
         (_ :=> t') -> ptypes t'
       vs = zipWith f ns ts
@@ -125,8 +144,15 @@ transVdef (n, Pat.Lambda ns expr) = do
       f n' t' = let qf' = filter (\pr -> head (tv pr) `elem` tv t') qf
                 in TermVar n' (qf' :=> t')
       as' = Map.fromList [(n', Forall [] (qf' :=> t')) | TermVar n' (qf' :=> t') <- vs]
+
   appendAs as'
+
+  failsc_save <- trcFailSc <$> get
+  putFailSc failsc
   expr' <- transExpr expr
+
+  st <- get
+  put st{trcFailSc=failsc_save}
   appendBind (n, lam' vs expr')
   putAs as
   where
@@ -134,6 +160,9 @@ transVdef (n, Pat.Lambda ns expr) = do
     lam' vs e = Lam vs e
 
 transVdef (n, e) = do
+  as <- getAs
+  sc <- find n as
+  putFailSc sc
   expr' <- transExpr e
   appendBind (n, expr')
 
@@ -155,8 +184,6 @@ transExpr (Pat.Case n cs) = do
   return $ Case scrut case_bndr alts
   where
     trClauses [] alts = do
-      -- defAlt <- mkDefAlt
-      -- return (defAlt:alts)
       return alts
     trClauses (Pat.Clause (i :>: scm) ns expr : cs') alts = do
       qt <- freshInst' scm
@@ -174,12 +201,6 @@ transExpr (Pat.Case n cs) = do
       -- TODO: qt is the type of the constructor. Should it be the type of lhs?
       let alt = (DataAlt (DataCon i vs qt), [], expr')
       trClauses cs' (alt:alts)
-    {-
-    mkDefAlt = do
-      a <- newTVar' Star
-      e' <- transExpr e
-      return (DEFAULT, [TermVar n ([] :=> a)], e')
-    -}
 
 transExpr (Pat.Fatbar (Pat.OtherExpression e) f) = do
   f' <- transExpr f
