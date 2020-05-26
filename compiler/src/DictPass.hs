@@ -68,7 +68,6 @@ data TcState = TcState { tcCe           :: !ClassEnv
                        , tcSubst        :: !Subst
                        , tcNum          :: !Int
                        , tcIntegerTVars :: ![Type]
-                       , tcReplaceQty   :: ![(Id, Qual Type)]
                        }
                deriving Show
 
@@ -109,10 +108,7 @@ getTy :: Expr -> TC (Qual Type)
 getTy (Var (TermVar n qt@(ps :=> _))) =
   do checkPreds ps
      st <- get
-     let d = tcReplaceQty st
-     case lookup n d of
-       Just x  -> return x
-       Nothing -> return qt
+     return qt
        where checkPreds :: [Pred] -> TC ()
              checkPreds [] = return ()
              checkPreds (IsIn n v:ps)
@@ -220,7 +216,7 @@ lookupDictArg (c, y) = do
 
 mkTcState :: ClassEnv -> [(Pred, Id)] -> Subst -> Int -> TcState
 mkTcState ce pss subst num =
-  TcState{tcCe=ce, tcPss=pss, tcSubst=subst, tcNum=num, tcIntegerTVars=[], tcReplaceQty=[]}
+  TcState{tcCe=ce, tcPss=pss, tcSubst=subst, tcNum=num, tcIntegerTVars=[]}
 
 findApplyDict e (qv :=> t') (_ :=> t) = do
   unify' t' t
@@ -262,13 +258,7 @@ findApplyDict e (qv :=> t') (_ :=> t) = do
 
 tcExpr :: Expr -> Qual Type -> TC Expr
 tcExpr e@(Var (TermVar n (qv :=> t'))) qt
-  | null qv || isArg n {- todo:too suspicious! -} = do
-      st <- get
-      let d = tcReplaceQty st
-      case lookup n d of
-        Just qt' -> findApplyDict (Var (TermVar n qt')) qt' qt
-        Nothing  -> return e
-
+  | null qv || isArg n {- todo:too suspicious! -} = return e
   | otherwise = findApplyDict e (qv :=> t') qt
   where isArg ('_':_) = True
         isArg _       = False
