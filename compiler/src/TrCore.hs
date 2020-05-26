@@ -2,16 +2,18 @@ module TrCore where -- Translate from Pattern.Expr to Core.
 
 import           Core
 import qualified Pattern                    as Pat
-import           PreDefined                 (ConstructorInfo, initialConsts)
+import           PreDefined                 (ConstructorInfo, fromAssumpList,
+                                             initialConsts)
 import           Symbol
 import           Types
 import           Typing                     (Assump (..), Assumps, Pred (..),
                                              Qual (..), Scheme (..), find, inst,
-                                             tv)
+                                             quantify, tv)
 import qualified Typing                     as Ty (Expr (..), Literal (..),
                                                    Pat (..))
 
 import           Control.Monad.State.Strict
+import           Data.List                  (nub)
 import           Data.List.Split            (splitOn)
 import qualified Data.Map.Strict            as Map
 import           Data.Maybe
@@ -95,16 +97,17 @@ appendAs as' = do
   as <- getAs
   putAs (Map.union as' as)
 
+checkReplaceAs :: Id -> Scheme -> TRC Assumps
+checkReplaceAs n sc
+  | last (splitOn "." n) == "_fail#" = return $ fromAssumpList [(n :>: sc)]
+  | otherwise                        = return $ fromAssumpList []
+
 appendBind :: (Id, Expr) -> TRC ()
 appendBind (n, e) = do
   t <- typeLookup n
-  scfail <- trcFailSc <$> get
-  tfail <- freshInst' scfail
-  let isfail = last (splitOn "." n) == "_fail#"
-      t' = if isfail then tfail else t
   st <- get -- this must be after the typeLookup above.
   let Rec bs = trcBind st
-      bs' = bs ++ [(TermVar n t', e)]
+      bs' = bs ++ [(TermVar n t, e)]
   put st{trcBind = Rec bs'}
 
 pushBind :: TRC ()
@@ -123,19 +126,32 @@ popBind = do
   put st'
   return $ trcBind st
 
-calcFailSc :: Scheme -> [a] -> Scheme
-calcFailSc sc [] = sc -- todo: simplify ks and ps
-calcFailSc (Forall ks
-            (ps :=> TAp (TAp (TCon (Tycon "(->)" (Kfun Star (Kfun Star Star)))) _) t'))
-           (a:as)
-  = calcFailSc (Forall ks (ps :=> t')) as
+calcFailSc :: Qual Type -> [a] -> Scheme
+calcFailSc qt [] = let qt' = normQTy qt
+                   in (Forall [] qt') -- quantify (tv qt') qt'
+  where normQTy (qs :=> t) = let tvs = tv t
+                                 qs' = filter
+                                       (\pr -> case tv pr of
+                                           [] -> True
+                                           xs -> (head xs) `elem` tvs
+                                       )
+                                       (nub qs)
+                             in
+                               qs' :=> t
+calcFailSc (ps :=> TAp (TAp (TCon (Tycon "(->)" (Kfun Star (Kfun Star Star)))) _) t') (a:as)
+  = calcFailSc (ps :=> t') as
+
 
 transVdef :: (Id, Pat.Expression) -> TRC ()
 transVdef (n, Pat.Lambda ns expr) = do
+  failsc_save <- trcFailSc <$> get
+  asf <- checkReplaceAs n failsc_save
+  appendAs asf
+
   as <- getAs
   sc <- find n as
   qt <- freshInst' sc
-  let failsc = calcFailSc sc ns
+  let failsc = calcFailSc qt ns
   let ts = case qt of
         (_ :=> t') -> ptypes t'
       vs = zipWith f ns ts
@@ -146,11 +162,8 @@ transVdef (n, Pat.Lambda ns expr) = do
       as' = Map.fromList [(n', Forall [] (qf' :=> t')) | TermVar n' (qf' :=> t') <- vs]
 
   appendAs as'
-
-  failsc_save <- trcFailSc <$> get
   putFailSc failsc
   expr' <- transExpr expr
-
   st <- get
   put st{trcFailSc=failsc_save}
   appendBind (n, lam' vs expr')

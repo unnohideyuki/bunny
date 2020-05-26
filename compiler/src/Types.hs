@@ -1,5 +1,6 @@
 module Types where
 
+import qualified Data.Map.Strict as Map
 import           Symbol
 
 data Kind = Star | Kfun Kind Kind deriving (Eq, Show)
@@ -45,4 +46,3 @@ list = TAp tList
 
 pair :: Type -> Type -> Type
 pair a = TAp (TAp tTuple2 a)
-
