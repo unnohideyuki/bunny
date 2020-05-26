@@ -50,9 +50,10 @@ tcBind (Rec bs) ce maybest = tbloop st0 bs []
             pss' = tcPss st
             st' = st{tcPss=(pss++pss')}
             (e', st'') = runState (tcExpr e qt) st'
+            num = tcNum st''
         in
-          if null qs then ((v, e'), st''{tcPss=pss'})
-          else ((v, Lam (mkVs n qs) e'), st''{tcPss=pss'})
+          if null qs then ((v, e'), st{tcNum=num})
+          else ((v, Lam (mkVs n qs) e'), st{tcNum=num})
     tcbind _ _ = error "tcbind: must not occur."
 
 isOVExpr :: Expr -> Bool -- whether (#overloaded# a b) form or not
