@@ -46,7 +46,8 @@ tcBind (Rec bs) ce maybest = tbloop st0 bs []
     tcbind (v@(TermVar n qt@(qs :=> t)), e) st
       | isOVExpr e = ((v, e), st)
       | otherwise =
-        let pss = (zip qs (repeat n))
+        let ds = zipWith (++) (repeat (n ++ ".DARG")) (map show [0..])
+            pss = (zip qs ds)
             pss' = tcPss st
             st' = st{tcPss=(pss++pss')}
             (e', st'') = runState (tcExpr e qt) st'
@@ -203,16 +204,15 @@ lookupDictArg (c, y) = do
   s <- getSubst
   pss <- getPss
   ce <- getCe
-  let d = zip (map (\((IsIn i t), _) -> (i, apply s t)) pss) [(0::Int)..]
-      lookupDict (k, tv) (((c, tv'), i):d')
-        | tv == tv' && c `isin` k = Just i
+  let d = map (\((IsIn i t), n) -> ((i, apply s t), n)) pss
+      lookupDict (k, tv) (((c, tv'), s):d')
+        | tv == tv' && c `isin` k = Just s
         | otherwise = lookupDict (k, tv) d'
       lookupDict _ [] = Nothing
       c1 `isin` c2 = (c1 == c2)|| (or $ map (`isin` c2) (super ce c1))
       ret = case lookupDict (c, TVar y) d of
         Nothing -> Nothing
-        Just j  -> let (_, n) = pss !! j
-                   in Just $ TermVar (n ++ ".DARG" ++ show j) ([] :=> TGen 100)
+        Just s  -> Just $ TermVar s ([] :=> TGen 100)
   return ret
 
 mkTcState :: ClassEnv -> [(Pred, Id)] -> Subst -> Int -> TcState
