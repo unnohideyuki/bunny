@@ -119,16 +119,15 @@ lcm _ 0 =  0
 lcm 0 _ =  0
 lcm x y =  abs ((x `quot` (gcd x y)) * y)
 
-{-
+
 (^)           :: (Num a, Integral b) => a -> b -> a
 x ^ 0         =  1
 x ^ n | n > 0 =  f x (n-1) x
                  where f _ 0 y = y
-                       f n x y = g n x where
-                         g n x | even n = g (x*x) (n `quot` 2)
+                       f x n y = g x n where
+                         g x n | even n = g (x*x) (n `quot` 2)
                                | otherwise = f x (n-1) (x*y)
 _ ^ _         =  error "Prelude.^: negative exponent"
--}
 
 -- Monadic classes
 
@@ -199,6 +198,23 @@ instance Show Char where
 showLitChar c = (++) [c]
 
 -- Maybe type
+data Maybe a = Nothing | Just a
+
+{-
+instance (Eq a) => Eq (Maybe a) where
+  Nothing == Nothing = True
+  Just x  == Just y  = x == y
+  _       == _       = False
+
+instance (Ord a) => Ord (Maybe a) where
+  Nothing <= _      = True
+  Just x  <= Just y = x <= y
+
+instance (Show a) => Show (Maybe a) where
+  show Nothing  = "Nothing"
+  show (Just x) = "Just " ++ show x
+-}
+
 -- Either type
 
 -- IO type
