@@ -131,6 +131,9 @@ _ ^ _         =  error "Prelude.^: negative exponent"
 
 -- Monadic classes
 
+class Functor f where
+  fmap :: (a -> b) -> f a -> f b
+
 class Monad m where
   (>>=)  :: m a -> (a -> m b) -> m b
   (>>)   :: m a -> m b -> m b
@@ -139,6 +142,13 @@ class Monad m where
   -- Minimal complete definition: (>>=), return
   m >> k = m >>= \_ -> k
   fail s = error s
+
+sequence :: Monad m => [m a] -> m [a]
+sequence =  foldr mcons (return [])
+  where mcons p q = p >>= \x -> q >>= \y -> return (x:y)
+
+sequence_ :: Monad m => [m a] -> m ()
+sequence_ =  foldr (>>) (return ())
 
 -- Function type
 
@@ -213,6 +223,16 @@ instance (Ord a) => Ord (Maybe a) where
 instance (Show a) => Show (Maybe a) where
   show Nothing  = "Nothing"
   show (Just x) = "Just " ++ show x
+
+instance Functor Maybe where
+  fmap f Nothing  = Nothing
+  fmap f (Just x) = f x
+
+instance Monad Maybe where
+  (Just x) >>= k = k x
+  Nothing  >>= k = Nothing
+  return         = Just
+  fail s         = Nothing
 -}
 
 -- Either type
