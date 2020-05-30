@@ -9,6 +9,7 @@ import           Rename
 import           Symbol
 import           Typing
 
+import           Control.Monad
 import           Control.Monad.State.Strict (get)
 import qualified Data.Map.Strict            as Map
 import           Debug.Trace
@@ -50,10 +51,11 @@ renProg m = do
           ]
 
 
-semProgram :: A.Module -> (Subst, Int, Assumps)
+semProgram :: A.Module -> (Subst, Int, Assumps) -> Bool
            -> RN ([BindGroup], Assumps, [DictDef] ,[(Id, Id)], ClassEnv)
-semProgram m cont = do
+semProgram m cont ddumpren = do
   (bgs, bgs'', as2, dicts, ctab) <- renProg m
+  when ddumpren $ trace (show bgs) $ return ()
   st <- get
   let ce = rnCe st
       as = rnCms st

@@ -11,6 +11,7 @@ import           Data.Char                  (isUpper)
 import           Data.List.Split            (splitOn)
 import qualified Data.Map.Strict            as Map
 import           Data.Maybe                 (fromMaybe)
+import           Debug.Trace
 
 aTrue :: A.Exp
 aTrue  = A.VarExp $ Name "True" (0,0) True

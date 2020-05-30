@@ -210,7 +210,6 @@ showLitChar c = (++) [c]
 -- Maybe type
 data Maybe a = Nothing | Just a
 
-{-
 instance (Eq a) => Eq (Maybe a) where
   Nothing == Nothing = True
   Just x  == Just y  = x == y
@@ -224,17 +223,18 @@ instance (Show a) => Show (Maybe a) where
   show Nothing  = "Nothing"
   show (Just x) = "Just " ++ show x
 
-instance Functor Maybe where
-  fmap f Nothing  = Nothing
-  fmap f (Just x) = f x
-
 instance Monad Maybe where
   (Just x) >>= k = k x
   Nothing  >>= k = Nothing
   return         = Just
   fail s         = Nothing
--}
 
+{-
+instance Functor Maybe where
+  fmap f Nothing  = Nothing
+  fmap f (Just x) = f x
+
+-}
 -- Either type
 
 -- IO type

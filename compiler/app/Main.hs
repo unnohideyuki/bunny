@@ -77,7 +77,8 @@ doCompile st0 m dest cont opts = do
   -- TODO: regular way to add primitive names.
   let lv = (initialLevel $ Absyn.modname m){lvDict=primNames}
   let st = st0{rnModid = lvPrefix lv, rnLvs = lv : rnLvs st0}
-      ((bgs, as, dicts, ctab, ce), st') = runState (semProgram m cont) st
+      ((bgs, as, dicts, ctab, ce), st')
+        = runState (semProgram m cont (optDdumpren opts)) st
 
   when (optDdumpas opts) $ ddumpAssump (toAssumpList as)
 

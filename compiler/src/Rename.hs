@@ -168,7 +168,7 @@ scanDecls ds = do
       let renCs (n, ts) = do
             qn <- renameVar n
             let t' = foldr fn t ts
-            return $ qn :>: toScheme t'
+            return $ qn :>: (quantify (tv t') ([] :=> t'))
 
       as <- mapM renCs cs
       appendCMs (fromAssumpList as)

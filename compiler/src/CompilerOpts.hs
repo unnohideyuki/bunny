@@ -14,6 +14,7 @@ data Options = Options
                , xnoImplicitPrelude :: Bool
                , optVerbose         :: Bool
                , optDdumpabsyn      :: Bool
+               , optDdumpren        :: Bool
                , optDdumpas         :: Bool
                , optDdumpcore       :: Bool
                , optDdumpcore0      :: Bool
@@ -64,6 +65,12 @@ ddumpabsynP = switch $ mconcat
            , help "Debugging dump of Absyn"
            ]
 
+ddumprenP :: Parser Bool
+ddumprenP = switch $ mconcat
+           [ long "ddump-ren"
+           , help "Debugging dump of Rename"
+           ]
+
 ddumpasP :: Parser Bool
 ddumpasP = switch $ mconcat
            [ long "ddump-assump"
@@ -93,6 +100,7 @@ optionsP = (<*>) helper $
            <*> xNoImplicitPreludeP
            <*> verboseP
            <*> ddumpabsynP
+           <*> ddumprenP
            <*> ddumpasP
            <*> ddumpcoreP
            <*> ddumpcore0P
