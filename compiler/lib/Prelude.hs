@@ -210,6 +210,10 @@ showLitChar c = (++) [c]
 -- Maybe type
 data Maybe a = Nothing | Just a
 
+maybe              :: b -> (a -> b) -> Maybe a -> b
+maybe n f Nothing  =  n
+maybe n f (Just x) =  f x
+
 instance (Eq a) => Eq (Maybe a) where
   Nothing == Nothing = True
   Just x  == Just y  = x == y
