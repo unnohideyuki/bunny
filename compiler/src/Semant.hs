@@ -1,5 +1,6 @@
 module Semant ( module Rename
-              , semProgram
+              , renProg
+--              , semProgram
               , semPrelude
               ) where
 
@@ -49,18 +50,6 @@ renProg m = do
                             (A.FunAppExp (A.VarExp (Name "return" (0,0) False))
                                          (A.VarExp (Name "()" (0,0) True)))) []))
           ]
-
-
-semProgram :: A.Module -> (Subst, Int, Assumps) -> Bool
-           -> RN ([BindGroup], Assumps, [DictDef] ,[(Id, Id)], ClassEnv)
-semProgram m cont ddumpren = do
-  (bgs, bgs'', as2, dicts, ctab) <- renProg m
-  when ddumpren $ trace (show bgs) $ return ()
-  st <- get
-  let ce = rnCe st
-      as = rnCms st
-  let as' = tiProgram ce (Map.union as as2) bgs cont
-  return (bgs'', Map.union as' as2, dicts, ctab, ce)
 
 semPrelude :: A.Module -> RN (Subst, Int, Assumps)
 semPrelude m = do

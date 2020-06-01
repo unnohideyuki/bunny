@@ -11,7 +11,7 @@ import           Semant
 import           Symbol
 import qualified TrSTG                      as TR
 import           Typing                     (Assump, Assumps, Subst, initialEnv,
-                                             initialTI)
+                                             initialTI, tiProgram)
 
 import           CompilerOpts
 import           DDumpAssump
@@ -77,8 +77,13 @@ doCompile st0 m dest cont opts = do
   -- TODO: regular way to add primitive names.
   let lv = (initialLevel $ Absyn.modname m){lvDict=primNames}
   let st = st0{rnModid = lvPrefix lv, rnLvs = lv : rnLvs st0}
-      ((bgs, as, dicts, ctab, ce), st')
-        = runState (semProgram m cont (optDdumpren opts)) st
+      ((bgs_ti, bgs, as2, dicts, ctab), st') = runState (renProg m) st
+
+  when (optDdumpren opts) $ trace (show bgs) $ return ()
+
+  let ce = rnCe st'
+      as' = tiProgram ce (Map.union (rnCms st') as2) bgs_ti cont
+      as = Map.union as' as2
 
   when (optDdumpas opts) $ ddumpAssump (toAssumpList as)
 
