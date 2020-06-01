@@ -9,7 +9,7 @@ objs = src/Lexer.o src/Parser.o src/PreDefined.o \
        src/Core.o src/Desugar.o src/TrCore.o src/STG.o src/TrSTG.o \
        src/CodeGen.o src/DictPass.o \
        src/CompilerOpts.o src/DDumpAssump.o src/DDumpCore.o \
-       src/PPTypes.o src/PPCore.o
+       src/PPTypes.o src/PPCore.o src/PPTyping.o
 all: $(execs)
 
 OPTIONS = -Wall -XHaskell2010 -XNoMonadFailDesugaring $(OFLAG)

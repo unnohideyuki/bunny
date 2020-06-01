@@ -16,6 +16,7 @@ import           Typing                     (Assump, Assumps, Subst, initialEnv,
 import           CompilerOpts
 import           DDumpAssump
 import           DDumpCore
+import           PPTyping
 
 import           Control.Monad
 import           Control.Monad.State.Strict (runState)
@@ -79,7 +80,7 @@ doCompile st0 m dest cont opts = do
   let st = st0{rnModid = lvPrefix lv, rnLvs = lv : rnLvs st0}
       ((bgs_ti, bgs, as2, dicts, ctab), st') = runState (renProg m) st
 
-  when (optDdumpren opts) $ trace (show bgs) $ return ()
+  when (optDdumpren opts) $ ddumpRen bgs
 
   let ce = rnCe st'
       as' = tiProgram ce (Map.union (rnCms st') as2) bgs_ti cont
