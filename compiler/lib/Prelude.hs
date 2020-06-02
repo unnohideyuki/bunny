@@ -173,7 +173,7 @@ f $ x = f x
 
 -- Boolean type
 
-data Bool = False | True
+data Bool = False | True deriving Show
 
 -- Boolean functions
 
@@ -223,12 +223,6 @@ instance (Ord a) => Ord (Maybe a) where
   Nothing <= _      = True
   Just x  <= Just y = x <= y
 
-{-
-instance (Show a) => Show (Maybe a) where
-  show Nothing  = "Nothing"
-  show (Just x) = "Just " ++ show x
--}
-
 instance Functor Maybe where
   fmap f Nothing  = Nothing
   fmap f (Just x) = Just (f x)
@@ -250,11 +244,8 @@ instance Monad IO where
 
 -- Ordering type
 
-data Ordering = LT | EQ | GT
+data Ordering = LT | EQ | GT deriving Show
 --              deriving (Eq, Ord, Enum, Read, Show, Bounded)
-
-instance Show Ordering where
-  show = Prim.showConName
 
 instance Eq Ordering where
   a == b = case (a, b) of
@@ -279,9 +270,6 @@ instance Ord Ordering where
     (GT, LT) -> False
     (GT, EQ) -> False
     (GT, GT) -> True
-
-instance Show Bool where
-  show = Prim.showConName
 
 instance (Show a) => Show [a] where
   showsPrec p = showList

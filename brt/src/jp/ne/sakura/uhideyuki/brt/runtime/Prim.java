@@ -31,10 +31,6 @@ public class Prim {
 	return new ErrExpr("Error: Non-exhaustive patterns.");
     }
 
-    public static Expr mkshowConName(){
-	return RTLib.mkFun(new ShowConNameFunc());
-    }
-
     public static Expr mkintegerShow(){
 	return RTLib.mkFun(new IntegerShowFunc());
     }
@@ -214,26 +210,6 @@ public class Prim {
 
     public static Expr mk_40__44__41_(){
 	return RTLib.mkFun(new PairFunc());
-    }
-}
-
-class ShowConNameFunc implements LambdaForm {
-    public int arity(){ return 1; }
-    public Expr call(AtomExpr[] args){
-	assert args.length == arity();
-	Expr x = RT.eval(args[0]);
-
-	if (x instanceof AtomExpr && 
-	    ((AtomExpr)x).a instanceof Var &&
-	    ((Var)((AtomExpr)x).a).obj instanceof ConObj){
-	    ConObj co = (ConObj)((Var)((AtomExpr)x).a).obj;
-	    String ident = co.cotr.ident;
-	    String[] t = ident.split("\\.", 0);
-	    String r = t[t.length - 1];
-	    return RTLib.fromJString(r);
-	} else {
-	    return new ErrExpr("Prim.show: must not occur");
-	}
     }
 }
 
