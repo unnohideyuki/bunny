@@ -208,7 +208,7 @@ instance Show Char where
 showLitChar c = (++) [c]
 
 -- Maybe type
-data Maybe a = Nothing | Just a
+data Maybe a = Nothing | Just a deriving Show
 
 maybe              :: b -> (a -> b) -> Maybe a -> b
 maybe n f Nothing  =  n
@@ -223,9 +223,11 @@ instance (Ord a) => Ord (Maybe a) where
   Nothing <= _      = True
   Just x  <= Just y = x <= y
 
+{-
 instance (Show a) => Show (Maybe a) where
   show Nothing  = "Nothing"
   show (Just x) = "Just " ++ show x
+-}
 
 instance Functor Maybe where
   fmap f Nothing  = Nothing

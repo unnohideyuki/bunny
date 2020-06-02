@@ -18,7 +18,8 @@ import           Typing
 import           Control.Exception          (assert)
 import           Control.Monad              (mapM, when)
 import           Control.Monad.State.Strict (get, put)
-import           Data.List                  (concatMap, foldl', notElem, sort)
+import           Data.List                  (concatMap, foldl', notElem, sort,
+                                             union)
 import qualified Data.Map.Strict            as Map
 import           Data.Maybe                 (fromJust, fromMaybe)
 import           Debug.Trace
@@ -176,7 +177,12 @@ scanDecls ds = do
       da <- mapM parseConsts cs
       let dc = map (\(n, _) -> (n, as)) da
       appendConstInfo da dc
-      return ([], [], [])
+
+      let ddrvs = if needDrvShow maybe_dtys
+                  then [genDerivedShow d]
+                  else []
+
+      return ([], [], ddrvs)
       where
         parseTy (A.Tycon n) = return (n, [])
         parseTy t = parsety' [] t
@@ -202,6 +208,46 @@ scanDecls ds = do
           qn <- renameVar n
           let aty = length ts
           return (qn, aty)
+
+        needDrvShow Nothing   = False
+        needDrvShow (Just ts) = any (\(A.Tycon n) -> origName n == "Show") ts
+
+        tv' v@(A.Tyvar _) = [v]
+        tv' (A.AppTy l r) = tv' l ++ tv' r
+        tv' (A.ParTy t)   = tv' t
+        tv' _             = []
+
+        genDerivedShow (A.DataDecl (maybe_context, ty) consts maybe_dtys) =
+          let tvs = tv' ty
+              ctx | null tvs        = Nothing
+                  | length tvs == 1 =
+                    Just (A.AppTy (A.Tycon (Name "Show" (0,0) True)) (head tvs))
+                  | otherwise       = error "todo: two or more tvs in genDerivedShow."
+              tycls_inst = A.AppTy (A.Tycon (Name "Show" (0,0) True)) ty
+              idecls = map deriveShowDecl consts
+
+              var n = A.VarExp (Name n (0,0) False)
+              con n = A.VarExp (Name n (0,0) True)
+              str n = A.LitExp (A.LitString n (0,0))
+              vshow = var "show"
+
+              deriveShowDecl (A.Con (A.Tycon n)) =
+                let n' = origName n
+                    lhs = A.FunAppExp vshow (con n')
+                    rhs = A.UnguardedRhs (str n') []
+                in A.VDecl (A.ValDecl lhs rhs)
+
+              deriveShowDecl (A.Con (A.AppTy (A.Tycon n) (A.Tyvar x))) =
+                let n' = origName n
+                    x' = origName x
+                    lhs = A.FunAppExp vshow (A.FunAppExp (con n') (var x'))
+                    rhs = A.UnguardedRhs (A.InfixExp (str (n' ++ " "))
+                                                     (Name "++" (0,0) False)
+                                                     (A.FunAppExp vshow (var x')))
+                                         []
+                in A.VDecl (A.ValDecl lhs rhs)
+
+          in A.InstDecl ctx tycls_inst idecls
 
     scandecl (A.DefaultDecl _)   = error "not yet: DefaultDecl"
     scandecl (A.ForeignDecl _)   = error "not yet: ForeignDecl"
