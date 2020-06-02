@@ -248,28 +248,19 @@ data Ordering = LT | EQ | GT deriving Show
 --              deriving (Eq, Ord, Enum, Read, Show, Bounded)
 
 instance Eq Ordering where
-  a == b = case (a, b) of
-    (LT, LT) -> True
-    (LT, EQ) -> False
-    (LT, GT) -> False
-    (EQ, LT) -> False
-    (EQ, EQ) -> True
-    (EQ, GT) -> False
-    (GT, LT) -> False
-    (GT, EQ) -> False
-    (GT, GT) -> True
+  LT == LT = True
+  EQ == EQ = True
+  GT == GT = True
+  _  == _  = False
 
 instance Ord Ordering where
-  a <= b = case (a, b) of
-    (LT, LT) -> True
-    (LT, EQ) -> True
-    (LT, GT) -> True
-    (EQ, LT) -> False
-    (EQ, EQ) -> True
-    (EQ, GT) -> True
-    (GT, LT) -> False
-    (GT, EQ) -> False
-    (GT, GT) -> True
+  LT <= LT = True
+  LT <= EQ = True
+  LT <= GT = True
+  EQ <= EQ = True
+  EQ <= GT = True
+  GT <= GT = True
+  _  <= _  = False
 
 instance (Show a) => Show [a] where
   showsPrec p = showList
