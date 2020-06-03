@@ -229,6 +229,25 @@ instance Monad Maybe where
   fail s         = Nothing
 
 -- Either type
+data Either a b = Left a | Right b
+
+instance (Eq a, Eq b) => Eq (Either a b) where
+  Left x  == Left y  = x == y
+  Right x == Right y = x == y
+  _       == _       = False
+
+instance (Ord a, Ord b) => Ord (Either a b) where
+  Left  x <= Left y  = x <= y
+  Left  _ <= Right _ = True
+  Right x <= Right y = x <= y
+
+instance (Show a, Show b) => Show (Either a b) where
+  show (Left x) = "Left " ++ show x
+  show (Right x) = "Right " ++ show x
+
+either               :: (a -> c) -> (b -> c) -> Either a b -> c
+either f g (Left x)  =  f x
+either f g (Right y) =  g y
 
 -- IO type
 
