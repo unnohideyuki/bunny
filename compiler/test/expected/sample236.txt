@@ -1,0 +1,11 @@
+Left 0
+Left 2
+Right 10.0
+Right 3.0
+True
+True
+True
+True
+False
+4.0
+5.0

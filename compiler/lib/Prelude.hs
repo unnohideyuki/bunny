@@ -27,6 +27,13 @@ instance (Eq a) => Eq [a] where
   [] == _  = False
   (x:xs) == (y:ys) = x == y && xs == ys
 
+instance (Ord a) => Ord [a] where
+  [] <= _  = True
+  _  <= [] = False
+  (x:xs) <= (y:ys) | x == y    = xs <= ys
+                   | x <  y    = True
+                   | otherwise = False
+
 class (Eq a) => Ord a where
   compare              :: a -> a -> Ordering
   (<), (<=), (>=), (>) :: a -> a -> Bool
