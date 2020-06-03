@@ -208,16 +208,11 @@ instance Show Char where
 showLitChar c = (++) [c]
 
 -- Maybe type
-data Maybe a = Nothing | Just a deriving Show
+data Maybe a = Nothing | Just a deriving (Eq, Show)
 
 maybe              :: b -> (a -> b) -> Maybe a -> b
 maybe n f Nothing  =  n
 maybe n f (Just x) =  f x
-
-instance (Eq a) => Eq (Maybe a) where
-  Nothing == Nothing = True
-  Just x  == Just y  = x == y
-  _       == _       = False
 
 instance (Ord a) => Ord (Maybe a) where
   Nothing <= _      = True
@@ -244,14 +239,8 @@ instance Monad IO where
 
 -- Ordering type
 
-data Ordering = LT | EQ | GT deriving Show
+data Ordering = LT | EQ | GT deriving (Eq, Show)
 --              deriving (Eq, Ord, Enum, Read, Show, Bounded)
-
-instance Eq Ordering where
-  LT == LT = True
-  EQ == EQ = True
-  GT == GT = True
-  _  == _  = False
 
 instance Ord Ordering where
   LT <= LT = True

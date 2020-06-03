@@ -181,8 +181,11 @@ scanDecls ds = do
       let ddrvs = if needDrvShow maybe_dtys
                   then [genDerivedShow d]
                   else []
+          ddrvs' = if needDrvEq maybe_dtys
+                   then (genDerivedEq d:ddrvs)
+                   else ddrvs
 
-      return ([], [], ddrvs)
+      return ([], [], ddrvs')
       where
         parseTy (A.Tycon n) = return (n, [])
         parseTy t = parsety' [] t
@@ -211,6 +214,9 @@ scanDecls ds = do
 
         needDrvShow Nothing   = False
         needDrvShow (Just ts) = any (\(A.Tycon n) -> origName n == "Show") ts
+
+        needDrvEq Nothing   = False
+        needDrvEq (Just ts) = any (\(A.Tycon n) -> origName n == "Eq") ts
 
         tv' v@(A.Tyvar _) = [v]
         tv' (A.AppTy l r) = tv' l ++ tv' r
@@ -246,6 +252,45 @@ scanDecls ds = do
                                                      (A.FunAppExp vshow (var x')))
                                          []
                 in A.VDecl (A.ValDecl lhs rhs)
+
+          in A.InstDecl ctx tycls_inst idecls
+
+        genDerivedEq (A.DataDecl (maybe_context, ty) consts maybe_dtys) =
+          let tvs = tv' ty
+              ctx | null tvs        = Nothing
+                  | length tvs == 1 =
+                    Just (A.AppTy (A.Tycon (Name "Eq" (0,0) True)) (head tvs))
+                  | otherwise       = error "todo: two or more tvs in genDerivedShow."
+              tycls_inst = A.AppTy (A.Tycon (Name "Eq" (0,0) True)) ty
+              idecls = map deriveEqDecl consts ++ [wildcardDecl]
+
+              var n = A.VarExp (Name n (0,0) False)
+              con n = A.VarExp (Name n (0,0) True)
+              str n = A.LitExp (A.LitString n (0,0))
+              neq = Name "==" (0,0) False
+
+              deriveEqDecl (A.Con (A.Tycon n)) =
+                let n' = origName n
+                    lhs = A.InfixExp (con n') neq (con n')
+                    rhs = A.UnguardedRhs (con "True") []
+                in A.VDecl (A.ValDecl lhs rhs)
+
+              deriveEqDecl (A.Con (A.AppTy (A.Tycon n) (A.Tyvar _))) =
+                let n' = origName n
+                    lhs = A.InfixExp (A.FunAppExp (con n') (var "x"))
+                                     neq
+                                     (A.FunAppExp (con n') (var "y"))
+                    rhs = A.UnguardedRhs (A.InfixExp (var "x")
+                                                     neq
+                                                     (var "y"))
+                                         []
+                in A.VDecl (A.ValDecl lhs rhs)
+
+              wildcardDecl =
+                let lhs = A.InfixExp A.WildcardPat neq A.WildcardPat
+                    rhs = A.UnguardedRhs (con "False") []
+                in A.VDecl (A.ValDecl lhs rhs)
+
 
           in A.InstDecl ctx tycls_inst idecls
 
