@@ -136,6 +136,13 @@ x ^ n | n > 0 =  f x (n-1) x
                                | otherwise = f x (n-1) (x*y)
 _ ^ _         =  error "Prelude.^: negative exponent"
 
+-- (^^)
+
+fromIntegral :: (Integral a, Num b) => a -> b
+fromIntegral =  fromInteger . toInteger
+
+-- realToFrac
+
 -- Monadic classes
 
 class Functor f where
@@ -463,7 +470,9 @@ undefined :: a
 undefined =  error "Prelude.undefined"
 
 -- PreludeList
+infixl 9 !!
 infixr 5 ++
+infix  4 `elem`, `notElem`
 
 -- Map and append
 map          :: (a -> b) -> [a] -> [b]
@@ -471,19 +480,53 @@ map f []     =  []
 map f (x:xs) =  f x : map f xs
 
 (++) :: [a] -> [a] -> [a]
-(++) []     ys = ys
-(++) (x:xs) ys = x : xs ++ ys
+[]     ++ ys = ys
+(x:xs) ++ ys = x : xs ++ ys
+
+concat :: [[a]] -> [a]
+concat xss = foldr (++) [] xss
 
 concatMap  :: (a -> [b]) -> [a] -> [b]
 concatMap f = foldr ((++) . f) []
 
-head             :: [a] -> a
-head (x:xs)      =  x -- todo: wild card
-head []          =  error "Prelude.head: empty list"
+-- head and tail extract the first element and remaining elements,
+-- respectively, of a list, which must be non-empty.  last and init
+-- are dual functions working from the end of a finite list,
+-- rather than the beginning.
+
+head           :: [a] -> a
+head (x:_)     =  x
+head []        =  error "Prelude.head: empty list"
 
 tail             :: [a] -> [a]
-tail (x:xs)      =  xs -- todo wild card
+tail (_:xs)      =  xs
 tail []          =  error "Prelude.tail: empty list"
+
+last        :: [a] -> a
+last [x]    =  x
+last xs     =  last (tail xs) -- todo: occur check fail?
+last []     =  error "Prelude.last: empty list"
+
+init        :: [a] -> [a]
+init [x]    =  []
+init xs     =  head xs : init (tail xs) -- todo: occur check fail?
+init []     =  error "Prelude.init: empty list"
+
+null :: [a] -> Bool
+null [] = True
+null (_:_) = False
+
+-- length returns the length of a finite list as an Int.
+length       :: [a] -> Int
+length []    =  0
+length (_:l) =  1 + length l
+
+-- List index operator, 0-origin
+(!!)                :: [a] -> Int -> a
+xs     !! n | n < 0 =  error "Prelude.!!: negative index"
+[]     !! _         =  error "Prelude.!!: index too large"
+(x:_)  !! 0         =  x
+(_:xs) !! n         =  xs !! (n-1)
 
 -- foldl
 foldl            :: (a -> b -> a) -> a -> [b] -> a
