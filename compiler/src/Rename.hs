@@ -228,7 +228,8 @@ scanDecls ds = do
               ctx | null tvs        = Nothing
                   | length tvs == 1 =
                     Just (A.AppTy (A.Tycon (Name "Show" (0,0) True)) (head tvs))
-                  | otherwise       = error "todo: two or more tvs in genDerivedShow."
+                  | otherwise       =
+                    Just (A.TupleTy (map (A.AppTy (A.Tycon (Name "Show" (0,0) True))) tvs))
               tycls_inst = A.AppTy (A.Tycon (Name "Show" (0,0) True)) ty
               idecls = map deriveShowDecl consts
 
@@ -260,7 +261,8 @@ scanDecls ds = do
               ctx | null tvs        = Nothing
                   | length tvs == 1 =
                     Just (A.AppTy (A.Tycon (Name "Eq" (0,0) True)) (head tvs))
-                  | otherwise       = error "todo: two or more tvs in genDerivedShow."
+                  | otherwise       =
+                      Just (A.TupleTy (map (A.AppTy (A.Tycon (Name "Eq" (0,0) True))) tvs))
               tycls_inst = A.AppTy (A.Tycon (Name "Eq" (0,0) True)) ty
               idecls = map deriveEqDecl consts ++ [wildcardDecl]
 
