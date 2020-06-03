@@ -157,6 +157,17 @@ sequence =  foldr mcons (return [])
 sequence_ :: Monad m => [m a] -> m ()
 sequence_ =  foldr (>>) (return ())
 
+-- The xxxM function take list arguments, but lift the function or
+-- list element to a monad type
+mapM      :: Monad m => (a -> m b) -> [a] -> m [b]
+mapM f as =  sequence (map f as)
+
+mapM_      :: Monad m => (a -> m b) -> [a] -> m ()
+mapM_ f as =  sequence_ (map f as)
+
+(=<<)   :: Monad m => (a -> m b) -> m a -> m b
+f =<< x =  x >>= f
+
 -- Function type
 
 -- identity function
@@ -164,6 +175,8 @@ id   :: a -> a
 id x = x
 
 -- constant function
+const     :: a -> b -> a
+const x _ =  x
 
 -- function composition
 (.) :: (b -> c) -> (a -> b) -> (a -> c)
@@ -180,13 +193,15 @@ f $ x = f x
 
 -- Boolean type
 
-data Bool = False | True deriving Show
+data Bool = False | True deriving (Eq, Show)
 
 -- Boolean functions
 
-(&&) :: Bool -> Bool -> Bool
+(&&), (||) :: Bool -> Bool -> Bool
 True  && x = x
 False && x = False
+True  || _ = True
+False || x = x
 
 not :: Bool -> Bool
 not True  = False
@@ -248,6 +263,9 @@ either f g (Left x)  =  f x
 either f g (Right y) =  g y
 
 -- IO type
+
+instance Functor IO where
+  fmap f x = x >>= (return . f)
 
 instance Monad IO where
   return = Prim.retIO
@@ -396,7 +414,16 @@ instance Show Double where
   show = Prim.doubleShow
 
 -- Lists
--- Functor, Monad
+
+{- renSigDoc $ A.Tycon []
+instance Functor [] where
+  fmap = map
+
+instance Monad [] where
+  m >>= k  = concat (map k m)
+  return x = [x]
+  fail s   = []
+-}
 
 -- Tuples
 -- componet projections for pairs:
@@ -406,10 +433,43 @@ fst (x, y) = x
 snd :: (a, b) -> b
 snd (x, y) = y
 
+-- curry converts an uncurried function to a curried function:
+-- uncurry converts a curried function to a function on pairs.
+curry       :: ((a, b) -> c) -> a -> b -> c
+curry f x y =  f (x, y)
+
+uncurry     :: (a -> b -> c) -> ((a, b) -> c)
+uncurry f p =  f (fst p) (snd p)
+
+-- Misc functions
+
+-- until p f yields the result of applying f until p holds.
+until :: (a -> Bool) -> (a -> a) -> a -> a
+until p f x
+  | p x       = x
+  | otherwise = until p f (f x)
+
+-- asTypeOf is a type-restricted version of const. It is usually used
+-- as an infix operator, and its typing forces its first argument
+-- (which is usually overloaded) to have the same types as the second.
+asTypeOf :: a -> a -> a
+asTypeOf =  const
+
+-- error stops execution and displays an error message
+-- (build-in function)
+
+-- undefined
+undefined :: a
+undefined =  error "Prelude.undefined"
+
 -- PreludeList
 infixr 5 ++
 
 -- Map and append
+map          :: (a -> b) -> [a] -> [b]
+map f []     =  []
+map f (x:xs) =  f x : map f xs
+
 (++) :: [a] -> [a] -> [a]
 (++) []     ys = ys
 (++) (x:xs) ys = x : xs ++ ys
