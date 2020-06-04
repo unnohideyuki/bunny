@@ -533,17 +533,73 @@ foldl            :: (a -> b -> a) -> a -> [b] -> a
 foldl f z []     =  z
 foldl f z (x:xs) =  foldl f (f z x) xs
 
+foldl1          :: (a -> a -> a) -> [a] -> a
+foldl1 f (x:xs) =  foldl f x xs
+foldl1 _ []     =  error "Prelude.foldl1: empty list"
+
+scanl        :: (a -> b -> a) -> a -> [b] -> [a]
+scanl f q xs =  q : (case xs of
+                       []   -> []
+                       x:xs -> scanl f (f q x) xs)
+
+scanl1          :: (a -> a -> a) -> [a] -> [a]
+scanl1 f (x:xs) =  scanl f x xs
+scanl1 _ []     = []
+
 -- foldr
 foldr :: (a -> b -> b) -> b -> [a] -> b
 foldr k z = go
             where go []     = z
                   go (y:ys) = y `k` go ys
 
+foldr1          :: (a -> a -> a) -> [a] -> a
+foldr1 f [x]    =  x
+foldr1 f (x:xs) =  f x (foldr1 f xs)
+foldr1 _ []     =  error "Prelude.foldr1: empty list"
+
+scanr             :: (a -> b -> b) -> b -> [a] -> [b]
+scanr f q0 []     =  [q0]
+scanr f q0 (x:xs) =  f x q : qs
+                     where qs@(q:_) = scanr f q0 xs
+
+scanr1          :: (a -> a -> a) -> [a] -> [a]
+scanr1 f []     =  []
+scanr1 f [x]    =  [x]
+scanr1 f (x:xs) =  f x q : qs
+                   where qs@(q:_) = scanr1 f xs
+
+-- iterate
+iterate     :: (a -> a) -> a -> [a]
+iterate f x =  x : iterate f (f x)
+
+-- repeat
+repeat   :: a -> [a]
+repeat x =  xs where xs = x:xs
+
+-- replicate
+replicate     :: Int -> a -> [a]
+replicate n x =  take n (repeat x)
+
+-- cycle
+cycle    :: [a] -> [a]
+cycle [] =  error "Prelude.cycle: empty list"
+cycle xs =  xs' where xs' = xs ++ xs'
+
 -- take
 take              :: Int -> [a] -> [a]
 take n _ | n <= 0 =  []
 take n []         =  []
 take n (x:xs)     =  x : take (n-1) xs
+
+-- drop
+drop               :: Int -> [a] -> [a]
+drop n xs | n <= 0 =  xs
+drop _ []          = []
+drop n (_:xs)      = drop (n-1) xs
+
+-- splitAt
+splitAt      :: Int -> [a] -> ([a],[a])
+splitAt n xs =  (take n xs, drop n xs)
 
 -- takeWhile ...
 
