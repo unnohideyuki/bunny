@@ -4,6 +4,7 @@ import jp.ne.sakura.uhideyuki.brt.brtsyn.*;
 
 import java.util.Arrays;
 
+
 class ConsFunc implements LambdaForm {
     public int arity(){ return 2; }
     public Expr call(AtomExpr[] args){
@@ -83,7 +84,7 @@ public class RTLib {
 	    assert(((AtomExpr)e).a instanceof Var);
 
 	    if (! (((Var)((AtomExpr)e).a).obj instanceof BoxedCharObj)){
-		System.err.println("Not a BuxedCharObj:" + e.inspect());
+		System.err.println("Not a BoxedCharObj:" + e.inspect());
 	    }
 	    assert(((Var)((AtomExpr)e).a).obj instanceof BoxedCharObj);
 

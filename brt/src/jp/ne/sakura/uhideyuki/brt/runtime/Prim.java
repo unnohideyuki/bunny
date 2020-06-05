@@ -1,6 +1,7 @@
 package jp.ne.sakura.uhideyuki.brt.runtime;
 
 import jp.ne.sakura.uhideyuki.brt.brtsyn.*;
+import java.io.*;
 
 public class Prim {
     private static Expr mkExpr(HeapObj obj){
@@ -13,6 +14,17 @@ public class Prim {
     
     public static Expr mkputStrLn(){
 	return RTLib.putStrLn;
+    }
+
+    public static Expr mkgetChar(){
+	int c = 0;
+	try {
+	    c = System.in.read();
+	}
+	catch (IOException e){
+	    // todo: handling the exception
+	}
+	return new AtomExpr(new LitChar((char) c));
     }
 
     public static Expr mkTrue(){

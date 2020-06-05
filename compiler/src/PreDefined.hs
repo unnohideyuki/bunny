@@ -201,6 +201,13 @@ primFloatFromIntegerCfun = "Prim.floatFromInteger" :>:
 primFloatShowCfun :: Assump
 primFloatShowCfun  = "Prim.floatShow" :>: Forall [] ([] :=> (tFloat `fn` tString))
 
+primPutStrLnCfun :: Assump
+primPutStrLnCfun =
+  "Prim.putStrLn" :>: Forall [] ([] :=> (TAp tList tChar `fn` TAp tIO tUnit))
+
+primGetCharCfun :: Assump
+primGetCharCfun = "Prim.getChar" :>: Forall [] ([] :=> (TAp tIO tChar))
+
 overloadedCfun :: Assump
 overloadedCfun = "#overloaded#" :>:
   Forall [Star, Star] ([] :=> (TGen 0 `fn` tString `fn` TGen 1))
@@ -230,11 +237,9 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun
                 , primFloatShowCfun
                 , errorCfun
                 , eFAILCfun
-                , "Prim.putStrLn" :>:
-                  Forall []
-                   ([] :=> (TAp tList tChar `fn` TAp tIO tUnit))
+                , primPutStrLnCfun
+                , primGetCharCfun
                 , overloadedCfun
-                , "Main.main" :>: Forall [Star] ([] :=> TAp tIO (TGen 0))
                 ]
 
 primConsNames :: [(Id, Id)]
@@ -242,53 +247,54 @@ primConsNames  = [ ("()", "Prim.()")
                  , ("Prim.[]", "Prim.[]")
                  , ("[]", "Prelude.[]")
                  , (":", "Prelude.:")
-                 , ("Prim.FAIL", "Prim.FAIL")
-                 , ("error", "Prim.error")
-                 , ("Prim.retIO", "Prim.retIO")
-                 , ("Prim.bindIO", "Prim.bindIO")
-                 , ("Prim.failIO", "Prim.failIO")
-                 , ("Prim.charLe", "Prim.charLe")
-                 , ("Prim.charEq", "Prim.charEq")
-                 , ("Prim.integerLe", "Prim.integerLe")
-                 , ("Prim.integerEq", "Prim.integerEq")
-                 , ("Prim.integerAdd", "Prim.integerAdd")
-                 , ("Prim.integerSub", "Prim.integerSub")
-                 , ("Prim.integerMul", "Prim.integerMul")
-                 , ("Prim.intLe", "Prim.intLe")
-                 , ("Prim.intEq", "Prim.intEq")
-                 , ("Prim.intAdd", "Prim.intAdd")
-                 , ("Prim.intSub", "Prim.intSub")
-                 , ("Prim.intMul", "Prim.intMul")
-                 , ("Prim.intFromInteger", "Prim.intFromInteger")
-                 , ("Prim.integerFromInt", "Prim.integerFromInt")
-                 , ("Prim.integerShow", "Prim.integerShow")
-                 , ("Prim.intShow", "Prim.intShow")
-                 , ("Prim.integerQuotRem", "Prim.integerQuotRem")
-                 , ("Prim.intQuotRem", "Prim.intQuotRem")
-                 , ("Prim.doubleLe", "Prim.doubleLe")
-                 , ("Prim.doubleEq", "Prim.doubleEq")
-                 , ("Prim.doubleAdd", "Prim.doubleAdd")
-                 , ("Prim.doubleSub", "Prim.doubleSub")
-                 , ("Prim.doubleMul", "Prim.doubleMul")
-                 , ("Prim.doubleSignum", "Prim.doubleSignum")
-                 , ("Prim.doubleFromInteger", "Prim.doubleFromInteger")
-                 , ("Prim.doubleShow", "Prim.doubleShow")
-                 , ("Prim.floatLe", "Prim.floatLe")
-                 , ("Prim.floatEq", "Prim.floatEq")
-                 , ("Prim.floatAdd", "Prim.floatAdd")
-                 , ("Prim.floatSub", "Prim.floatSub")
-                 , ("Prim.floatMul", "Prim.floatMul")
-                 , ("Prim.floatSignum", "Prim.floatSignum")
-                 , ("Prim.floatFromInteger", "Prim.floatFromInteger")
-                 , ("Prim.floatShow", "Prim.floatShow")
                  , ("#overloaded#", "#overloaded#")
+                 , ("Prim.FAIL", "Prim.FAIL")
                  ]
 
 -- Primitive Names
 
 primNames :: Table Id
 primNames  = fromList (primConsNames ++
-                       [ ("putStrLn", "Prim.putStrLn")
+                       [ ("Prim.charLe", "Prim.charLe")
+                       , ("Prim.charEq", "Prim.charEq")
+                       , ("Prim.integerLe", "Prim.integerLe")
+                       , ("Prim.integerEq", "Prim.integerEq")
+                       , ("Prim.integerAdd", "Prim.integerAdd")
+                       , ("Prim.integerSub", "Prim.integerSub")
+                       , ("Prim.integerMul", "Prim.integerMul")
+                       , ("Prim.intLe", "Prim.intLe")
+                       , ("Prim.intEq", "Prim.intEq")
+                       , ("Prim.intAdd", "Prim.intAdd")
+                       , ("Prim.intSub", "Prim.intSub")
+                       , ("Prim.intMul", "Prim.intMul")
+                       , ("Prim.intFromInteger", "Prim.intFromInteger")
+                       , ("Prim.integerFromInt", "Prim.integerFromInt")
+                       , ("Prim.integerShow", "Prim.integerShow")
+                       , ("Prim.intShow", "Prim.intShow")
+                       , ("Prim.integerQuotRem", "Prim.integerQuotRem")
+                       , ("Prim.intQuotRem", "Prim.intQuotRem")
+                       , ("Prim.doubleLe", "Prim.doubleLe")
+                       , ("Prim.doubleEq", "Prim.doubleEq")
+                       , ("Prim.doubleAdd", "Prim.doubleAdd")
+                       , ("Prim.doubleSub", "Prim.doubleSub")
+                       , ("Prim.doubleMul", "Prim.doubleMul")
+                       , ("Prim.doubleSignum", "Prim.doubleSignum")
+                       , ("Prim.doubleFromInteger", "Prim.doubleFromInteger")
+                       , ("Prim.doubleShow", "Prim.doubleShow")
+                       , ("Prim.floatLe", "Prim.floatLe")
+                       , ("Prim.floatEq", "Prim.floatEq")
+                       , ("Prim.floatAdd", "Prim.floatAdd")
+                       , ("Prim.floatSub", "Prim.floatSub")
+                       , ("Prim.floatMul", "Prim.floatMul")
+                       , ("Prim.floatSignum", "Prim.floatSignum")
+                       , ("Prim.floatFromInteger", "Prim.floatFromInteger")
+                       , ("Prim.floatShow", "Prim.floatShow")
+                       , ("Prim.error", "Prim.error")
+                       , ("Prim.retIO", "Prim.retIO")
+                       , ("Prim.bindIO", "Prim.bindIO")
+                       , ("Prim.failIO", "Prim.failIO")
+                       , ("Prim.putStrLn", "Prim.putStrLn")
+                       , ("Prim.getChar", "Prim.getChar")
                        ])
 
 -- arity and constructors for pattern-matching
