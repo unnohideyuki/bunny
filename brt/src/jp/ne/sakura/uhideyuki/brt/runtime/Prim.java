@@ -44,7 +44,7 @@ public class Prim {
     public static class BindIOFunc implements LambdaForm {
 	public int arity(){ return 2; }
 	public Expr call(AtomExpr[] args){
-	    Expr t0 = RT.eval(args[0]);
+	    Expr t0 = (AtomExpr) RT.eval(args[0]);
 	    return RTLib.app(args[1], t0);
 	}
     }
@@ -57,7 +57,7 @@ public class Prim {
 	public int arity(){ return 1; }
 	public Expr call(AtomExpr[] args){
 	    assert args.length == arity();
-	    return new AtomExpr(new Var(new ConObj(new Cotr("Main.IO"), args)));
+	    return (Expr) args[0];
 	}
     }
     public static Expr mkretIO(){
