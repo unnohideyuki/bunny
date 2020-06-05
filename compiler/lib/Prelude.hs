@@ -625,14 +625,12 @@ break p = span (not . p)
 
 -- lines, words, unlines and unwords
 
-{-
 lines    :: [Char] -> [[Char]]
 lines "" =  []
-lines s  = let (l, s') = break (== `\n`) s
+lines s  = let (l, s') = break (== '\n') s
            in l : case s' of
                     []      -> []
                     (_:s'') -> lines s''
--}
 
 isSpace = (==' ') -- todo: Char.isSpace
 
@@ -642,7 +640,8 @@ words s = case dropWhile isSpace s of
             s' -> w : words s''
               where (w, s'') = break isSpace s'
 
--- todo: unlines
+unlines :: [[Char]] -> [Char]
+unlines =  concatMap (++ "\n")
 
 unwords    :: [[Char]] -> [Char]
 unwords [] =  ""
