@@ -463,7 +463,8 @@ asTypeOf :: a -> a -> a
 asTypeOf =  const
 
 -- error stops execution and displays an error message
--- (build-in function)
+error :: [Char] -> a
+error = Prim.error
 
 -- undefined
 undefined :: a
@@ -651,7 +652,66 @@ unwords ws =  foldr1 (\w s -> w ++ ' ':s) ws
 reverse :: [a] -> [a]
 reverse =  foldl (flip (:)) []
 
+-- and, or
+and, or :: [Bool] -> Bool
+and     =  foldr (&&) True
+or      =  foldr (||) False
+
+-- any, all
+any, all :: (a -> Bool) -> [a] -> Bool
+any p    =  or . map p
+all p    =  and . map p
+
+-- elem, notElem
+elem, notElem :: (Eq a) => a -> [a] -> Bool
+elem x        =  any (==x)
+notElem x     =  all (/=x)
+
+-- lookup key assocs looks up a ken in an association list.
+lookup        :: (Eq a) => a -> [(a,b)] -> Maybe b
+lookup key [] =  Nothing
+lookup key ((x, y) : xys)
+  | key == x  =  Just y
+  | otherwise =  lookup key xys
+
+-- sum and product
+sum, product :: (Num a) => [a] -> a
+sum          =  foldl (+) 0
+product      =  foldl (*) 1
+
+-- maximum and minimum
+maximum, minimum :: (Ord a) => [a] -> a
+
+maximum []       = error "Prelude.maximum: empty list"
+maximum xs       = foldl1 max xs
+
+minimum []       = error "Prelude.minimum: empty list"
+minimum xs       = foldl1 min xs
+
+-- zip
+zip :: [a] -> [b] -> [(a,b)]
+zip =  zipWith (,)
+
+zipWith                 :: (a->b->c) -> [a] -> [b] -> [c]
+zipWith z (a:as) (b:bs) =  z a b : zipWith z as bs
+zipWith _ _ _           = []
+
+unzip :: [(a, b)] -> ([a], [b])
+unzip =  foldr (\(a, b) (as, bs) -> (a:as, b:bs)) ([], []) -- todo: ~
+
+
 -- PreludeIO
+putStrLn :: [Char] -> IO ()
+putStrLn =  Prim.putStrLn
+
+getChar :: IO Char
+getChar =  Prim.getChar
+
+getLine :: IO [Char]
+getLine =  do c <- getChar
+              if c == '\n' then return "" else
+                do s <- getLine
+                   return (c:s)
 
 print x = putStrLn (show x)
 
