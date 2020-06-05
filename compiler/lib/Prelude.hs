@@ -601,7 +601,56 @@ drop n (_:xs)      = drop (n-1) xs
 splitAt      :: Int -> [a] -> ([a],[a])
 splitAt n xs =  (take n xs, drop n xs)
 
--- takeWhile ...
+-- takeWhile, dropWhile, span and break
+
+takeWhile                      :: (a -> Bool) -> [a] -> [a]
+takeWhile p []                 =  []
+takeWhile p (x:xs) | p x       =  x : takeWhile p xs
+                   | otherwise = []
+
+dropWhile           :: (a -> Bool) -> [a] -> [a]
+dropWhile p []      =  []
+dropWhile p (x:xs') -- todo: xs@(x:xs')
+  | p x             =  dropWhile p xs'
+  | otherwise       =  x:xs'
+
+span, break :: (a -> Bool) -> [a] -> ([a],[a])
+span p [] = ([], [])
+span p (x:xs') -- todo: xs@(x:xs')
+  | p x = (x:ys, zs)
+  | otherwise = ([], x:xs')
+  where (ys, zs) = span p xs'
+
+break p = span (not . p)
+
+-- lines, words, unlines and unwords
+
+{-
+lines    :: [Char] -> [[Char]]
+lines "" =  []
+lines s  = let (l, s') = break (== `\n`) s
+           in l : case s' of
+                    []      -> []
+                    (_:s'') -> lines s''
+-}
+
+isSpace = (==' ') -- todo: Char.isSpace
+
+words :: [Char] -> [[Char]]
+words s = case dropWhile isSpace s of
+            "" -> []
+            s' -> w : words s''
+              where (w, s'') = break isSpace s'
+
+-- todo: unlines
+
+unwords    :: [[Char]] -> [Char]
+unwords [] =  ""
+unwords ws =  foldr1 (\w s -> w ++ ' ':s) ws
+
+-- reverse
+reverse :: [a] -> [a]
+reverse =  foldl (flip (:)) []
 
 -- PreludeIO
 
