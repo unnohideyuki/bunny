@@ -1,14 +1,17 @@
 module Prelude where
 
 infixr 9 .
+infixr 8 ^, ^^, **
 infixl 7 *, /, `quot`, `rem`, `div`, `mod`
 infixl 6 +, -
 
 infixr 5 :
 infix  4 ==, /=, <, <=, >=, >
 infixr 3 &&
+infixr 2 ||
 infixl 1 >>, >>=
-infixr 0 $
+infixr 1 =<<
+infixr 0 $, $!, `seq`
 
 -- Standard types, classes, instances and related functions
 
@@ -65,6 +68,10 @@ class Enum a where
   enumFromThen   :: a -> a -> [a]      -- [n,n',..]
   enumFromTo     :: a -> a -> [a]      -- [n..m]
   enumFromThenTo :: a -> a -> a -> [a] -- [n,n'..m]
+
+class Bounded a where
+  minBound :: a
+  maxBound :: a
 
 -- todo: Show cannot be declare after Num
 class Show a where
@@ -198,8 +205,9 @@ seq = Prim.seq
 
 -- right-associating infix application operators
 -- (useful in continuation-passing style)
-($) :: (a -> b) -> a -> b
+($), ($!) :: (a -> b) -> a -> b
 f $ x = f x
+f $! x = x `seq` f x
 
 -- Boolean type
 
