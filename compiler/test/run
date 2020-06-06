@@ -12,4 +12,5 @@ fi
 java -ea -cp "../../brt/src$s$d" $c
 if [ $? -ne 0 ];then
     echo "abend!"
+    exit 1
 fi

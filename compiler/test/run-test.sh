@@ -50,17 +50,27 @@ function dotest(){
 
   ./run jout/$bname/Sample.java > results/$bname.txt 2> /dev/null
   if [ $? -ne 0 ];then
-    echo "Running $bname failed (or abend)."
-    echo "$f: abort" >> errors.txt
-    return 1
+      if [ ! -f err/$bname.rt ]; then
+	  echo "Running $bname failed (or abend)."
+	  echo "$f: abort" >> errors.txt
+	  return 1
+      fi
+  else
+      if [ -f err/$bname.rt ]; then
+	  echo -n "R" # shuold abend but didn't
+	  echo "$f: must abend" >> $errors
+	  return 1
+      fi
   fi
   cat results/$bname.txt
 
-  diff results/$bname.txt expected
-  if [ $? -ne 0 ];then
-    echo "Unexpected result: $bname"
-    echo "$f: result check" >> errors.txt
-    return 1
+  if [ ! -f err/$bname.rt ]; then
+      diff results/$bname.txt expected
+      if [ $? -ne 0 ];then
+	  echo "Unexpected result: $bname"
+	  echo "$f: result check" >> errors.txt
+	  return 1
+      fi
   fi
 
   return 0

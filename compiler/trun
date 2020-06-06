@@ -19,6 +19,5 @@ fi
 
 echo "# 3. jout/run"
 ./run $bname/Sample.java
-if [ $? -ne 0 ];then
-  exit 1
-fi
+exit $?
+

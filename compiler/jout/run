@@ -11,5 +11,6 @@ fi
 
 java -Duser.language=en -ea -cp "../../brt/src$s$d" $c 2> trace.txt
 if [ $? -ne 0 ];then
-    echo "abend!"
+    tail trace.txt
+    exit 1
 fi
