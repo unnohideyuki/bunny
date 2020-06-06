@@ -65,7 +65,7 @@ function dotest(){
   cat results/$bname.txt
 
   if [ ! -f err/$bname.rt ]; then
-      diff results/$bname.txt expected
+      diff --strip-trailing-cr results/$bname.txt expected
       if [ $? -ne 0 ];then
 	  echo "Unexpected result: $bname"
 	  echo "$f: result check" >> errors.txt
