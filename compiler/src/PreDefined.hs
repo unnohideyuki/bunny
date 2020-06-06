@@ -208,6 +208,10 @@ primPutStrLnCfun =
 primGetCharCfun :: Assump
 primGetCharCfun = "Prim.getChar" :>: Forall [] ([] :=> (TAp tIO tChar))
 
+primSeqCfun :: Assump
+primSeqCfun =
+  "Prim.seq" :>: Forall [Star, Star] ([] :=> ((TGen 0) `fn` ((TGen 1) `fn` (TGen 1))))
+
 overloadedCfun :: Assump
 overloadedCfun = "#overloaded#" :>:
   Forall [Star, Star] ([] :=> (TGen 0 `fn` tString `fn` TGen 1))
@@ -237,6 +241,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun
                 , primFloatShowCfun
                 , errorCfun
                 , eFAILCfun
+                , primSeqCfun
                 , primPutStrLnCfun
                 , primGetCharCfun
                 , overloadedCfun
@@ -293,6 +298,7 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.retIO", "Prim.retIO")
                        , ("Prim.bindIO", "Prim.bindIO")
                        , ("Prim.failIO", "Prim.failIO")
+                       , ("Prim.seq", "Prim.seq")
                        , ("Prim.putStrLn", "Prim.putStrLn")
                        , ("Prim.getChar", "Prim.getChar")
                        ])

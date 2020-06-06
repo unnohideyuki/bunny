@@ -11,6 +11,10 @@ public class Prim {
     public static Expr mkerror(){
 	return RTLib.error;
     }
+
+    public static Expr mkseq(){
+	return RTLib.seq;
+    }
     
     public static Expr mkputStrLn(){
 	return RTLib.putStrLn;

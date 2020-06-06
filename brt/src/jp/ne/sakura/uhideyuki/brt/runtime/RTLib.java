@@ -13,6 +13,15 @@ class ConsFunc implements LambdaForm {
     }
 }
 
+class SeqFunc implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr t = RT.eval(args[0]);
+	return args[1];
+    }
+}
+
 class PutStrLnFunc implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
@@ -163,6 +172,8 @@ public class RTLib {
 	return fromJCharArray(s.toCharArray());
     }
 
+    public static Expr seq = mkFun(new SeqFunc());
+    
     public static Expr putStrLn = mkFun(new PutStrLnFunc());
 
     public static Expr fromChar(char c){ return mkExpr(c); }

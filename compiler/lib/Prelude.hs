@@ -193,6 +193,9 @@ f . g = \x -> f (g x)
 flip       :: (a -> b -> c) -> b -> a -> c
 flip f x y =  f y x
 
+seq :: a -> b -> b
+seq = Prim.seq
+
 -- right-associating infix application operators
 -- (useful in continuation-passing style)
 ($) :: (a -> b) -> a -> b
