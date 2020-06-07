@@ -68,6 +68,14 @@ class Enum a where
   enumFromThen   :: a -> a -> [a]      -- [n,n',..]
   enumFromTo     :: a -> a -> [a]      -- [n..m]
   enumFromThenTo :: a -> a -> a -> [a] -- [n,n'..m]
+  -- Minimal complete definition: toEnum, fromEnum
+  succ             = toEnum . (+1) . fromEnum
+  pred             = toEnum . (subtract 1) . fromEnum
+  enumFrom x       = map toEnum [fromEnum x ..]
+  enumFromTo x y   = map toEnum [fromEnum x .. fromEnum y]
+  enumFromThen x y = map toEnum [fromEnum x, fromEnum y ..]
+  enumFromThenTo x y z
+                   = map toEnum [fromEnum x, fromEnum y .. fromEnum z]
 
 class Bounded a where
   minBound :: a
