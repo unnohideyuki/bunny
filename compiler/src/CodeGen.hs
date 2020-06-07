@@ -444,7 +444,7 @@ genAtomExpr (AtomExpr (LitAtom (LitStr s))) = do
 
 genAtomExpr (AtomExpr (LitAtom (LitChar c))) = do
   n <- nexti
-  appendCode $ "Expr t" ++ show n ++ " = RTLib.fromChar(" ++ show c ++ ");"
+  appendCode $ "Expr t" ++ show n ++ " = RTLib.fromChar(" ++ show (fromEnum c) ++ ");"
   return n
 
 genAtomExpr (AtomExpr (LitAtom (LitInt i))) = do

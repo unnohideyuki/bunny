@@ -48,12 +48,12 @@ public class RTLib {
 	return new AtomExpr(new Var(obj));
     }
 
-    private static Expr mkExpr(char c){
-	return new AtomExpr(new LitChar(c));
-    }
-
     public static Expr mkFun(LambdaForm lam){
 	return mkExpr(new FunObj(lam.arity(), lam));
+    }
+
+    private static Expr mkLitChar(int c){
+	return new AtomExpr(new LitChar(c));
     }
 
     public static Expr cons = mkFun(new ConsFunc());
@@ -98,7 +98,7 @@ public class RTLib {
 	    assert(((Var)((AtomExpr)e).a).obj instanceof BoxedCharObj);
 
 	    BoxedCharObj c = (BoxedCharObj)((Var)((AtomExpr)e).a).obj;
-	    t.append(c.value);
+	    t.append(Character.toChars(c.value));
 	    x = tail(x);
 	}
 
@@ -152,31 +152,32 @@ public class RTLib {
 	return mkExpr(new Thunk(new FunAppExpr(f, args, -1)));
     }
 	       
-    private static Expr fromJCharArray(char[] s){
+    private static Expr fromJCharArray(int[] s){
 	if (s.length == 0){
 	    return nil;
 	} else if (s.length == 1){
 	    // return app(cons, mkExpr(s[0]), nil);
-	    AtomExpr[] args = {(AtomExpr) mkExpr(s[0]), (AtomExpr) nil};
+	    AtomExpr[] args = {(AtomExpr) mkLitChar(s[0]), (AtomExpr) nil};
 	    return new AtomExpr(new Var(new ConObj(new Cotr("Prelude.:"), args)));
 	}
 	
-	char[] t = Arrays.copyOfRange(s, 1, s.length);
+	int[] t = Arrays.copyOfRange(s, 1, s.length);
 	// return app(cons, mkExpr(s[0]), fromJCharArray(t));
-	AtomExpr[] args = {(AtomExpr) mkExpr(s[0]), 
+	AtomExpr[] args = {(AtomExpr) mkLitChar(s[0]), 
 			   (AtomExpr) fromJCharArray(t)};
 	return new AtomExpr(new Var(new ConObj(new Cotr("Prelude.:"), args)));
     }
 	       
     public static Expr fromJString(String s){
-	return fromJCharArray(s.toCharArray());
+	int[] charArray = s.codePoints().toArray();
+	return fromJCharArray(charArray);
     }
 
     public static Expr seq = mkFun(new SeqFunc());
     
     public static Expr putStrLn = mkFun(new PutStrLnFunc());
 
-    public static Expr fromChar(char c){ return mkExpr(c); }
+    public static Expr fromChar(int c){ return mkLitChar(c); }
 
     public static Expr mkLitInteger(String s){
 	return new AtomExpr(new LitInteger(s));
