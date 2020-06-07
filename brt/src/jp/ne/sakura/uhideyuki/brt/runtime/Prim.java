@@ -94,6 +94,14 @@ public class Prim {
 	return RTLib.mkFun(new CharEq());
     }
 
+    public static Expr mkintToChar(){
+	return RTLib.mkFun(new IntToChar());
+    }
+    
+    public static Expr mkcharToInt(){
+	return RTLib.mkFun(new CharToInt());
+    }
+    
     public static Expr mkintegerLe(){
 	return RTLib.mkFun(new IntegerLe());
     }
@@ -314,6 +322,32 @@ class CharEq implements LambdaForm {
 	} else {
 	    return Prim.mkFalse();
 	}
+    }
+}
+
+class IntToChar implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedInt();
+
+	BoxedIntObj i = (BoxedIntObj)((Var)((AtomExpr)x).a).obj;
+	return new AtomExpr(new LitChar((int)i.value));
+    }
+}
+
+class CharToInt implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedChar();
+
+	BoxedCharObj c = (BoxedCharObj)((Var)((AtomExpr)x).a).obj;
+	return new AtomExpr(new LitInt(c.value));
     }
 }
 

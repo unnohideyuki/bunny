@@ -74,6 +74,12 @@ primCharLeCfun = "Prim.charLe" :>: scCharcharbool
 primCharEqCfun :: Assump
 primCharEqCfun = "Prim.charEq" :>: scCharcharbool
 
+primIntToCharCfun :: Assump
+primIntToCharCfun = "Prim.intToChar" :>: Forall [] ([] :=> (tInt `fn` tChar))
+
+primCharToIntCfun :: Assump
+primCharToIntCfun = "Prim.charToInt" :>: Forall [] ([] :=> (tChar `fn` tInt))
+
 scIntegerintegerbool :: Scheme
 scIntegerintegerbool = Forall [] ([] :=> (tInteger `fn` tInteger `fn` tBool))
 
@@ -221,6 +227,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun
                 , leMfun, gtMfun
                 , primRetCfun, primBindCfun, primFailCfun
                 , primCharLeCfun, primCharEqCfun
+                , primIntToCharCfun, primCharToIntCfun
                 , primIntegerLeCfun, primIntegerEqCfun
                 , primIntegerAddCfun, primIntegerSubCfun
                 , primIntegerMulCfun
@@ -262,6 +269,8 @@ primNames :: Table Id
 primNames  = fromList (primConsNames ++
                        [ ("Prim.charLe", "Prim.charLe")
                        , ("Prim.charEq", "Prim.charEq")
+                       , ("Prim.intToChar", "Prim.intToChar")
+                       , ("Prim.charToInt", "Prim.charToInt")
                        , ("Prim.integerLe", "Prim.integerLe")
                        , ("Prim.integerEq", "Prim.integerEq")
                        , ("Prim.integerAdd", "Prim.integerAdd")
