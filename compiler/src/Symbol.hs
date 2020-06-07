@@ -18,6 +18,9 @@ data Name = Name { origName  :: Id
                  }
           deriving Show
 
+instance Eq Name where
+  n1 == n2 = origName n1 == origName n2
+
 type Table = Map.Map Id
 
 empty :: Table a

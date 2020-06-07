@@ -77,10 +77,26 @@ data RnState = RnState { rnModid   :: !Id
                        , rnConsts  :: !ConstructorInfo
                        , rnTConsts :: ![(Id, Type)]
                        , rnNum     :: !Int
+                       , rnSyn     :: ![(A.Type, A.Type)]
                        }
                deriving Show
 
 type RN a = State RnState a
+
+isSynonym :: A.Type -> RN Bool
+isSynonym t = do
+  d <- rnSyn <$> get
+  case lookup t d of
+    Just _  -> return True
+    Nothing -> return False
+
+actualTy :: A.Type -> RN A.Type
+actualTy t = do
+  d <- rnSyn <$> get
+  actual_ty d t
+    where actual_ty d t = case lookup t d of
+            Nothing -> return t
+            Just t' -> actual_ty d t'
 
 getCDicts :: RN [(Id, DictDef)]
 getCDicts = do

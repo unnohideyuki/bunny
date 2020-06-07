@@ -76,7 +76,7 @@ data RecField = RecField Name Exp
                 deriving Show
 
 data ConDeclField = ConDeclField Name Type
-                  deriving Show
+                  deriving (Eq, Show)
 
 data Type = Tyvar   Name
           | Tycon   Name
@@ -87,7 +87,7 @@ data Type = Tyvar   Name
           | ListTy  Type
           | ParTy   Type -- why needed parened type?
           | RecTy   [ConDeclField]
-          deriving Show
+          deriving (Eq, Show)
 
 data Constr = Con      Type
             | InfixCon Type Name Type

@@ -41,6 +41,7 @@ initRnState =
            , rnConsts = emptyConstInfo
            , rnTConsts = initialTypeConsts
            , rnNum = 0
+           , rnSyn = []
            }
 
 tiAs :: (a, b, c) -> c

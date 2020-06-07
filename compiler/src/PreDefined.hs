@@ -352,7 +352,6 @@ initialTypeConsts =
   , ("Int", tInt)
   , ("Integer", tInteger)
   , ("IO", tIO)
-  , ("String", tString)
   , ("Double", tDouble)
   , ("Float", tFloat)
   ]

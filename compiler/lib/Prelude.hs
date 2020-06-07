@@ -73,19 +73,27 @@ class Bounded a where
   minBound :: a
   maxBound :: a
 
+type String = [Char]
+
 -- todo: Show cannot be declare after Num
+
+type ShowS = String -> String
+
 class Show a where
-  show      :: a -> [Char]
-  showsPrec :: Int -> a -> ([Char] -> [Char])
-  showList  :: [a] -> ([Char] -> [Char])
+  show      :: a -> String
+  showsPrec :: Int -> a -> ShowS
+  showList  :: [a] -> ShowS
   -- Minimal complete definition:
   --  show or showsPrec
   showsPrec p x s = show x ++ s
   show x = showsPrec 0 x ""
   showList []     = (++) "[]"
-  showList (x:xs) = (:) '[' . showsPrec 0 x . showl xs
+  showList (x:xs) = (:) '[' . shows x . showl xs
     where showl []     = (:) ']'
-          showl (x:xs) = (:) ',' . showsPrec 0 x . showl xs
+          showl (x:xs) = (:) ',' . shows x . showl xs
+
+shows :: (Show a) => a -> ShowS
+shows =  showsPrec 0
 
 -- Numeric classes
 
@@ -159,7 +167,7 @@ class Monad m where
   (>>=)  :: m a -> (a -> m b) -> m b
   (>>)   :: m a -> m b -> m b
   return :: a -> m a
-  fail   :: [Char] -> m a
+  fail   :: String -> m a
   -- Minimal complete definition: (>>=), return
   m >> k = m >>= \_ -> k
   fail s = error s
@@ -474,7 +482,7 @@ asTypeOf :: a -> a -> a
 asTypeOf =  const
 
 -- error stops execution and displays an error message
-error :: [Char] -> a
+error :: String -> a
 error = Prim.error
 
 -- undefined
@@ -637,7 +645,7 @@ break p = span (not . p)
 
 -- lines, words, unlines and unwords
 
-lines    :: [Char] -> [[Char]]
+lines    :: String -> [String]
 lines "" =  []
 lines s  = let (l, s') = break (== '\n') s
            in l : case s' of
@@ -646,16 +654,16 @@ lines s  = let (l, s') = break (== '\n') s
 
 isSpace = (==' ') -- todo: Char.isSpace
 
-words :: [Char] -> [[Char]]
+words :: String -> [String]
 words s = case dropWhile isSpace s of
             "" -> []
             s' -> w : words s''
               where (w, s'') = break isSpace s'
 
-unlines :: [[Char]] -> [Char]
+unlines :: [String] -> String
 unlines =  concatMap (++ "\n")
 
-unwords    :: [[Char]] -> [Char]
+unwords    :: [String] -> String
 unwords [] =  ""
 unwords ws =  foldr1 (\w s -> w ++ ' ':s) ws
 
@@ -712,13 +720,13 @@ unzip =  foldr (\(a, b) (as, bs) -> (a:as, b:bs)) ([], []) -- todo: ~
 
 
 -- PreludeIO
-putStrLn :: [Char] -> IO ()
+putStrLn :: String -> IO ()
 putStrLn =  Prim.putStrLn
 
 getChar :: IO Char
 getChar =  Prim.getChar
 
-getLine :: IO [Char]
+getLine :: IO String
 getLine =  do c <- getChar
               if c == '\n' then return "" else
                 do s <- getLine

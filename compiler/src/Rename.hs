@@ -197,12 +197,14 @@ scanDecls ds = do
 
         renTy (A.Tyvar i) = return $ TVar (Tyvar (origName i) Star)
 
-        renTy (A.Tycon i) = do
-          t <- lookupTConst (origName i)
-          st <- get
-          return $ fromMaybe
-            (error $ "Non-exhaustive patterns: " ++ origName i ++ (show $ rnTConsts st))
-            t
+        renTy t@(A.Tycon i) = do
+          issyn <- isSynonym t
+          if issyn
+            then do t' <- actualTy t
+                    renTy t'
+            else do t <- lookupTConst (origName i)
+                    st <- get
+                    return $ fromMaybe (error $ "renTy: " ++ origName i) t
 
         renTy (A.ListTy t) = do rt <- renTy t
                                 return $ list rt
@@ -296,9 +298,14 @@ scanDecls ds = do
 
           in A.InstDecl ctx tycls_inst idecls
 
+    scandecl (A.SynonymDecl t1 t2) = do
+      st <- get
+      let syn = rnSyn st
+      put st{rnSyn=((t1, t2):syn)}
+      return ([], [], [])
+
     scandecl (A.DefaultDecl _)   = error "not yet: DefaultDecl"
     scandecl (A.ForeignDecl _)   = error "not yet: ForeignDecl"
-    scandecl (A.SynonymDecl _ _) = error "not yet: SynonymDecl"
     scandecl A.NewtypeDecl{}     = error "not yet: NewtypeDecl"
 
 trCdecl :: Id -> A.ClassDecl -> DictDef
@@ -638,10 +645,14 @@ renSigdoc (A.AppTy e1 e2) kdict = do
 
 renSigdoc (A.ParTy e) kdict = renSigdoc e kdict
 
-renSigdoc (A.Tycon n) _ = do
-  let n' = origName n
-  t <- lookupTConst n'
-  return $ fromMaybe (error $ "renSigDoc $ A.Tycon " ++ n') t
+renSigdoc t@(A.Tycon n) kdict = do
+  issyn <- isSynonym t
+  if issyn
+    then do t' <- actualTy t
+            renSigdoc t' kdict
+    else do let n' = origName n
+            t <- lookupTConst n'
+            return $ fromMaybe (error $ "renSigDoc $ A.Tycon " ++ n') t
 
 renSigdoc (A.ListTy e) kdict = do
   t <- renSigdoc e kdict
