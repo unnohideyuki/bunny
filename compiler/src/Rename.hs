@@ -97,7 +97,9 @@ scanDecls ds = do
       return (A.ClassDecl hdr ds')
 
     scanInstDecl2 (A.InstDecl ctx t ds) = do
+      lv_save <- getLvs
       dss' <- mapM (\(A.VDecl d) -> scanValueDecl2 d) ds
+      putLvs lv_save
       let ds' = map A.VDecl $ concat dss'
       return (A.InstDecl ctx t ds')
 
@@ -801,7 +803,6 @@ renExp (A.FunAppExp e1 e2) = do
 renExp (A.VarExp name) = do
   qn <- qname (origName name)
   return (Var qn)
-
 renExp (A.LetExp ds e) = do
   enterNewLevel
   (ds', _, _) <- scanDecls ds
