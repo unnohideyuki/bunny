@@ -9,7 +9,7 @@ if [ -d /c ]; then
     s=";"
 fi
 
-java -Duser.language=en -ea -cp "../../brt/src$s$d" $c 2> trace.txt
+java -Duser.language=en -Dfile.encoding=UTF-8 -ea -cp "../../brt/src$s$d" $c 2> trace.txt
 if [ $? -ne 0 ];then
     tail trace.txt
     exit 1

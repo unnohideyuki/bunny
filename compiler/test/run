@@ -9,7 +9,7 @@ if [ -d /c ]; then
     s=";"
 fi
 
-java -ea -cp "../../brt/src$s$d" $c
+java -Dfile.encoding=UTF-8 -ea -cp "../../brt/src$s$d" $c
 if [ $? -ne 0 ];then
     echo "abend!"
     exit 1
