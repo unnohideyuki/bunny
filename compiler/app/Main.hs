@@ -50,7 +50,7 @@ tiAs (_, _, as) = as
 debugmes :: Bool -> String -> IO ()
 debugmes verbose_mode message = when verbose_mode $ hPutStr stderr message
 
-implicitPrelude :: String -> Bool -> IO ((Subst, Int, Assumps), RnState)
+implicitPrelude :: String -> Bool -> IO (((Subst, Int, Assumps), [DictDef]), RnState)
 implicitPrelude prelude_dir verbose_mode = do
   debugmes verbose_mode "implicitPrelude ... "
   let src = prelude_dir ++ "/Prelude.hs"
@@ -66,14 +66,14 @@ implicitPrelude prelude_dir verbose_mode = do
         st0 = initRnState
         lv = (initialLevel $ Absyn.modname m){lvDict=primNames}
         st = st0{rnModid = lvPrefix lv, rnLvs = [lv]}
-        (cont, rnstate) = runState (semPrelude m) st
+        ((cont, dicts), rnstate) = runState (semPrelude m) st
         as = rnCms rnstate
         as' = tiAs cont
-      in (cont, rnstate{rnCms = Map.union as as'})
+      in ((cont, dicts), rnstate{rnCms = Map.union as as'})
 
 doCompile :: RnState -> Absyn.Module -> String -> (Subst, Int, Assumps)
-              -> Options -> IO ()
-doCompile st0 m dest cont opts = do
+             -> [DictDef] -> Options -> IO ()
+doCompile st0 m dest cont idicts opts = do
   let verbose_mode = optVerbose opts
   debugmes verbose_mode "doCompile ... "
   -- TODO: regular way to add primitive names.
@@ -107,16 +107,16 @@ doCompile st0 m dest cont opts = do
         Module n _ -> n
   CodeGen.emitProgram b'' dest mname ci
   CodeGen.emitDicts dest dicts
-  CodeGen.emitInsts dest dicts ctab ce
+  CodeGen.emitInsts dest (dicts++idicts) ctab ce
   debugmes verbose_mode "done.\n"
 
 main :: IO ()
 main = do
   opts <- customExecParser (prefs showHelpOnError) myParserInfo
   let verbose_mode = optVerbose opts
-  (cont, rne) <- if xnoImplicitPrelude opts
-                     then return (initialTI, initRnState)
-                     else implicitPrelude (xlibPath opts) verbose_mode
+  ((cont, dicts), rne) <- if xnoImplicitPrelude opts
+                          then return ((initialTI, []), initRnState)
+                          else implicitPrelude (xlibPath opts) verbose_mode
   let src = head $ inputFiles opts
       dest = destDir opts
   handle <- openFile src ReadMode
@@ -126,4 +126,4 @@ main = do
     Left  mes -> putStrLn $ "Error: " ++ mes
     Right m   -> do
       when (optDdumpabsyn opts) $ print m
-      doCompile rne m dest cont opts
+      doCompile rne m dest cont dicts opts

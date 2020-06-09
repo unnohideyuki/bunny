@@ -112,7 +112,7 @@ class (Eq a, Show a) => Num a where
   fromInteger   :: Integer -> a
   -- Minimal complete definition:
   --  All, except negate or (-)
-  x - y    = x + nagate y
+  x - y    = x + negate y
   negate x = 0 - x
 
 class (Num a, Ord a, Enum a) => Integral a where

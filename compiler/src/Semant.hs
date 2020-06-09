@@ -51,11 +51,12 @@ renProg m = do
                                          (A.VarExp (Name "()" (0,0) True)))) []))
           ]
 
-semPrelude :: A.Module -> RN (Subst, Int, Assumps)
+semPrelude :: A.Module -> RN ((Subst, Int, Assumps), [DictDef])
 semPrelude m = do
-  (bgs, _, as2, _, _) <- renProg m
+  (bgs, _, as2, dicts, _) <- renProg m
   st <- get
   let ce = rnCe st
       as = rnCms st
-  return $ tiImportedProgram ce (Map.union as as2) bgs initialTI
+      tiState = tiImportedProgram ce (Map.union as as2) bgs initialTI
+  return (tiState, dicts)
 

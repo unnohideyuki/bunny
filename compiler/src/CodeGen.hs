@@ -483,7 +483,9 @@ emitDicts dest (dict:ds) = do
 emitInsts :: String -> [DictDef] -> [(Id, Id)] -> ClassEnv -> IO ()
 emitInsts _ _ [] _ = return ()
 emitInsts dest dicts ((qin, qcn):ctab) ce = do
-  let ms = ddMethods $ fromJust $ find ((== qcn). ddId) dicts
+  -- trace (show (qin, qcn)) $ return ()
+  let ms = ddMethods $ fromMaybe (error $ "emitInsts: " ++ qcn ++ " not found: " ++ show dicts)
+                                 (find ((== qcn). ddId) dicts)
       msM = map mangle ms
       pdname = cls2dictNameM qcn
       f c = c : concatMap f (super ce c)
