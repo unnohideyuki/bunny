@@ -5,7 +5,6 @@ ratPrec = 7 :: Int
 -- todo: (Integral a) =>
 --       :%, infix constructor
 --       deriving Eq
---       Ratio a a (not Ratio a b)
 data Ratio a = Rat a a
 
 type Rational = Ratio Integer
@@ -50,3 +49,4 @@ main = do print a
   where a, b :: (Ratio Integer)
         a = 5 % 10
         b = 1 % 2
+
