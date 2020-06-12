@@ -167,7 +167,11 @@ scanDecls ds = do
       -- the keys of TypeConst dict should be qualified?
       appendTConst (origName tn) (TCon (Tycon qtn k))
 
-      cs <- mapM (\(A.Con t) -> parseTy t) consts
+      let f (A.Con t) = parseTy t
+          f (A.InfixCon tv1 n tv2) = f (A.Con (A.AppTy (A.AppTy (A.Tycon n) tv1) tv2))
+          f x         = error $ "unexaustive patterns in f: " ++ show x
+      cs <- mapM f consts
+
       let renCs (n, ts) = do
             qn <- renameVar n
             let t' = foldr fn t ts
