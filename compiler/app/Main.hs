@@ -10,7 +10,7 @@ import           PreDefined
 import           Semant
 import           Symbol
 import qualified TrSTG                      as TR
-import           Typing                     (Assump, Assumps, Subst, initialEnv,
+import           Typing                     (Assumps, Subst, initialEnv,
                                              initialTI, tiProgram)
 
 import           CompilerOpts
