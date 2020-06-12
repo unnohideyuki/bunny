@@ -5,7 +5,7 @@ ratPrec = 7 :: Int
 -- todo: (Integral a) =>
 --       :%, infix constructor
 --       deriving Eq
-data {- (Integral a) => -} Ratio a = a :% a
+data (Integral a) => Ratio a = a :% a
 
 type Rational = Ratio Integer
 
@@ -41,6 +41,7 @@ instance (Show a) => Show (Ratio a) where
 
 main = do print a
           print b
+          print c
           -- print (a < b)
           -- print $ a + b
           -- print $ a * b
@@ -49,4 +50,5 @@ main = do print a
   where a, b :: (Ratio Integer)
         a = 5 % 10
         b = 768 % (768 * 2)
+        c = 'a' :% 'c' -- should be an error
 
