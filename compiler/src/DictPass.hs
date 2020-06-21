@@ -231,7 +231,10 @@ findApplyDict e (qv :=> t') (_ :=> t) = do
 
        ty2dict n2 (TAp (TCon (Tycon n1 _)) ty) = do
          let cdd = Var (DictVar n1 n2)
-         cdds <- mapM (ty2dict n2) [ty]
+             n3 | n1 == "Main.Ratio" && n2 == "Prelude.Ord" = "Prelude.Integral"
+                | otherwise = n2
+         trace (show (n1, n2, n3)) $ return ()
+         cdds <- mapM (ty2dict n3) [ty]
          return $ Var (CompositDict cdd cdds)
 
        ty2dict n2 ty@(TAp _ _) = do
