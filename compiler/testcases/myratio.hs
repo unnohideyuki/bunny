@@ -43,12 +43,12 @@ main = do print a
           print b
           -- print c
           print (a < b)
-          -- print $ a + b
-          -- print $ a * b
-          -- print (- a)
-          -- print (fromInteger 8 :: Ratio Int)
+          print $ a + b
+          print $ a * b
+          print (- a)
+          print (fromInteger 8 :: Ratio Int)
   where a, b :: (Ratio Integer)
-        a = 5 % 10
+        a = 2 % 6
         b = 768 % (768 * 2)
         -- c = 'a' :% 'c' -- should be an error
 
