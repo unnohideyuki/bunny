@@ -66,18 +66,19 @@ data Assoc = LeftAssoc | RightAssoc | NoAssoc
 
 -- Renaming Monad
 
-data RnState = RnState { rnModid   :: !Id
-                       , rnLvs     :: ![Level]
-                       , rnTenv    :: !(Table Id)
-                       , rnIfxenv  :: !(Table Fixity)
-                       , rnCe      :: !ClassEnv
-                       , rnCms     :: !Assumps
-                       , rnKdict   :: !(Table Kind)
-                       , rnCdicts  :: ![(Id, DictDef)]
-                       , rnConsts  :: !ConstructorInfo
-                       , rnTConsts :: ![(Id, Type)]
-                       , rnNum     :: !Int
-                       , rnSyn     :: ![(A.Type, A.Type)]
+data RnState = RnState { rnModid    :: !Id
+                       , rnLvs      :: ![Level]
+                       , rnTenv     :: !(Table Id)
+                       , rnIfxenv   :: !(Table Fixity)
+                       , rnCe       :: !ClassEnv
+                       , rnCms      :: !Assumps
+                       , rnKdict    :: !(Table Kind)
+                       , rnCdicts   :: ![(Id, DictDef)]
+                       , rnConsts   :: !ConstructorInfo
+                       , rnTConsts  :: ![(Id, Type)]
+                       , rnNum      :: !Int
+                       , rnSyn      :: ![(A.Type, A.Type)]
+                       , rnIContext :: ![((Id, Id), Id)]
                        }
                deriving Show
 

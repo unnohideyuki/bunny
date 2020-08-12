@@ -449,6 +449,17 @@ renInstDecls dcls' = do
       tsdecls <-
         concat <$> mapM (renTDecl (origName i ++ "%I") t ctx) (ddTDecls dict)
       tbs <- renDecls (tsdecls ++ ds'')
+
+      -- Issue 108 temporary (2020-08-12)
+      st <- get
+      let n1 = qin
+          n2 = qcn
+          iContext = rnIContext st
+          iContext' = case ps of
+                        [IsIn n3 _] -> (((n1, n2), n3):iContext)
+                        _           -> iContext
+      put st{rnIContext = iContext'}
+
       return (tbs, (qin, qcn))
 
     renTDecl :: Id -> A.Type -> Maybe A.Type -> A.ValueDecl -> RN [A.ValueDecl]

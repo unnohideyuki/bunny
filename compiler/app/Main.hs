@@ -42,6 +42,7 @@ initRnState =
            , rnTConsts = initialTypeConsts
            , rnNum = 0
            , rnSyn = []
+           , rnIContext = []
            }
 
 tiAs :: (a, b, c) -> c
@@ -98,7 +99,8 @@ doCompile st0 m dest cont idicts opts = do
 
   when (optDdumpcore0 opts) $ ddumpCore b
 
-  let (b', _) = tcBind b ce Nothing
+  let iContext = rnIContext st'
+      (b', _) = tcBind b ce Nothing iContext
 
   when (optDdumpcore opts) $ ddumpCore b'
 

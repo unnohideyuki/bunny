@@ -30,8 +30,8 @@ normQTy (qs :=> t) = let
   in
     qs' :=> t
 
-tcBind :: Bind -> ClassEnv -> Maybe TcState -> (Bind, TcState)
-tcBind (Rec bs) ce maybest = tbloop st0 bs []
+tcBind :: Bind -> ClassEnv -> Maybe TcState -> [((Id, Id), Id)] -> (Bind, TcState)
+tcBind (Rec bs) ce maybest iContext = tbloop st0 bs []
   where
     tbloop :: TcState -> [(Var, Expr)] -> [(Var, Expr)] -> (Bind, TcState)
     tbloop st []     res = (Rec (reverse res), st)
@@ -40,7 +40,7 @@ tcBind (Rec bs) ce maybest = tbloop st0 bs []
 
     st0 = case maybest of
             Just st' -> st'
-            Nothing  -> mkTcState ce [] nullSubst 0
+            Nothing  -> mkTcState ce [] nullSubst 0 iContext
 
     tcbind :: (Var, Expr) -> TcState -> ((Var, Expr), TcState)
     tcbind (v@(TermVar n qt@(qs :=> t)), e) st
@@ -70,6 +70,7 @@ data TcState = TcState { tcCe           :: !ClassEnv
                        , tcSubst        :: !Subst
                        , tcNum          :: !Int
                        , tcIntegerTVars :: ![Type]
+                       , tcIContext     :: ![((Id, Id), Id)]
                        }
                deriving Show
 
@@ -215,9 +216,9 @@ lookupDictArg (c, y) = do
         Just s  -> Just $ TermVar s ([] :=> TGen 100)
   return ret
 
-mkTcState :: ClassEnv -> [(Pred, Id)] -> Subst -> Int -> TcState
-mkTcState ce pss subst num =
-  TcState{tcCe=ce, tcPss=pss, tcSubst=subst, tcNum=num, tcIntegerTVars=[]}
+mkTcState :: ClassEnv -> [(Pred, Id)] -> Subst -> Int ->[((Id, Id), Id)] -> TcState
+mkTcState ce pss subst num icontext =
+  TcState{tcCe=ce, tcPss=pss, tcSubst=subst, tcNum=num, tcIntegerTVars=[], tcIContext=icontext}
 
 findApplyDict e (qv :=> t') (_ :=> t) = do
   unify' t' t
@@ -230,10 +231,11 @@ findApplyDict e (qv :=> t') (_ :=> t) = do
             mkdicts qs (d:ds)
 
        ty2dict n2 (TAp (TCon (Tycon n1 _)) ty) = do
+         iconst <- tcIContext <$> get
          let cdd = Var (DictVar n1 n2)
-             n3 | n1 == "Main.Ratio" && n2 == "Prelude.Ord" = "Prelude.Integral"
-                | otherwise = n2
-         trace (show (n1, n2, n3)) $ return ()
+             n3 = case lookup (n1, n2) iconst of
+               Just s  -> s
+               Nothing -> n2
          cdds <- mapM (ty2dict n3) [ty]
          return $ Var (CompositDict cdd cdds)
 
@@ -289,7 +291,7 @@ tcExpr e@(Lam vs ebody) (qs :=> t) = do
 
 tcExpr (Let bs e) qt = do
   st <- get
-  let (bs', st') = tcBind bs (tcCe st) (Just st)
+  let (bs', st') = tcBind bs (tcCe st) (Just st) []
   put st'
   e' <- tcExpr e (normQTy qt)
   return $ Let bs' e'
