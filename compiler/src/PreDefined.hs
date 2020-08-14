@@ -165,6 +165,9 @@ primDoubleSubCfun = "Prim.doubleSub" :>: scDoubledoubledouble
 primDoubleMulCfun :: Assump
 primDoubleMulCfun = "Prim.doubleMul" :>: scDoubledoubledouble
 
+primDoubleDivCfun :: Assump
+primDoubleDivCfun = "Prim.doubleDiv" :>: scDoubledoubledouble
+
 primDoubleSignumCfun :: Assump
 primDoubleSignumCfun = "Prim.doubleSignum" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
 
@@ -196,6 +199,9 @@ primFloatSubCfun = "Prim.floatSub" :>: scFloatfloatfloat
 
 primFloatMulCfun :: Assump
 primFloatMulCfun = "Prim.floatMul" :>: scFloatfloatfloat
+
+primFloatDivCfun :: Assump
+primFloatDivCfun = "Prim.floatDiv" :>: scFloatfloatfloat
 
 primFloatSignumCfun :: Assump
 primFloatSignumCfun = "Prim.floatSignum" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
@@ -240,10 +246,12 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun
                 , integerQuotRem, intQuotRem
                 , primDoubleLeCfun, primDoubleEqCfun
                 , primDoubleAddCfun, primDoubleSubCfun, primDoubleMulCfun
+                , primDoubleDivCfun
                 , primDoubleSignumCfun, primDoubleFromIntegerCfun
                 , primDoubleShowCfun
                 , primFloatLeCfun, primFloatEqCfun
                 , primFloatAddCfun, primFloatSubCfun, primFloatMulCfun
+                , primFloatDivCfun
                 , primFloatSignumCfun, primFloatFromIntegerCfun
                 , primFloatShowCfun
                 , errorCfun
@@ -292,6 +300,7 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.doubleAdd", "Prim.doubleAdd")
                        , ("Prim.doubleSub", "Prim.doubleSub")
                        , ("Prim.doubleMul", "Prim.doubleMul")
+                       , ("Prim.doubleDiv", "Prim.doubleDiv")
                        , ("Prim.doubleSignum", "Prim.doubleSignum")
                        , ("Prim.doubleFromInteger", "Prim.doubleFromInteger")
                        , ("Prim.doubleShow", "Prim.doubleShow")
@@ -300,6 +309,7 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.floatAdd", "Prim.floatAdd")
                        , ("Prim.floatSub", "Prim.floatSub")
                        , ("Prim.floatMul", "Prim.floatMul")
+                       , ("Prim.floatDiv", "Prim.floatDiv")
                        , ("Prim.floatSignum", "Prim.floatSignum")
                        , ("Prim.floatFromInteger", "Prim.floatFromInteger")
                        , ("Prim.floatShow", "Prim.floatShow")

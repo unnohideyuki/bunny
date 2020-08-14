@@ -128,6 +128,15 @@ class (Num a, Ord a, Enum a) => Integral a where
   divMod n d = if signum r == - signum d then (q-1, r+d) else qr
     where qr@(q,r) = quotRem n d
 
+class (Num a) => Fractional a where
+  (/)   :: a -> a -> a
+  recip :: a -> a
+  -- fromRational :: Rational -> a
+  -- Minimal complete definition:
+  --     fromRational and (recip or (/))
+  recip x = 1 / x
+  x / y   = x * recip y
+
 -- Numeric functions
 
 subtract :: (Num a) => a -> a -> a
@@ -437,6 +446,10 @@ instance Num Float where
   abs x | x >= 0    = x
         | otherwise = -x
 
+instance Fractional Float where
+  (/) = Prim.floatDiv
+  recip x = (1::Float) / x
+
 instance Show Float where
   show = Prim.floatShow
 
@@ -454,6 +467,10 @@ instance Num Double where
   fromInteger = Prim.doubleFromInteger
   abs x | x >= 0    = x
         | otherwise = -x
+
+instance Fractional Double where
+  (/) = Prim.doubleDiv
+  recip x = (1::Double) / x
 
 instance Show Double where
   show = Prim.doubleShow
