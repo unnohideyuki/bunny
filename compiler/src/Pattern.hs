@@ -93,7 +93,7 @@ reduceMatch ci n0 k0 vs0 qs0 def0 =
 
         matchClause c k (_:us) qs def =
           Clause c us' (match
-                        n
+                        (n ++ "._c")
                         (k + k)
                         (us' ++ us)
                         [(ps' ++ ps, e) | (PCon _ ps':ps, e) <- qs]
