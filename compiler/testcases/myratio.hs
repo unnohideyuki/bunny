@@ -2,6 +2,7 @@ infixl 7 %
 
 ratPrec = 7 :: Int
 
+{- Ratio and Rational are placed temporary in lib/Prelude.hs
 -- todo: (Integral a) =>
 --       :%, infix constructor
 --       deriving Eq
@@ -11,6 +12,12 @@ type Rational = Ratio Integer
 
 instance (Eq a) => Eq (Ratio a) where
   a :% b == c :% d = a == c && b == d
+
+-- todo: Integral is a instance of Show?
+--       showParen
+instance (Show a) => Show (Ratio a) where
+  show (x :% y) = show x ++ " % " ++ show y
+-}
 
 reduce _ 0 = error "Ratio.% : zero denominator"
 reduce x y = (x `quot` d) :% (y `quot` d)
@@ -34,10 +41,6 @@ instance (Integral a) => Num (Ratio a) where
   fromInteger x     = (fromInteger x) :% 1
 
 
--- todo: Integral is a instance of Show?
---       showParen
-instance (Show a) => Show (Ratio a) where
-  show (x :% y) = show x ++ " % " ++ show y
 
 main = do print a
           print b

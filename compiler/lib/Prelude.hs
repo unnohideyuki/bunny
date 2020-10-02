@@ -128,6 +128,28 @@ class (Num a, Ord a, Enum a) => Integral a where
   divMod n d = if signum r == - signum d then (q-1, r+d) else qr
     where qr@(q,r) = quotRem n d
 
+-- (from here) todo: should be separated into Data.Ratio 
+
+-- todo: (Integral a) =>
+--       :%, infix constructor
+--       deriving Eq
+data (Integral a) => Ratio a = a :% a
+
+type Rational = Ratio Integer
+
+instance (Eq a) => Eq (Ratio a) where
+  a :% b == c :% d = a == c && b == d
+
+-- todo: Integral is a instance of Show?
+--       showParen
+instance (Show a) => Show (Ratio a) where
+  show (x :% y) = show x ++ " % " ++ show y
+
+-- (to here) todo: should be separated into Data.Ratio 
+
+class (Num a, Ord a) => Real a where
+  toRational :: a -> Rational
+
 class (Num a) => Fractional a where
   (/)   :: a -> a -> a
   recip :: a -> a
