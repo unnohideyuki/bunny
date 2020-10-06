@@ -21,7 +21,7 @@ public class ToRationalSample {
 		BigInteger d = BigInteger.valueOf(16).pow(256).negate();
 		System.out.println(d.toString() + " % 1");
 	    } else if (hs == "NaN"){
-		BigInteger d = BigInteger.valueOf(16).pow(255).multiply(BigInteger.valueOf(0x18));
+		BigInteger d = BigInteger.valueOf(16).pow(255).multiply(BigInteger.valueOf(-24));
 		System.out.println(d.toString() + " % 1");
 	    } else {
 		Pattern pat = Pattern.compile("(-?)0x(\\d+)\\.([0-9a-f]+)p(-?\\d+)");
