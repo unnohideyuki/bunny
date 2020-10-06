@@ -33,7 +33,9 @@ public class ToRationalSample {
 		    System.out.println(m.group(3));
 		    System.out.println(m.group(4));
 
-		    boolean isNeg = m.group(1) == "-";
+		    boolean isNeg = (m.group(1).charAt(0) == '\u002D');
+		    System.out.println(isNeg);
+
 		    BigInteger d0 = new BigInteger(m.group(2) + m.group(3), 16);
 
 		    int len = m.group(3).length();

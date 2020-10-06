@@ -475,6 +475,9 @@ instance Fractional Float where
 instance Show Float where
   show = Prim.floatShow
 
+instance Real Float where
+  toRational = Prim.floatToRational
+
 instance Eq Double where
   (==) = Prim.doubleEq
 
@@ -496,6 +499,9 @@ instance Fractional Double where
 
 instance Show Double where
   show = Prim.doubleShow
+
+instance Real Double where
+  toRational = Prim.doubleToRational
 
 -- Lists
 

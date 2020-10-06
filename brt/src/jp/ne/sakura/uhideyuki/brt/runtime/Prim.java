@@ -208,14 +208,14 @@ public class Prim {
 	} else if (hs == "NaN"){
 	    d = BigInteger.valueOf(16).pow(255).multiply(BigInteger.valueOf(-24));
 	} else {
-	    Pattern pat = Pattern.compile("(-?)0x(\\d+)\\.([0-9a-f]+)p(-?\\d+)");
+	    Pattern pat = Pattern.compile("-?0x(\\d+)\\.([0-9a-f]+)p(-?\\d+)");
 	    Matcher m = pat.matcher(hs);
 	    if (m.find()){
-		boolean isNeg = m.group(1) == "-";
-		BigInteger d0 = new BigInteger(m.group(2) + m.group(3), 16);
+		boolean isNeg = (hs.charAt(0) == '\u002D');
+		BigInteger d0 = new BigInteger(m.group(1) + m.group(2), 16);
 
-		int len = m.group(3).length();
-		int e0 = Integer.parseInt(m.group(4));
+		int len = m.group(2).length();
+		int e0 = Integer.parseInt(m.group(3));
 		int e = e0 - len*4;
 
 		BigInteger n0;

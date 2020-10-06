@@ -37,6 +37,9 @@ tTuple2   = TCon (Tycon "Prelude.(,)" (Kfun Star (Kfun Star Star)))
 tString :: Type
 tString  = list tChar
 
+tRational :: Type
+tRational  = TAp (TCon (Tycon "Prelude.Ratio" (Kfun Star Star))) tInteger
+
 infixr 4 `fn`
 fn :: Type -> Type -> Type
 a `fn` b = TAp (TAp tArrow a) b
