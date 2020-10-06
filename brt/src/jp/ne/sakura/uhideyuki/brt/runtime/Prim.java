@@ -2,6 +2,8 @@ package jp.ne.sakura.uhideyuki.brt.runtime;
 
 import jp.ne.sakura.uhideyuki.brt.brtsyn.*;
 import java.io.*;
+import java.util.regex.*;
+import java.math.BigInteger;
 
 public class Prim {
     private static Expr mkExpr(HeapObj obj){
@@ -190,6 +192,56 @@ public class Prim {
 	return RTLib.mkFun(new DoubleFromInteger());
     }
 
+    public static Expr mkdoubleToRational(){
+	return RTLib.mkFun(new DoubleToRational());
+    }
+
+    public static Expr mkRational(double x){
+	String hs = Double.toHexString(x);
+	BigInteger d = BigInteger.ZERO;
+	BigInteger n = BigInteger.ONE;
+	
+	if (hs == "Infinity") {
+	    d = BigInteger.valueOf(16).pow(256);
+	} else if (hs == "-Infinity"){
+	    d = BigInteger.valueOf(16).pow(256).negate();
+	} else if (hs == "NaN"){
+	    d = BigInteger.valueOf(16).pow(255).multiply(BigInteger.valueOf(-24));
+	} else {
+	    Pattern pat = Pattern.compile("(-?)0x(\\d+)\\.([0-9a-f]+)p(-?\\d+)");
+	    Matcher m = pat.matcher(hs);
+	    if (m.find()){
+		boolean isNeg = m.group(1) == "-";
+		BigInteger d0 = new BigInteger(m.group(2) + m.group(3), 16);
+
+		int len = m.group(3).length();
+		int e0 = Integer.parseInt(m.group(4));
+		int e = e0 - len*4;
+
+		BigInteger n0;
+		if (e < 0){
+		    n0 = BigInteger.valueOf(1L << (-e));
+		} else {
+		    n0 = BigInteger.ONE;
+		    d0 = d0.multiply(BigInteger.valueOf(1L << e));
+		}
+
+		BigInteger g = d0.gcd(n0);
+		d = d0.divide(g);
+		n = n0.divide(g);
+		if (isNeg){ d = d.negate(); }
+	    } else {
+		System.err.println("Prim.mkRational: must not occur");
+		return Prim.mkerror();
+	    }
+	}
+
+	AtomExpr ad = new AtomExpr(new LitInteger(d));
+	AtomExpr an = new AtomExpr(new LitInteger(n));
+	AtomExpr[] args = {ad, an};
+	return mkExpr(new ConObj(new Cotr("Prelude.:%"), args));
+    }
+
     public static Expr mkdoubleShow(){
 	return RTLib.mkFun(new DoubleShow());
     }
@@ -224,6 +276,10 @@ public class Prim {
 
     public static Expr mkfloatFromInteger(){
 	return RTLib.mkFun(new FloatFromInteger());
+    }
+
+    public static Expr mkfloatToRational(){
+	return RTLib.mkFun(new FloatToRational());
     }
 
     public static Expr mkfloatShow(){
@@ -833,6 +889,17 @@ class DoubleFromInteger implements LambdaForm {
     }
 }
 
+class DoubleToRational implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedDouble();
+	BoxedDoubleObj ix = (BoxedDoubleObj)((Var)((AtomExpr)x).a).obj;
+	return Prim.mkRational(ix.value);
+    }
+}
+
 class DoubleShow implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
@@ -1020,6 +1087,17 @@ class FloatFromInteger implements LambdaForm {
 	    (BoxedIntegerObj)((Var)((AtomExpr)x).a).obj;
 
 	return new AtomExpr(new LitFloat(ix.value.floatValue()));
+    }
+}
+
+class FloatToRational implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedFloat();
+	BoxedFloatObj ix = (BoxedFloatObj)((Var)((AtomExpr)x).a).obj;
+	return Prim.mkRational((double)ix.value);
     }
 }
 
