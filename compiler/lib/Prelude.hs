@@ -153,7 +153,7 @@ class (Num a, Ord a) => Real a where
 class (Num a) => Fractional a where
   (/)   :: a -> a -> a
   recip :: a -> a
-  -- fromRational :: Rational -> a
+  fromRational :: Rational -> a
   -- Minimal complete definition:
   --     fromRational and (recip or (/))
   recip x = 1 / x
@@ -471,6 +471,7 @@ instance Num Float where
 instance Fractional Float where
   (/) = Prim.floatDiv
   recip x = (1::Float) / x
+  fromRational = Prim.floatFromRational
 
 instance Show Float where
   show = Prim.floatShow
@@ -496,6 +497,7 @@ instance Num Double where
 instance Fractional Double where
   (/) = Prim.doubleDiv
   recip x = (1::Double) / x
+  fromRational = Prim.doubleFromRational
 
 instance Show Double where
   show = Prim.doubleShow

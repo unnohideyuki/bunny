@@ -179,6 +179,10 @@ primDoubleToRationalCfun :: Assump
 primDoubleToRationalCfun = "Prim.doubleToRational" :>:
                             Forall [] ([] :=> (tDouble `fn` tRational))
 
+primDoubleFromRationalCfun :: Assump
+primDoubleFromRationalCfun =  "Prim.doubleFromRational" :>:
+                              Forall [] ([] :=> (tRational `fn` tDouble))
+
 primDoubleShowCfun :: Assump
 primDoubleShowCfun  = "Prim.doubleShow" :>: Forall [] ([] :=> (tDouble `fn` tString))
 
@@ -218,6 +222,10 @@ primFloatToRationalCfun :: Assump
 primFloatToRationalCfun = "Prim.floatToRational" :>:
                           Forall [] ([] :=> (tFloat `fn` tRational))
 
+primFloatFromRationalCfun :: Assump
+primFloatFromRationalCfun =  "Prim.floatFromRational" :>:
+                             Forall [] ([] :=> (tRational `fn` tFloat))
+
 primFloatShowCfun :: Assump
 primFloatShowCfun  = "Prim.floatShow" :>: Forall [] ([] :=> (tFloat `fn` tString))
 
@@ -256,13 +264,13 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun
                 , primDoubleAddCfun, primDoubleSubCfun, primDoubleMulCfun
                 , primDoubleDivCfun
                 , primDoubleSignumCfun, primDoubleFromIntegerCfun
-                , primDoubleToRationalCfun
+                , primDoubleToRationalCfun, primDoubleFromRationalCfun
                 , primDoubleShowCfun
                 , primFloatLeCfun, primFloatEqCfun
                 , primFloatAddCfun, primFloatSubCfun, primFloatMulCfun
                 , primFloatDivCfun
                 , primFloatSignumCfun, primFloatFromIntegerCfun
-                , primFloatToRationalCfun
+                , primFloatToRationalCfun, primFloatFromRationalCfun
                 , primFloatShowCfun
                 , errorCfun
                 , eFAILCfun
@@ -314,6 +322,7 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.doubleSignum", "Prim.doubleSignum")
                        , ("Prim.doubleFromInteger", "Prim.doubleFromInteger")
                        , ("Prim.doubleToRational", "Prim.doubleToRational")
+                       , ("Prim.doubleFromRational", "Prim.doubleFromRational")
                        , ("Prim.doubleShow", "Prim.doubleShow")
                        , ("Prim.floatLe", "Prim.floatLe")
                        , ("Prim.floatEq", "Prim.floatEq")
@@ -324,6 +333,7 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.floatSignum", "Prim.floatSignum")
                        , ("Prim.floatFromInteger", "Prim.floatFromInteger")
                        , ("Prim.floatToRational", "Prim.floatToRational")
+                       , ("Prim.floatFromRational", "Prim.floatFromRational")
                        , ("Prim.floatShow", "Prim.floatShow")
                        , ("Prim.error", "Prim.error")
                        , ("Prim.retIO", "Prim.retIO")

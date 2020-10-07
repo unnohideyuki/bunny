@@ -242,6 +242,24 @@ public class Prim {
 	return mkExpr(new ConObj(new Cotr("Prelude.:%"), args));
     }
 
+    public static Expr mkdoubleFromRational(){
+	return RTLib.mkFun(new DoubleFromRational());
+    }
+
+    public static double fromRational(BigInteger d0, BigInteger n0){
+	if (d0 == BigInteger.valueOf(16).pow(256)){
+	    return (1/0);
+	} else if (d0 == BigInteger.valueOf(16).pow(256).negate()){
+	    return (-1/0);
+	} else if (d0 == BigInteger.valueOf(16).pow(255).multiply(BigInteger.valueOf(-24))){
+	    return (0/0);
+	} else {
+	    double d = d0.doubleValue();
+	    double n = n0.doubleValue();
+	    return (d/n);
+	}
+    }
+    
     public static Expr mkdoubleShow(){
 	return RTLib.mkFun(new DoubleShow());
     }
@@ -280,6 +298,10 @@ public class Prim {
 
     public static Expr mkfloatToRational(){
 	return RTLib.mkFun(new FloatToRational());
+    }
+
+    public static Expr mkfloatFromRational(){
+	return RTLib.mkFun(new FloatFromRational());
     }
 
     public static Expr mkfloatShow(){
@@ -900,6 +922,23 @@ class DoubleToRational implements LambdaForm {
     }
 }
 
+class DoubleFromRational implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	ConObj obj = (ConObj)((Var)((AtomExpr)x).a).obj;
+	Cotr cotr = obj.cotr;
+	assert cotr.ident == "Prelude.:%";
+	Expr y = RT.eval(obj.args[0]);
+	Expr z = RT.eval(obj.args[1]);
+	BoxedIntegerObj id = (BoxedIntegerObj)((Var)((AtomExpr)y).a).obj;
+	BoxedIntegerObj in = (BoxedIntegerObj)((Var)((AtomExpr)z).a).obj;
+	double r = Prim.fromRational(id.value, in.value);
+	return new AtomExpr(new LitDouble(r));
+    }
+}
+
 class DoubleShow implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
@@ -1098,6 +1137,23 @@ class FloatToRational implements LambdaForm {
 	assert x.isBoxedFloat();
 	BoxedFloatObj ix = (BoxedFloatObj)((Var)((AtomExpr)x).a).obj;
 	return Prim.mkRational((double)ix.value);
+    }
+}
+
+class FloatFromRational implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	ConObj obj = (ConObj)((Var)((AtomExpr)x).a).obj;
+	Cotr cotr = obj.cotr;
+	assert cotr.ident == "Prelude.:%";
+	Expr y = RT.eval(obj.args[0]);
+	Expr z = RT.eval(obj.args[1]);
+	BoxedIntegerObj id = (BoxedIntegerObj)((Var)((AtomExpr)y).a).obj;
+	BoxedIntegerObj in = (BoxedIntegerObj)((Var)((AtomExpr)z).a).obj;
+	float r = (float) Prim.fromRational(id.value, in.value);
+	return new AtomExpr(new LitFloat(r));
     }
 }
 
