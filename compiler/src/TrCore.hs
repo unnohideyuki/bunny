@@ -267,6 +267,13 @@ trExpr2 (Ty.Lit (Ty.LitInt n)) = do
       i = Lit (LitInt n tInteger)
   return (App f i)
 
+trExpr2 (Ty.Lit (Ty.LitFrac d)) = do
+  v <- newTVar' Star
+  let qty = [IsIn "Prelude.Fractional" v] :=> (tRational `fn` v)
+      f = Var (TermVar "Prelude.fromRational" qty)
+      l = Lit (LitFrac d tRational)
+  return (App f l)
+
 trExpr2 (Ty.Ap e1 e2) = do
   e1' <- trExpr2 e1
   e2' <- trExpr2 e2

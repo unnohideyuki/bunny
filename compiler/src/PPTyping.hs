@@ -42,7 +42,7 @@ ppAssump (n :>: sc) = text n <+> text ":>:" <+> ppScheme sc
 ppLiteral :: Literal -> Doc
 ppLiteral (LitInt i)  = text "LitInt"  <+> text (show i)
 ppLiteral (LitChar c) = text "LitChar" <+> text (show c)
-ppLiteral (LitRat r)  = text "LitRat"  <+> text (show r)
+ppLiteral (LitFrac d) = text "LitFrac" <+> text (show d)
 ppLiteral (LitStr s)  = text "LitStr"  <+> text (show s)
 
 ppExpr :: Expr -> Doc

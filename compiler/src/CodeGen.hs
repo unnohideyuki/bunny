@@ -452,6 +452,11 @@ genAtomExpr (AtomExpr (LitAtom (LitInt i))) = do
   appendCode $ "Expr t" ++ show n ++ " = RTLib.mkLitInteger(\"" ++ show i ++ "\");"
   return n
 
+genAtomExpr (AtomExpr (LitAtom (LitFrac d))) = do
+  n <- nexti
+  appendCode $ "Expr t" ++ show n ++ " = Prim.mkRational(" ++ show d ++ ");"
+  return n
+
 genAtomExpr e = error $ "Non-exhaustive pattern in genAtomExpr: " ++ show e
 
 refTopLevel :: Id -> Id

@@ -367,7 +367,7 @@ type Infer e t = ClassEnv -> Assumps -> e -> TI ([Pred], t)
 
 data Literal = LitInt  Integer
              | LitChar Char
-             | LitRat  Rational
+             | LitFrac Double
              | LitStr  String
              deriving Show
 
@@ -376,8 +376,8 @@ tiLit (LitChar _) = return ([], tChar)
 tiLit (LitInt _)  = do v <- newTVar Star
                        return ([IsIn "Prelude.Num" v], v)
 tiLit (LitStr _) = return ([], tString)
-tiLit (LitRat _) = do v <- newTVar Star
-                      return ([IsIn "Fractional" v], v)
+tiLit (LitFrac _) = do v <- newTVar Star
+                       return ([IsIn "Prelude.Fractional" v], v)
 -- Patterns
 
 data Pat = PVar Id

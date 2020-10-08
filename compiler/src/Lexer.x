@@ -227,7 +227,7 @@ data Token =
            | TQConsym (String, AlexPosn)
            -- Literals
            | TInteger (Integer, AlexPosn)
-           | TFloat (Float, AlexPosn)
+           | TFloat (Double, AlexPosn)
            | TString (String, AlexPosn)
            | TChar (Char, AlexPosn)
            | Eof

@@ -66,7 +66,7 @@ data Fixity = Infixl | Infixr | Infix
             deriving (Show, Eq)
 
 data Literal = LitInteger Integer Pos
-             | LitFloat   Float   Pos
+             | LitFloat   Double  Pos
              | LitString  String  Pos
              | LitChar    Char    Pos
                deriving Show
@@ -157,5 +157,5 @@ mkString (s, pos) = LitString s $ extrPos pos
 mkInteger :: (Integer, AlexPosn) -> Literal
 mkInteger (i, pos) = LitInteger i $ extrPos pos
 
-mkFloat :: (Float, AlexPosn) -> Literal
+mkFloat :: (Double, AlexPosn) -> Literal
 mkFloat (d, pos) = LitFloat d $ extrPos pos

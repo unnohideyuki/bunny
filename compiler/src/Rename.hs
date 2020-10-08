@@ -912,6 +912,8 @@ renExp (A.LitExp (A.LitInteger i _)) = return $ Lit (LitInt i)
 
 renExp (A.LitExp (A.LitChar c _)) = return $ Lit (LitChar c)
 
+renExp (A.LitExp (A.LitFloat f _)) = return $ Lit (LitFrac f)
+
 renExp (A.ParExp e) = renExp e
 
 -- pair
