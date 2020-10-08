@@ -159,6 +159,24 @@ class (Num a) => Fractional a where
   recip x = 1 / x
   x / y   = x * recip y
 
+class (Fractional a) => Floatting a where
+  pi                  :: a
+  exp, log, sqrt      :: a -> a
+  (**), logBase       :: a -> a -> a
+  sin, cos, tan       :: a -> a
+  asin, acos, atan    :: a -> a
+  sinh, cosh, tanh    :: a -> a
+  asinh, acosh, atanh :: a -> a
+  -- Minimal complete definition:
+  --   pi, exp, log, sin, cos, sinh, cosh,
+  --   asin, acos, atan,
+  --   asinh, acosh, atanh
+  x ** y      = exp (log x * y)
+  logBase x y = log y / log x
+  sqrt x      = x ** 0.5
+  tan x       = sin x / cos x
+  tanh x      = sinh x / cosh x
+
 -- Numeric functions
 
 subtract :: (Num a) => a -> a -> a
