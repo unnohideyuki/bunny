@@ -183,6 +183,42 @@ primDoubleFromRationalCfun :: Assump
 primDoubleFromRationalCfun =  "Prim.doubleFromRational" :>:
                               Forall [] ([] :=> (tRational `fn` tDouble))
 
+primDoubleExpCfun :: Assump
+primDoubleExpCfun =  "Prim.doubleExp" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
+primDoubleLogCfun :: Assump
+primDoubleLogCfun =  "Prim.doubleLog" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
+primDoubleSinCfun :: Assump
+primDoubleSinCfun =  "Prim.doubleSin" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
+primDoubleCosCfun :: Assump
+primDoubleCosCfun =  "Prim.doubleCos" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
+primDoubleSinhCfun :: Assump
+primDoubleSinhCfun =  "Prim.doubleSinh" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
+primDoubleCoshCfun :: Assump
+primDoubleCoshCfun =  "Prim.doubleCosh" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
+primDoubleAsinCfun :: Assump
+primDoubleAsinCfun =  "Prim.doubleAsin" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
+primDoubleAcosCfun :: Assump
+primDoubleAcosCfun =  "Prim.doubleAcos" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
+primDoubleAtanCfun :: Assump
+primDoubleAtanCfun =  "Prim.doubleAtan" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
+primDoubleAsinhCfun :: Assump
+primDoubleAsinhCfun =  "Prim.doubleAsinh" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
+primDoubleAcoshCfun :: Assump
+primDoubleAcoshCfun =  "Prim.doubleAcosh" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
+primDoubleAtanhCfun :: Assump
+primDoubleAtanhCfun =  "Prim.doubleAtanh" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
 primDoubleShowCfun :: Assump
 primDoubleShowCfun  = "Prim.doubleShow" :>: Forall [] ([] :=> (tDouble `fn` tString))
 
@@ -226,6 +262,42 @@ primFloatFromRationalCfun :: Assump
 primFloatFromRationalCfun =  "Prim.floatFromRational" :>:
                              Forall [] ([] :=> (tRational `fn` tFloat))
 
+primFloatExpCfun :: Assump
+primFloatExpCfun =  "Prim.floatExp" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
+primFloatLogCfun :: Assump
+primFloatLogCfun =  "Prim.floatLog" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
+primFloatSinCfun :: Assump
+primFloatSinCfun =  "Prim.floatSin" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
+primFloatCosCfun :: Assump
+primFloatCosCfun =  "Prim.floatCos" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
+primFloatSinhCfun :: Assump
+primFloatSinhCfun =  "Prim.floatSinh" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
+primFloatCoshCfun :: Assump
+primFloatCoshCfun =  "Prim.floatCosh" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
+primFloatAsinCfun :: Assump
+primFloatAsinCfun =  "Prim.floatAsin" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
+primFloatAcosCfun :: Assump
+primFloatAcosCfun =  "Prim.floatAcos" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
+primFloatAtanCfun :: Assump
+primFloatAtanCfun =  "Prim.floatAtan" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
+primFloatAsinhCfun :: Assump
+primFloatAsinhCfun =  "Prim.floatAsinh" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
+primFloatAcoshCfun :: Assump
+primFloatAcoshCfun =  "Prim.floatAcosh" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
+primFloatAtanhCfun :: Assump
+primFloatAtanhCfun =  "Prim.floatAtanh" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
 primFloatShowCfun :: Assump
 primFloatShowCfun  = "Prim.floatShow" :>: Forall [] ([] :=> (tFloat `fn` tString))
 
@@ -265,12 +337,22 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun
                 , primDoubleDivCfun
                 , primDoubleSignumCfun, primDoubleFromIntegerCfun
                 , primDoubleToRationalCfun, primDoubleFromRationalCfun
+                , primDoubleExpCfun, primDoubleLogCfun
+                , primDoubleSinCfun, primDoubleCosCfun
+                , primDoubleSinhCfun, primDoubleCoshCfun
+                , primDoubleAsinCfun, primDoubleAcosCfun, primDoubleAtanCfun
+                , primDoubleAsinhCfun, primDoubleAcoshCfun, primDoubleAtanhCfun
                 , primDoubleShowCfun
                 , primFloatLeCfun, primFloatEqCfun
                 , primFloatAddCfun, primFloatSubCfun, primFloatMulCfun
                 , primFloatDivCfun
                 , primFloatSignumCfun, primFloatFromIntegerCfun
                 , primFloatToRationalCfun, primFloatFromRationalCfun
+                , primFloatExpCfun, primFloatLogCfun
+                , primFloatSinCfun, primFloatCosCfun
+                , primFloatSinhCfun, primFloatCoshCfun
+                , primFloatAsinCfun, primFloatAcosCfun, primFloatAtanCfun
+                , primFloatAsinhCfun, primFloatAcoshCfun, primFloatAtanhCfun
                 , primFloatShowCfun
                 , errorCfun
                 , eFAILCfun
@@ -323,6 +405,18 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.doubleFromInteger", "Prim.doubleFromInteger")
                        , ("Prim.doubleToRational", "Prim.doubleToRational")
                        , ("Prim.doubleFromRational", "Prim.doubleFromRational")
+                       , ("Prim.doubleExp", "Prim.doubleExp")
+                       , ("Prim.doubleLog", "Prim.doubleLog")
+                       , ("Prim.doubleSin", "Prim.doubleSin")
+                       , ("Prim.doubleCos", "Prim.doubleCos")
+                       , ("Prim.doubleSinh", "Prim.doubleSinh")
+                       , ("Prim.doubleCosh", "Prim.doubleCosh")
+                       , ("Prim.doubleAsin", "Prim.doubleAsin")
+                       , ("Prim.doubleAcos", "Prim.doubleAcos")
+                       , ("Prim.doubleAtan", "Prim.doubleAtan")
+                       , ("Prim.doubleAsinh", "Prim.doubleAsinh")
+                       , ("Prim.doubleAcosh", "Prim.doubleAcosh")
+                       , ("Prim.doubleAtanh", "Prim.doubleAtanh")
                        , ("Prim.doubleShow", "Prim.doubleShow")
                        , ("Prim.floatLe", "Prim.floatLe")
                        , ("Prim.floatEq", "Prim.floatEq")
@@ -334,6 +428,18 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.floatFromInteger", "Prim.floatFromInteger")
                        , ("Prim.floatToRational", "Prim.floatToRational")
                        , ("Prim.floatFromRational", "Prim.floatFromRational")
+                       , ("Prim.floatExp", "Prim.floatExp")
+                       , ("Prim.floatLog", "Prim.floatLog")
+                       , ("Prim.floatSin", "Prim.floatSin")
+                       , ("Prim.floatCos", "Prim.floatCos")
+                       , ("Prim.floatSinh", "Prim.floatSinh")
+                       , ("Prim.floatCosh", "Prim.floatCosh")
+                       , ("Prim.floatAsin", "Prim.floatAsin")
+                       , ("Prim.floatAcos", "Prim.floatAcos")
+                       , ("Prim.floatAtan", "Prim.floatAtan")
+                       , ("Prim.floatAsinh", "Prim.floatAsinh")
+                       , ("Prim.floatAcosh", "Prim.floatAcosh")
+                       , ("Prim.floatAtanh", "Prim.floatAtanh")
                        , ("Prim.floatShow", "Prim.floatShow")
                        , ("Prim.error", "Prim.error")
                        , ("Prim.retIO", "Prim.retIO")

@@ -159,7 +159,7 @@ class (Num a) => Fractional a where
   recip x = 1 / x
   x / y   = x * recip y
 
-class (Fractional a) => Floatting a where
+class (Fractional a) => Floating a where
   pi                  :: a
   exp, log, sqrt      :: a -> a
   (**), logBase       :: a -> a -> a
@@ -491,6 +491,21 @@ instance Fractional Float where
   recip x = (1::Float) / x
   fromRational = Prim.floatFromRational
 
+instance Floating Float where
+  pi = 3.1415927
+  exp = Prim.floatExp
+  log = Prim.floatLog
+  sin = Prim.floatSin
+  cos = Prim.floatCos
+  sinh = Prim.floatSinh
+  cosh = Prim.floatCosh
+  asin = Prim.floatAsin
+  acos = Prim.floatAcos
+  atan = Prim.floatAtan
+  asinh = Prim.floatAsinh
+  acosh = Prim.floatAcosh
+  atanh = Prim.floatAtanh
+
 instance Show Float where
   show = Prim.floatShow
 
@@ -516,6 +531,21 @@ instance Fractional Double where
   (/) = Prim.doubleDiv
   recip x = (1::Double) / x
   fromRational = Prim.doubleFromRational
+
+instance Floating Double where
+  pi = 3.141592653589793
+  exp = Prim.doubleExp
+  log = Prim.doubleLog
+  sin = Prim.doubleSin
+  cos = Prim.doubleCos
+  sinh = Prim.doubleSinh
+  cosh = Prim.doubleCosh
+  asin = Prim.doubleAsin
+  acos = Prim.doubleAcos
+  atan = Prim.doubleAtan
+  asinh = Prim.doubleAsinh
+  acosh = Prim.doubleAcosh
+  atanh = Prim.doubleAtanh
 
 instance Show Double where
   show = Prim.doubleShow
