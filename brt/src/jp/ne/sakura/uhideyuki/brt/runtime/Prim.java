@@ -43,7 +43,7 @@ public class Prim {
     }
 
     public static Expr mk_40__41_(){
-	return mkExpr(new ConObj(new Cotr("Prim.()"), new AtomExpr[0]));
+	return mkExpr(new ConObj(new Cotr("Prelude.()"), new AtomExpr[0]));
     }
 
     public static Expr mkFAIL(){

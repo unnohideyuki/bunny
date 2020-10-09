@@ -103,6 +103,9 @@ class Show a where
 shows :: (Show a) => a -> ShowS
 shows =  showsPrec 0
 
+instance Show () where
+  show _ = "()"
+
 -- Numeric classes
 
 class (Eq a, Show a) => Num a where

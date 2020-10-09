@@ -12,7 +12,7 @@ data Tyvar = Tyvar Id Kind deriving (Eq, Show)
 data Tycon = Tycon Id Kind deriving (Eq, Show)
 
 tUnit    :: Type
-tUnit     = TCon (Tycon "()" Star)
+tUnit     = TCon (Tycon "Prelude.()" Star)
 tChar    :: Type
 tChar     = TCon (Tycon "Prelude.Char" Star)
 tInt     :: Type

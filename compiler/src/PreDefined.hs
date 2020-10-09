@@ -14,7 +14,7 @@ toAssumpList as = map (\(i, sc) -> (i :>: sc)) (Map.toList as)
 
 -- Primitive Constructors and Member Functions
 unitCfun :: Assump
-unitCfun  = "Prim.()" :>: Forall [] ([] :=> tUnit)
+unitCfun  = "Prelude.()" :>: Forall [] ([] :=> tUnit)
 
 nilCfun :: Assump
 nilCfun  = "Prelude.[]" :>: Forall [Star] ([] :=> TAp tList (TGen 0))
@@ -363,7 +363,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun
                 ]
 
 primConsNames :: [(Id, Id)]
-primConsNames  = [ ("()", "Prim.()")
+primConsNames  = [ ("()", "Prelude.()")
                  , ("Prim.[]", "Prim.[]")
                  , ("[]", "Prelude.[]")
                  , (":", "Prelude.:")
@@ -466,13 +466,13 @@ concatConstInfo (ConstructorInfo da1 dc1)(ConstructorInfo da2 dc2) =
 
 initialConsts :: ConstructorInfo
 initialConsts = ConstructorInfo da dc
-  where   da = [ ("Prim.()", 0)
+  where   da = [ ("Prelude.()", 0)
                , ("Prelude.[]", 0)
                , ("Prelude.:", 2)
                , ("Prelude.(,)", 2)
                ]
 
-          dc = [ ("Prim.()", [unitCfun])
+          dc = [ ("Prelude.()", [unitCfun])
                , ("Prelude.[]", [nilCfun, consCfun])
                , ("Prelude.:", [nilCfun, consCfun])
                , ("Prelude.(,)", [pairCfun])

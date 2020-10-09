@@ -106,7 +106,7 @@ public class RTLib {
     }
 
     public static Expr unit =
-	mkExpr(new ConObj(new Cotr("Prim.()"), new AtomExpr[0]));
+	mkExpr(new ConObj(new Cotr("Prelude.()"), new AtomExpr[0]));
 
     public static Expr nil =
 	mkExpr(new ConObj(new Cotr("Prelude.[]"), new AtomExpr[0]));
