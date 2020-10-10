@@ -180,6 +180,24 @@ class (Fractional a) => Floating a where
   tan x       = sin x / cos x
   tanh x      = sinh x / cosh x
 
+class (Real a, Fractional a) => RealFrac a where
+  properFraction  :: (Integral b) => a -> (b, a)
+  truncate, round :: (Integral b) => a -> b
+  ceiling, floor  ::  (Integral b) => a -> b
+  -- Minimal complete definition:  properFraction
+  truncate x = m where (m, _) = properFraction x
+  round x = let (n, r) = properFraction x
+                m      = if r < 0 then n - 1 else n + 1
+                s = signum (abs r - 0.5)
+                r | s == -1 =  n
+                  | s == 0  = if even n then n else m
+                  | s == 1  =  m
+            in r
+  ceiling x = if r > 0 then n + 1 else n
+    where (n, r) = properFraction x
+  floor x = if r < 0 then n - 1 else n
+    where (n, r) = properFraction x
+
 -- Numeric functions
 
 subtract :: (Num a) => a -> a -> a
