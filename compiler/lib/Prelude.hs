@@ -516,10 +516,13 @@ instance Floating Float where
   pi = 3.1415927
   exp = Prim.floatExp
   log = Prim.floatLog
+  (**) = Prim.floatPow
   sin = Prim.floatSin
   cos = Prim.floatCos
+  tan = Prim.floatTan
   sinh = Prim.floatSinh
   cosh = Prim.floatCosh
+  tanh = Prim.floatTanh
   asin = Prim.floatAsin
   acos = Prim.floatAcos
   atan = Prim.floatAtan
@@ -557,10 +560,13 @@ instance Floating Double where
   pi = 3.141592653589793
   exp = Prim.doubleExp
   log = Prim.doubleLog
+  (**) = Prim.doublePow
   sin = Prim.doubleSin
   cos = Prim.doubleCos
+  tan = Prim.doubleTan
   sinh = Prim.doubleSinh
   cosh = Prim.doubleCosh
+  tanh = Prim.doubleTanh
   asin = Prim.doubleAsin
   acos = Prim.doubleAcos
   atan = Prim.doubleAtan

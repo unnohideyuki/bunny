@@ -269,6 +269,10 @@ public class Prim {
 	return RTLib.mkFun(new DoubleLog());
     }
     
+    public static Expr mkdoublePow(){
+	return RTLib.mkFun(new DoublePow());
+    }
+    
     public static Expr mkdoubleSin(){
 	return RTLib.mkFun(new DoubleSin());
     }
@@ -277,12 +281,20 @@ public class Prim {
 	return RTLib.mkFun(new DoubleCos());
     }
     
+    public static Expr mkdoubleTan(){
+	return RTLib.mkFun(new DoubleTan());
+    }
+    
     public static Expr mkdoubleSinh(){
 	return RTLib.mkFun(new DoubleSinh());
     }
     
     public static Expr mkdoubleCosh(){
 	return RTLib.mkFun(new DoubleCosh());
+    }
+    
+    public static Expr mkdoubleTanh(){
+	return RTLib.mkFun(new DoubleTanh());
     }
     
     public static Expr mkdoubleAsin(){
@@ -361,6 +373,10 @@ public class Prim {
 	return RTLib.mkFun(new FloatLog());
     }
     
+    public static Expr mkfloatPow(){
+	return RTLib.mkFun(new FloatPow());
+    }
+    
     public static Expr mkfloatSin(){
 	return RTLib.mkFun(new FloatSin());
     }
@@ -369,12 +385,20 @@ public class Prim {
 	return RTLib.mkFun(new FloatCos());
     }
     
+    public static Expr mkfloatTan(){
+	return RTLib.mkFun(new FloatTan());
+    }
+    
     public static Expr mkfloatSinh(){
 	return RTLib.mkFun(new FloatSinh());
     }
     
     public static Expr mkfloatCosh(){
 	return RTLib.mkFun(new FloatCosh());
+    }
+    
+    public static Expr mkfloatTanh(){
+	return RTLib.mkFun(new FloatTanh());
     }
     
     public static Expr mkfloatAsin(){
@@ -1062,6 +1086,23 @@ class DoubleLog implements LambdaForm {
     }
 }
 
+class DoublePow implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	Expr y = RT.eval(args[1]);
+	assert x.isBoxedDouble();
+	assert y.isBoxedDouble();
+	BoxedDoubleObj xx = (BoxedDoubleObj)((Var)((AtomExpr)x).a).obj;
+	BoxedDoubleObj yy = (BoxedDoubleObj)((Var)((AtomExpr)y).a).obj;
+	double a = xx.value;
+	double b = yy.value;
+	double r = Math.pow(a, b);
+	return new AtomExpr(new LitDouble(r));
+    }
+}
+
 class DoubleSin implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
@@ -1088,6 +1129,19 @@ class DoubleCos implements LambdaForm {
     }
 }
 
+class DoubleTan implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedDouble();
+	BoxedDoubleObj ix = (BoxedDoubleObj)((Var)((AtomExpr)x).a).obj;
+	double a = ix.value;
+	double r = Math.tan(a);
+	return new AtomExpr(new LitDouble(r));
+    }
+}
+
 class DoubleSinh implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
@@ -1110,6 +1164,19 @@ class DoubleCosh implements LambdaForm {
 	BoxedDoubleObj ix = (BoxedDoubleObj)((Var)((AtomExpr)x).a).obj;
 	double a = ix.value;
 	double r = Math.cosh(a);
+	return new AtomExpr(new LitDouble(r));
+    }
+}
+
+class DoubleTanh implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedDouble();
+	BoxedDoubleObj ix = (BoxedDoubleObj)((Var)((AtomExpr)x).a).obj;
+	double a = ix.value;
+	double r = Math.tanh(a);
 	return new AtomExpr(new LitDouble(r));
     }
 }
@@ -1436,6 +1503,24 @@ class FloatLog implements LambdaForm {
     }
 }
 
+class FloatPow implements LambdaForm {
+    public int arity(){ return 2; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	Expr y = RT.eval(args[1]);
+	assert x.isBoxedFloat();
+	assert y.isBoxedFloat();
+	BoxedFloatObj xx = (BoxedFloatObj)((Var)((AtomExpr)x).a).obj;
+	BoxedFloatObj yy = (BoxedFloatObj)((Var)((AtomExpr)y).a).obj;
+	float a = xx.value;
+	float b = yy.value;
+	float r = (float) Math.pow(a, b);
+	return new AtomExpr(new LitFloat(r));
+    }
+}
+
+
 class FloatSin implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
@@ -1462,6 +1547,19 @@ class FloatCos implements LambdaForm {
     }
 }
 
+class FloatTan implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedFloat();
+	BoxedFloatObj ix = (BoxedFloatObj)((Var)((AtomExpr)x).a).obj;
+	float a = ix.value;
+	float r = (float) Math.tan((double) a);
+	return new AtomExpr(new LitFloat(r));
+    }
+}
+
 class FloatSinh implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
@@ -1484,6 +1582,19 @@ class FloatCosh implements LambdaForm {
 	BoxedFloatObj ix = (BoxedFloatObj)((Var)((AtomExpr)x).a).obj;
 	float a = ix.value;
 	float r = (float) Math.cosh((double) a);
+	return new AtomExpr(new LitFloat(r));
+    }
+}
+
+class FloatTanh implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedFloat();
+	BoxedFloatObj ix = (BoxedFloatObj)((Var)((AtomExpr)x).a).obj;
+	float a = ix.value;
+	float r = (float) Math.tanh((double) a);
 	return new AtomExpr(new LitFloat(r));
     }
 }

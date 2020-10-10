@@ -189,17 +189,26 @@ primDoubleExpCfun =  "Prim.doubleExp" :>: Forall [] ([] :=> (tDouble `fn` tDoubl
 primDoubleLogCfun :: Assump
 primDoubleLogCfun =  "Prim.doubleLog" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
 
+primDoublePowCfun :: Assump
+primDoublePowCfun =  "Prim.doublePow" :>: Forall [] ([] :=> (tDouble `fn` tDouble `fn` tDouble))
+
 primDoubleSinCfun :: Assump
 primDoubleSinCfun =  "Prim.doubleSin" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
 
 primDoubleCosCfun :: Assump
 primDoubleCosCfun =  "Prim.doubleCos" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
 
+primDoubleTanCfun :: Assump
+primDoubleTanCfun =  "Prim.doubleTan" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
 primDoubleSinhCfun :: Assump
 primDoubleSinhCfun =  "Prim.doubleSinh" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
 
 primDoubleCoshCfun :: Assump
 primDoubleCoshCfun =  "Prim.doubleCosh" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
+
+primDoubleTanhCfun :: Assump
+primDoubleTanhCfun =  "Prim.doubleTanh" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
 
 primDoubleAsinCfun :: Assump
 primDoubleAsinCfun =  "Prim.doubleAsin" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
@@ -268,17 +277,26 @@ primFloatExpCfun =  "Prim.floatExp" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
 primFloatLogCfun :: Assump
 primFloatLogCfun =  "Prim.floatLog" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
 
+primFloatPowCfun :: Assump
+primFloatPowCfun =  "Prim.floatPow" :>: Forall [] ([] :=> (tFloat `fn` tFloat `fn` tFloat))
+
 primFloatSinCfun :: Assump
 primFloatSinCfun =  "Prim.floatSin" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
 
 primFloatCosCfun :: Assump
 primFloatCosCfun =  "Prim.floatCos" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
 
+primFloatTanCfun :: Assump
+primFloatTanCfun =  "Prim.floatTan" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
 primFloatSinhCfun :: Assump
 primFloatSinhCfun =  "Prim.floatSinh" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
 
 primFloatCoshCfun :: Assump
 primFloatCoshCfun =  "Prim.floatCosh" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
+
+primFloatTanhCfun :: Assump
+primFloatTanhCfun =  "Prim.floatTanh" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
 
 primFloatAsinCfun :: Assump
 primFloatAsinCfun =  "Prim.floatAsin" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
@@ -337,9 +355,9 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun
                 , primDoubleDivCfun
                 , primDoubleSignumCfun, primDoubleFromIntegerCfun
                 , primDoubleToRationalCfun, primDoubleFromRationalCfun
-                , primDoubleExpCfun, primDoubleLogCfun
-                , primDoubleSinCfun, primDoubleCosCfun
-                , primDoubleSinhCfun, primDoubleCoshCfun
+                , primDoubleExpCfun, primDoubleLogCfun, primDoublePowCfun
+                , primDoubleSinCfun, primDoubleCosCfun, primDoubleTanCfun
+                , primDoubleSinhCfun, primDoubleCoshCfun, primDoubleTanhCfun
                 , primDoubleAsinCfun, primDoubleAcosCfun, primDoubleAtanCfun
                 , primDoubleAsinhCfun, primDoubleAcoshCfun, primDoubleAtanhCfun
                 , primDoubleShowCfun
@@ -348,9 +366,9 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun
                 , primFloatDivCfun
                 , primFloatSignumCfun, primFloatFromIntegerCfun
                 , primFloatToRationalCfun, primFloatFromRationalCfun
-                , primFloatExpCfun, primFloatLogCfun
-                , primFloatSinCfun, primFloatCosCfun
-                , primFloatSinhCfun, primFloatCoshCfun
+                , primFloatExpCfun, primFloatLogCfun, primFloatPowCfun
+                , primFloatSinCfun, primFloatCosCfun, primFloatTanCfun
+                , primFloatSinhCfun, primFloatCoshCfun, primFloatTanhCfun
                 , primFloatAsinCfun, primFloatAcosCfun, primFloatAtanCfun
                 , primFloatAsinhCfun, primFloatAcoshCfun, primFloatAtanhCfun
                 , primFloatShowCfun
@@ -407,10 +425,13 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.doubleFromRational", "Prim.doubleFromRational")
                        , ("Prim.doubleExp", "Prim.doubleExp")
                        , ("Prim.doubleLog", "Prim.doubleLog")
+                       , ("Prim.doublePow", "Prim.doublePow")
                        , ("Prim.doubleSin", "Prim.doubleSin")
                        , ("Prim.doubleCos", "Prim.doubleCos")
+                       , ("Prim.doubleTan", "Prim.doubleTan")
                        , ("Prim.doubleSinh", "Prim.doubleSinh")
                        , ("Prim.doubleCosh", "Prim.doubleCosh")
+                       , ("Prim.doubleTanh", "Prim.doubleTanh")
                        , ("Prim.doubleAsin", "Prim.doubleAsin")
                        , ("Prim.doubleAcos", "Prim.doubleAcos")
                        , ("Prim.doubleAtan", "Prim.doubleAtan")
@@ -430,10 +451,13 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.floatFromRational", "Prim.floatFromRational")
                        , ("Prim.floatExp", "Prim.floatExp")
                        , ("Prim.floatLog", "Prim.floatLog")
+                       , ("Prim.floatPow", "Prim.floatPow")
                        , ("Prim.floatSin", "Prim.floatSin")
                        , ("Prim.floatCos", "Prim.floatCos")
+                       , ("Prim.floatTan", "Prim.floatTan")
                        , ("Prim.floatSinh", "Prim.floatSinh")
                        , ("Prim.floatCosh", "Prim.floatCosh")
+                       , ("Prim.floatTanh", "Prim.floatTanh")
                        , ("Prim.floatAsin", "Prim.floatAsin")
                        , ("Prim.floatAcos", "Prim.floatAcos")
                        , ("Prim.floatAtan", "Prim.floatAtan")
