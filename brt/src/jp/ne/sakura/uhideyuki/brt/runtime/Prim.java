@@ -199,47 +199,47 @@ public class Prim {
 
     public static Expr mkRational(double x){
 	String hs = Double.toHexString(x);
-	BigInteger d = BigInteger.ZERO;
-	BigInteger n = BigInteger.ONE;
+	BigInteger n = BigInteger.ZERO;
+	BigInteger d = BigInteger.ONE;
 	
 	if (hs == "Infinity") {
-	    d = BigInteger.valueOf(16).pow(256);
+	    n = BigInteger.valueOf(16).pow(256);
 	} else if (hs == "-Infinity"){
-	    d = BigInteger.valueOf(16).pow(256).negate();
+	    n = BigInteger.valueOf(16).pow(256).negate();
 	} else if (hs == "NaN"){
-	    d = BigInteger.valueOf(16).pow(255).multiply(BigInteger.valueOf(-24));
+	    n = BigInteger.valueOf(16).pow(255).multiply(BigInteger.valueOf(-24));
 	} else {
 	    Pattern pat = Pattern.compile("-?0x(\\d+)\\.([0-9a-f]+)p(-?\\d+)");
 	    Matcher m = pat.matcher(hs);
 	    if (m.find()){
 		boolean isNeg = (hs.charAt(0) == '\u002D');
-		BigInteger d0 = new BigInteger(m.group(1) + m.group(2), 16);
+		BigInteger n0 = new BigInteger(m.group(1) + m.group(2), 16);
 
 		int len = m.group(2).length();
 		int e0 = Integer.parseInt(m.group(3));
 		int e = e0 - len*4;
 
-		BigInteger n0;
+		BigInteger d0;
 		if (e < 0){
-		    n0 = BigInteger.valueOf(1L << (-e));
+		    d0 = BigInteger.valueOf(1L << (-e));
 		} else {
-		    n0 = BigInteger.ONE;
-		    d0 = d0.multiply(BigInteger.valueOf(1L << e));
+		    d0 = BigInteger.ONE;
+		    n0 = d0.multiply(BigInteger.valueOf(1L << e));
 		}
 
-		BigInteger g = d0.gcd(n0);
-		d = d0.divide(g);
+		BigInteger g = n0.gcd(d0);
 		n = n0.divide(g);
-		if (isNeg){ d = d.negate(); }
+		d = d0.divide(g);
+		if (isNeg){ n = n.negate(); }
 	    } else {
 		System.err.println("Prim.mkRational: must not occur");
 		return Prim.mkerror();
 	    }
 	}
 
-	AtomExpr ad = new AtomExpr(new LitInteger(d));
 	AtomExpr an = new AtomExpr(new LitInteger(n));
-	AtomExpr[] args = {ad, an};
+	AtomExpr ad = new AtomExpr(new LitInteger(d));
+	AtomExpr[] args = {an, ad};
 	return mkExpr(new ConObj(new Cotr("Prelude.:%"), args));
     }
 
@@ -247,17 +247,17 @@ public class Prim {
 	return RTLib.mkFun(new DoubleFromRational());
     }
 
-    public static double fromRational(BigInteger d0, BigInteger n0){
-	if (d0 == BigInteger.valueOf(16).pow(256)){
+    public static double fromRational(BigInteger n0, BigInteger d0){
+	if (n0 == BigInteger.valueOf(16).pow(256)){
 	    return (1/0);
-	} else if (d0 == BigInteger.valueOf(16).pow(256).negate()){
+	} else if (n0 == BigInteger.valueOf(16).pow(256).negate()){
 	    return (-1/0);
-	} else if (d0 == BigInteger.valueOf(16).pow(255).multiply(BigInteger.valueOf(-24))){
+	} else if (n0 == BigInteger.valueOf(16).pow(255).multiply(BigInteger.valueOf(-24))){
 	    return (0/0);
 	} else {
-	    double d = d0.doubleValue();
 	    double n = n0.doubleValue();
-	    return (d/n);
+	    double d = d0.doubleValue();
+	    return (n/d);
 	}
     }
 
@@ -1029,9 +1029,9 @@ class DoubleFromRational implements LambdaForm {
 	assert cotr.ident == "Prelude.:%";
 	Expr y = RT.eval(obj.args[0]);
 	Expr z = RT.eval(obj.args[1]);
-	BoxedIntegerObj id = (BoxedIntegerObj)((Var)((AtomExpr)y).a).obj;
-	BoxedIntegerObj in = (BoxedIntegerObj)((Var)((AtomExpr)z).a).obj;
-	double r = Prim.fromRational(id.value, in.value);
+	BoxedIntegerObj in = (BoxedIntegerObj)((Var)((AtomExpr)y).a).obj;
+	BoxedIntegerObj id = (BoxedIntegerObj)((Var)((AtomExpr)z).a).obj;
+	double r = Prim.fromRational(in.value, id.value);
 	return new AtomExpr(new LitDouble(r));
     }
 }
@@ -1403,9 +1403,9 @@ class FloatFromRational implements LambdaForm {
 	assert cotr.ident == "Prelude.:%";
 	Expr y = RT.eval(obj.args[0]);
 	Expr z = RT.eval(obj.args[1]);
-	BoxedIntegerObj id = (BoxedIntegerObj)((Var)((AtomExpr)y).a).obj;
-	BoxedIntegerObj in = (BoxedIntegerObj)((Var)((AtomExpr)z).a).obj;
-	float r = (float) Prim.fromRational(id.value, in.value);
+	BoxedIntegerObj in = (BoxedIntegerObj)((Var)((AtomExpr)y).a).obj;
+	BoxedIntegerObj id = (BoxedIntegerObj)((Var)((AtomExpr)z).a).obj;
+	float r = (float) Prim.fromRational(in.value, id.value);
 	return new AtomExpr(new LitFloat(r));
     }
 }
