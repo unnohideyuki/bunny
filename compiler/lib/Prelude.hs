@@ -229,10 +229,14 @@ x ^ n | n > 0 =  f x (n-1) x
                                | otherwise = f x (n-1) (x*y)
 _ ^ _         =  error "Prelude.^: negative exponent"
 
--- (^^)
+(^^)   :: (Fractional a, Integral b) => a -> b -> a
+x ^^ n =  if n >= 0 then x^n else recip (x^(-n))
 
 fromIntegral :: (Integral a, Num b) => a -> b
 fromIntegral =  fromInteger . toInteger
+
+realToFrac :: (Real a, Fractional b) => a -> b
+realToFrac =  fromRational . toRational
 
 -- realToFrac
 
@@ -451,6 +455,9 @@ instance Enum Int where
 instance Show Int where
   show = Prim.intShow
 
+instance Real Int where
+  toRational x = toInteger x :% 1
+
 instance Eq Integer where
   (==) = Prim.integerEq
 
@@ -491,6 +498,9 @@ instance Enum Integer where
 
 instance Show Integer where
   show = Prim.integerShow
+
+instance Real Integer where
+  toRational x = x :% 1
 
 instance Eq Float where
   (==) = Prim.floatEq
