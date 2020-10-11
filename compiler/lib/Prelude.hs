@@ -654,6 +654,11 @@ map f (x:xs) =  f x : map f xs
 []     ++ ys = ys
 (x:xs) ++ ys = x : xs ++ ys
 
+filter :: (a -> Bool) -> [a] -> [a]
+filter p []                 = []
+filter p (x:xs) | p x       = x : filter p xs
+                | otherwise = filter p xs 
+
 concat :: [[a]] -> [a]
 concat xss = foldr (++) [] xss
 
