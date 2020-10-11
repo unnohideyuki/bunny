@@ -884,6 +884,9 @@ zipWith3 _ _ _ _                = []
 unzip :: [(a, b)] -> ([a], [b])
 unzip =  foldr (\(a, b) (as, bs) -> (a:as, b:bs)) ([], []) -- todo: ~
 
+unzip3 :: [(a, b, c)] -> ([a], [b], [c])
+unzip3 =  foldr (\(a, b, c) (as, bs, cs) -> (a:as, b:bs, c:cs)) ([], [], []) -- todo: ~
+
 -- PreludeIO
 putStrLn :: String -> IO ()
 putStrLn =  Prim.putStrLn
