@@ -25,9 +25,14 @@ consCfun  = "Prelude.:" :>:
   ([] :=> (TGen 0 `fn` TAp tList (TGen 0) `fn` TAp tList (TGen 0)))
 
 pairCfun :: Assump
-pairCfun = "Prelude.(,)" :>:
-    Forall [Star, Star]
-    ([] :=> (TGen 0 `fn` TGen 1 `fn` pair (TGen 0) (TGen 1)))
+pairCfun =  "Prelude.(,)" :>:
+  Forall [Star, Star]
+  ([] :=> (TGen 0 `fn` TGen 1 `fn` pair (TGen 0) (TGen 1)))
+
+tripleCfun :: Assump
+tripleCfun =  "Prelude.(,,)" :>:
+  Forall [Star, Star, Star]
+  ([] :=> (TGen 0 `fn` TGen 1 `fn` TGen 2 `fn` triple (TGen 0) (TGen 1) (TGen 2)))
 
 cOrd :: String
 cOrd  = "Prelude.Ord"
@@ -335,7 +340,7 @@ overloadedCfun = "#overloaded#" :>:
   Forall [Star, Star] ([] :=> (TGen 0 `fn` tString `fn` TGen 1))
 
 primConsMems :: [Assump]
-primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun
+primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun, tripleCfun
                 , leMfun, gtMfun
                 , primRetCfun, primBindCfun, primFailCfun
                 , primCharLeCfun, primCharEqCfun
@@ -387,6 +392,7 @@ primConsNames  = [ ("()", "Prelude.()")
                  , (":", "Prelude.:")
                  , ("#overloaded#", "#overloaded#")
                  , ("Prim.FAIL", "Prim.FAIL")
+                 , ("(,,)", "Prelude.(,,)")
                  ]
 
 -- Primitive Names
@@ -494,12 +500,14 @@ initialConsts = ConstructorInfo da dc
                , ("Prelude.[]", 0)
                , ("Prelude.:", 2)
                , ("Prelude.(,)", 2)
+               , ("Prelude.(,,)", 3)
                ]
 
           dc = [ ("Prelude.()", [unitCfun])
                , ("Prelude.[]", [nilCfun, consCfun])
                , ("Prelude.:", [nilCfun, consCfun])
                , ("Prelude.(,)", [pairCfun])
+               , ("Prelude.(,,)", [tripleCfun])
                ]
 
 arity :: ConstructorInfo -> Assump -> Int

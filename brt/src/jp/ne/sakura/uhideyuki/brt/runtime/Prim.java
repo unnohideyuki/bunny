@@ -442,6 +442,20 @@ public class Prim {
     public static Expr mk_40__44__41_(){
 	return RTLib.mkFun(new PairFunc());
     }
+
+    // (,,) = Prelude.(,,)
+    public static class TripleFunc implements LambdaForm {
+	public int arity(){ return 3;}
+	public Expr call(AtomExpr[] args){
+	    assert args.length == arity();
+	    return new AtomExpr(new Var(new ConObj(new Cotr("Prelude.(,,)"),
+						   args)));
+	}
+    }
+
+    public static Expr mk_40__44__44__41_(){
+	return RTLib.mkFun(new TripleFunc());
+    }
 }
 
 class IntegerShowFunc implements LambdaForm {

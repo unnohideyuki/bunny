@@ -751,6 +751,12 @@ renPat (A.TupleExp [Just e1, Just e2]) = do
   p2 <- renPat e2
   return $ PCon pairCfun [p1, p2]
 
+renPat (A.TupleExp [Just e1, Just e2, Just e3]) = do
+  p1 <- renPat e1
+  p2 <- renPat e2
+  p3 <- renPat e3
+  return $ PCon tripleCfun [p1, p2, p3]
+
 renPat (A.ListExp es) = renPat $ expandList es
 
 renPat A.WildcardPat = return PWildcard
@@ -922,6 +928,14 @@ renExp (A.TupleExp [Just a, Just b]) = do
   e2 <- renExp b
   let c = Const pairCfun
   return $ Ap (Ap c e1) e2
+
+-- triple
+renExp (A.TupleExp [Just a, Just b, Just c]) = do
+  e1 <- renExp a
+  e2 <- renExp b
+  e3 <- renExp c
+  let c = Const tripleCfun
+  return $ Ap (Ap (Ap c e1) e2) e3
 
 renExp (A.UMinusExp e) = do
   let f_negate = A.VarExp (Name {origName = "negate", namePos = (0, 0), isConName = False})

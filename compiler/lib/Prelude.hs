@@ -411,6 +411,9 @@ instance (Show a) => Show [a] where
 instance (Show a, Show b) => Show (a, b) where
   show (a, b) = "(" ++ show a ++ "," ++ show b ++ ")"
 
+instance (Show a, Show b, Show c) => Show (a, b, c) where
+  show (a, b, c) = "(" ++ show a ++ "," ++ show b ++ "," ++ show c ++ ")"
+
 -- Standard numeric types.
 
 instance Eq Int where

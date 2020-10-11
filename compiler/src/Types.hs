@@ -33,6 +33,8 @@ tArrow   :: Type
 tArrow    = TCon (Tycon "(->)" (Kfun Star (Kfun Star Star)))
 tTuple2  :: Type
 tTuple2   = TCon (Tycon "Prelude.(,)" (Kfun Star (Kfun Star Star)))
+tTuple3  :: Type
+tTuple3   = TCon (Tycon "Prelude.(,,)" (Kfun Star (Kfun Star (Kfun Star Star))))
 
 tString :: Type
 tString  = list tChar
@@ -49,3 +51,6 @@ list = TAp tList
 
 pair :: Type -> Type -> Type
 pair a = TAp (TAp tTuple2 a)
+
+triple :: Type -> Type -> Type -> Type
+triple a b = TAp (TAp (TAp tTuple3 a) b)
