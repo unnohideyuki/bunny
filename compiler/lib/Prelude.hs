@@ -599,12 +599,10 @@ instance Real Double where
 instance Functor [] where
   fmap = map
 
-{-
 instance Monad [] where
   m >>= k  = concat (map k m)
   return x = [x]
   fail s   = []
--}
 
 -- Tuples
 -- componet projections for pairs:

@@ -115,10 +115,11 @@ getTy (Var (TermVar n qt@(ps :=> _))) =
        where checkPreds :: [Pred] -> TC ()
              checkPreds [] = return ()
              checkPreds (IsIn n v:ps)
-               | n == "Prelude.Num" = do st <- get
-                                         let tvars = tcIntegerTVars st
-                                         put st{tcIntegerTVars = (v:tvars)}
-                                         checkPreds ps
+               | n == "Prelude.Num" || n == "Prelude.Integral"
+               = do st <- get
+                    let tvars = tcIntegerTVars st
+                    put st{tcIntegerTVars = (v:tvars)}
+                    checkPreds ps
                | otherwise = checkPreds ps
 
 getTy (Lit (LitChar _ t)) = return ([] :=> t)
