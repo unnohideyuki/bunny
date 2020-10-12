@@ -533,4 +533,5 @@ initialTypeConsts =
   , ("IO", tIO)
   , ("Double", tDouble)
   , ("Float", tFloat)
+  , ("[]", tList)
   ]

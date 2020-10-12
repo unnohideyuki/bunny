@@ -596,10 +596,10 @@ instance Real Double where
 
 -- Lists
 
-{- renSigDoc $ A.Tycon []
 instance Functor [] where
   fmap = map
 
+{-
 instance Monad [] where
   m >>= k  = concat (map k m)
   return x = [x]
