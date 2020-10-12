@@ -1,0 +1,3 @@
+Just 10
+Nothing
+[2,4,6]
