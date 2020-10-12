@@ -145,8 +145,9 @@ instance (Eq a) => Eq (Ratio a) where
 
 -- todo: Integral is a instance of Show?
 --       showParen
-instance (Show a) => Show (Ratio a) where
-  show (x :% y) = show x ++ " % " ++ show y
+instance (Integral a) => Show (Ratio a) where
+  show (x :% y) | x < 0     = "(" ++ show x ++ ") % " ++ show y
+                | otherwise = show x ++ " % " ++ show y
 
 -- (to here) todo: should be separated into Data.Ratio 
 
