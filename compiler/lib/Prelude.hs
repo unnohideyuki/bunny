@@ -591,8 +591,31 @@ instance Floating Double where
 instance Show Double where
   show = Prim.doubleShow
 
+{-
+instance Enum Float where
+  succ x         = x + 1
+  pred x         = x - 1
+  toEnum         = fromIntegral
+  fromEnum       = fromInteger . truncate
+  enumFrom       = numericEnumFrom
+  enumFromThen   = numericEnumFromThen
+  enumFromTo     = numericEnumFromTo
+  enumFromThenTo = numericEnumFromThenTo
+-}
+
 instance Real Double where
   toRational = Prim.doubleToRational
+
+numericEnumFrom         :: (Fractional a) => a -> [a]
+numericEnumFromThen     :: (Fractional a) => a -> a -> [a]
+numericEnumFromTo       :: (Fractional a, Ord a) => a -> a -> [a]
+numericEnumFromThenTo   :: (Fractional a, Ord a) => a -> a -> a -> [a]
+numericEnumFrom         =  iterate (+1)
+numericEnumFromThen n m =  iterate (+(m-n)) n
+numericEnumFromTo n m   =  takeWhile (<= m+1/2) (numericEnumFrom n)
+numericEnumFromThenTo n n' m = takeWhile p (numericEnumFromThen n n')
+                               where p | n' >= n   = (<= m + (n'-n)/2)
+                                       | otherwise = (<= m + (n'-n)/2)
 
 -- Lists
 
