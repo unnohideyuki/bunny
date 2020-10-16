@@ -460,6 +460,7 @@ renInstDecls dcls' = do
                         _           -> iContext
       put st{rnIContext = iContext'}
 
+      trace (show tbs) $ return ()
       return (tbs, (qin, qcn))
 
     renTDecl :: Id -> A.Type -> Maybe A.Type -> A.ValueDecl -> RN [A.ValueDecl]

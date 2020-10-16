@@ -547,6 +547,18 @@ instance Floating Float where
 instance Show Float where
   show = Prim.floatShow
 
+
+properfrac :: (Real a, Fractional a, Integral b) => a -> (b, a)
+properfrac x = let (n :% d) = toRational x
+                   (q, r) = quotRem n d
+                   b = fromInteger q
+                   a = fromInteger r / fromInteger d
+               in (b, a)
+
+instance RealFrac Float where
+  properFraction = properfrac
+
+
 instance Real Float where
   toRational = Prim.floatToRational
 
