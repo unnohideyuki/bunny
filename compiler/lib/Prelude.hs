@@ -555,8 +555,8 @@ properfrac x = let (n :% d) = toRational x
                    a = fromInteger r / fromInteger d
                in (b, a)
 
-instance RealFrac Float where
-  properFraction = properfrac
+-- instance RealFrac Float where
+--  properFraction = properfrac
 
 
 instance Real Float where

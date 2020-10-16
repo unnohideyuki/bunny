@@ -315,7 +315,7 @@ scanDecls ds = do
     scandecl A.NewtypeDecl{}     = error "not yet: NewtypeDecl"
 
 trCdecl :: Id -> A.ClassDecl -> DictDef
-trCdecl modid (A.ClassDecl (_, sigvar@(A.AppTy (A.Tycon n) _)) ds) =
+trCdecl modid (A.ClassDecl (_, sigvar@(A.AppTy (A.Tycon n) (A.Tyvar ntyvar))) ds) =
   let
     name = modid ++ "." ++ origName n
 
@@ -332,7 +332,7 @@ trCdecl modid (A.ClassDecl (_, sigvar@(A.AppTy (A.Tycon n) _)) ds) =
     extrTSygDecl _                               = []
     tdcls = concatMap extrTSygDecl ds
  in
-   DictDef{ddId=name, ddMethods=ms, ddDecls=vdcls, ddTDecls=tdcls}
+   DictDef{ddId=name, ddMethods=ms, ddDecls=vdcls, ddTDecls=tdcls, ddTyvar=origName ntyvar}
 
 {- TODO: consider following patterns:
             _ (A.ClassDecl (_, A.Tyvar _) _)
@@ -444,10 +444,11 @@ renInstDecls dcls' = do
       instAdd ps p
       dict <- lookupCDicts qcn
       let defds = ddDecls dict
+          ntyvar = ddTyvar dict
           ds' = mergeDs ds (map A.VDecl defds)
       ds'' <- concat <$> mapM (renMDecl (origName i ++ "%I")) ds'
       tsdecls <-
-        concat <$> mapM (renTDecl (origName i ++ "%I") t ctx) (ddTDecls dict)
+        concat <$> mapM (renTDecl (origName i ++ "%I") t ctx ntyvar) (ddTDecls dict)
       tbs <- renDecls (tsdecls ++ ds'')
 
       -- Issue 108 temporary (2020-08-12)
@@ -459,18 +460,13 @@ renInstDecls dcls' = do
                         [IsIn n3 _] -> (((n1, n2), n3):iContext)
                         _           -> iContext
       put st{rnIContext = iContext'}
-
-      trace (show tbs) $ return ()
       return (tbs, (qin, qcn))
 
-    renTDecl :: Id -> A.Type -> Maybe A.Type -> A.ValueDecl -> RN [A.ValueDecl]
-    renTDecl pfx (A.AppTy _ tc) osv (A.TypeSigDecl ns (sigvar,sigdoc)) =
+    renTDecl :: Id -> A.Type -> Maybe A.Type -> Id -> A.ValueDecl -> RN [A.ValueDecl]
+    renTDecl pfx (A.AppTy _ tc) osv ntyvar (A.TypeSigDecl ns (sigvar,sigdoc)) =
       do ns' <- mapM (ren' pfx) ns
-         let Just (A.AppTy _ (A.Tyvar tv)) = sigvar
-             a = origName tv
-
-             subst' t@(A.Tyvar name) | origName name == a = tc
-                                     | otherwise          = t
+         let subst' t@(A.Tyvar name) | origName name == ntyvar = tc
+                                     | otherwise               = t
              subst' t@(A.Tycon _) = t
              subst' (A.FunTy t1 t2) = A.FunTy (subst' t1) (subst' t2)
              subst' (A.AppTy t1 t2) = A.AppTy (subst' t1) (subst' t2)
@@ -482,10 +478,23 @@ renInstDecls dcls' = do
 
              sigdoc' = subst' sigdoc
 
-             d' = A.TypeSigDecl ns' (osv, sigdoc')
+             extrts Nothing               = []
+             extrts (Just (A.ParTy t))    = [t]
+             extrts (Just (A.TupleTy ts)) = ts
+             extrts (Just t)              = [t]
+
+             mergedsv = let ts1 = extrts osv
+                            ts2 = extrts sigvar
+                            ts = ts1 ++ ts2
+                            sigv | null ts        = Nothing
+                                 | length ts == 1 = Just (A.ParTy (head ts))
+                                 | otherwise      = Just (A.TupleTy ts)
+                        in sigv
+
+             d' = A.TypeSigDecl ns' ({-mergedsv-} osv, sigdoc')
          return [d']
 
-    renTDecl pfx _ _ d = return [] -- not implemented yet.
+    renTDecl pfx _ _ _ d = return [] -- not implemented yet.
 
     renMDecl :: Id -> A.Decl -> RN [A.ValueDecl]
     renMDecl pfx (A.VDecl d) = do d' <- renMName pfx d

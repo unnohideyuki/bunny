@@ -55,6 +55,7 @@ data DictDef = DictDef{ ddId      :: Id
                       , ddMethods :: [Id]
                       , ddDecls   :: [A.ValueDecl]
                       , ddTDecls  :: [A.ValueDecl]
+                      , ddTyvar   :: Id
                       }
               deriving Show
 
