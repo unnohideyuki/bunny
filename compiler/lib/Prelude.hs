@@ -717,12 +717,12 @@ tail []          =  error "Prelude.tail: empty list"
 
 last        :: [a] -> a
 last [x]    =  x
-last xs     =  last (tail xs) -- todo: occur check fail?
+last (_:xs) = last xs
 last []     =  error "Prelude.last: empty list"
 
 init        :: [a] -> [a]
 init [x]    =  []
-init xs     =  head xs : init (tail xs) -- todo: occur check fail?
+init (x:xs) = x : init xs
 init []     =  error "Prelude.init: empty list"
 
 null :: [a] -> Bool
