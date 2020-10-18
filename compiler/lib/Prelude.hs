@@ -556,8 +556,7 @@ properfrac x = let (n :% d) = toRational x
                in (b, a)
 
 -- instance RealFrac Float where
---  properFraction = properfrac
-
+--   properFraction = properfrac
 
 instance Real Float where
   toRational = Prim.floatToRational

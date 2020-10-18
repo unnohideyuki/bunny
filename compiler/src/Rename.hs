@@ -327,8 +327,8 @@ trCdecl modid (A.ClassDecl (_, sigvar@(A.AppTy (A.Tycon n) (A.Tyvar ntyvar))) ds
     extrValDecl _                           = []
     vdcls = concatMap extrValDecl ds
 
-    extrTSygDecl (A.VDecl (A.TypeSigDecl ns (_, sigdoc))) =
-      [A.TypeSigDecl ns (Just sigvar, sigdoc)]
+    extrTSygDecl (A.VDecl (A.TypeSigDecl ns (sigvar', sigdoc))) =
+      [A.TypeSigDecl ns ({-Just sigvar-} sigvar', sigdoc)]
     extrTSygDecl _                               = []
     tdcls = concatMap extrTSygDecl ds
  in
@@ -369,21 +369,22 @@ renClassDecls dcls = do
 
     clsadd _ = error "Semant.renCDictdefDecls.clsadd"
 
-    addvar c ds' = let (_, sigvar) = c
-                       extrts Nothing               = []
-                       extrts (Just (A.ParTy t))    = [t]
-                       extrts (Just (A.TupleTy ts)) = ts
-                       extrts (Just t)              = [t]
+    extrts Nothing               = []
+    extrts (Just (A.ParTy t))    = [t]
+    extrts (Just (A.TupleTy ts)) = ts
+    extrts (Just t)              = [t]
 
-                       mergedsv sv1 sv2 = let ts1 = extrts sv1
-                                              ts2 = extrts sv2
-                                              ts = ts1 ++ ts2
-                                              sigv | null ts        = Nothing
-                                                   | length ts == 1 = Just (A.ParTy (head ts))
-                                                   | otherwise      = Just (A.TupleTy ts)
-                                          in sigv
+    mergesv sv1 sv2 = let ts1 = extrts sv1
+                          ts2 = extrts sv2
+                          ts = ts1 ++ ts2
+                          sigv | null ts        = Nothing
+                               | length ts == 1 = Just (A.ParTy (head ts))
+                               | otherwise      = Just (A.TupleTy ts)
+                        in sigv
+
+    addvar c ds' = let (_, sigvar) = c
                        f (A.TypeSigDecl ns (sv, sigdoc)) =
-                         A.TypeSigDecl ns ({-Just sigvar-} mergedsv (Just sigvar) sv, sigdoc)
+                         A.TypeSigDecl ns (mergesv (Just sigvar) sv, sigdoc)
                        f d = d
                    in map f ds'
 
