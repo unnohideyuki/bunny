@@ -21,7 +21,7 @@ import           Control.Monad.State.Strict (get, put)
 import           Data.List                  (concatMap, foldl', notElem, sort,
                                              union)
 import qualified Data.Map.Strict            as Map
-import           Data.Maybe                 (fromJust, fromMaybe)
+import           Data.Maybe                 (fromJust, fromMaybe, isJust)
 import           Debug.Trace
 
 scanDecls :: [A.Decl] -> RN ([A.ValueDecl], [A.ClassDecl], [A.InstDecl])
@@ -370,8 +370,20 @@ renClassDecls dcls = do
     clsadd _ = error "Semant.renCDictdefDecls.clsadd"
 
     addvar c ds' = let (_, sigvar) = c
-                       f (A.TypeSigDecl ns (_, sigdoc)) =
-                         A.TypeSigDecl ns (Just sigvar, sigdoc)
+                       extrts Nothing               = []
+                       extrts (Just (A.ParTy t))    = [t]
+                       extrts (Just (A.TupleTy ts)) = ts
+                       extrts (Just t)              = [t]
+
+                       mergedsv sv1 sv2 = let ts1 = extrts sv1
+                                              ts2 = extrts sv2
+                                              ts = ts1 ++ ts2
+                                              sigv | null ts        = Nothing
+                                                   | length ts == 1 = Just (A.ParTy (head ts))
+                                                   | otherwise      = Just (A.TupleTy ts)
+                                          in sigv
+                       f (A.TypeSigDecl ns (sv, sigdoc)) =
+                         A.TypeSigDecl ns ({-Just sigvar-} mergedsv (Just sigvar) sv, sigdoc)
                        f d = d
                    in map f ds'
 
@@ -483,15 +495,20 @@ renInstDecls dcls' = do
              extrts (Just (A.TupleTy ts)) = ts
              extrts (Just t)              = [t]
 
+             rmntyvar t@(A.AppTy _ (A.Tyvar n))
+               | origName n == ntyvar = []
+               | otherwise = [t]
+             rmntyvar t = [t]
+
              mergedsv = let ts1 = extrts osv
                             ts2 = extrts sigvar
-                            ts = ts1 ++ ts2
+                            ts = ts1 ++ concatMap rmntyvar ts2
                             sigv | null ts        = Nothing
                                  | length ts == 1 = Just (A.ParTy (head ts))
                                  | otherwise      = Just (A.TupleTy ts)
                         in sigv
 
-             d' = A.TypeSigDecl ns' ({-mergedsv-} osv, sigdoc')
+             d' = A.TypeSigDecl ns' (mergedsv, sigdoc')
          return [d']
 
     renTDecl pfx _ _ _ d = return [] -- not implemented yet.
