@@ -330,14 +330,11 @@ instance Ord Char where
 instance Enum Char where
   toEnum = Prim.intToChar
   fromEnum = Prim.charToInt
-  {-
   enumFrom c = map toEnum [fromEnum c .. 1114111]
-  enumFromThen c c' = map [fromEnum c, fromEnum c' .. lastint]
-    where lastint :: Int
-          lastint | c' < c    = 0
+  enumFromThen c c' = map toEnum [fromEnum c, fromEnum c' .. lastInt]
+    where lastInt | c' < c    = 0
                   | otherwise = 1114111
-  -}
-  
+
 instance Show Char where
   -- todo: escape
   show c = ['\'', c, '\'']
