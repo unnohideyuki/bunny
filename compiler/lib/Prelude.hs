@@ -190,10 +190,10 @@ class (Real a, Fractional a) => RealFrac a where
   round x = let (n, r) = properFraction x
                 m      = if r < 0 then n - 1 else n + 1
                 s = signum (abs r - 0.5)
-                r | s == -1 =  n
-                  | s == 0  = if even n then n else m
-                  | s == 1  =  m
-            in r
+            in if (s == -1) || (s == 0 && even n)
+               then n
+               else m
+
   ceiling x = if r > 0 then n + 1 else n
     where (n, r) = properFraction x
   floor x = if r < 0 then n - 1 else n
@@ -555,8 +555,8 @@ properfrac x = let (n :% d) = toRational x
                    a = fromInteger r / fromInteger d
                in (b, a)
 
--- instance RealFrac Float where
---   properFraction = properfrac
+instance RealFrac Float where
+  properFraction = properfrac
 
 instance Real Float where
   toRational = Prim.floatToRational
@@ -613,6 +613,9 @@ instance Enum Float where
   enumFromTo     = numericEnumFromTo
   enumFromThenTo = numericEnumFromThenTo
 -}
+
+instance RealFrac Double where
+  properFraction = properfrac
 
 instance Real Double where
   toRational = Prim.doubleToRational
