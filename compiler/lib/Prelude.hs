@@ -599,18 +599,6 @@ instance Floating Double where
 instance Show Double where
   show = Prim.doubleShow
 
-{-
-instance Enum Float where
-  succ x         = x + 1
-  pred x         = x - 1
-  toEnum         = fromIntegral
-  fromEnum       = fromInteger . truncate
-  enumFrom       = numericEnumFrom
-  enumFromThen   = numericEnumFromThen
-  enumFromTo     = numericEnumFromTo
-  enumFromThenTo = numericEnumFromThenTo
--}
-
 instance RealFrac Double where
   properFraction = properfrac
 
