@@ -617,6 +617,26 @@ instance RealFrac Double where
 instance Real Double where
   toRational = Prim.doubleToRational
 
+instance Enum Float where
+  succ x = x + 1
+  pred x = x - 1
+  toEnum = fromIntegral
+  fromEnum       = fromInteger . truncate
+  enumFrom       = numericEnumFrom
+  enumFromThen   = numericEnumFromThen
+  enumFromTo     = numericEnumFromTo
+  enumFromThenTo = numericEnumFromThenTo
+
+instance Enum Double where
+  succ x = x + 1
+  pred x = x - 1
+  toEnum = fromIntegral
+  fromEnum       = fromInteger . truncate
+  enumFrom       = numericEnumFrom
+  enumFromThen   = numericEnumFromThen
+  enumFromTo     = numericEnumFromTo
+  enumFromThenTo = numericEnumFromThenTo
+
 numericEnumFrom         :: (Fractional a) => a -> [a]
 numericEnumFromThen     :: (Fractional a) => a -> a -> [a]
 numericEnumFromTo       :: (Fractional a, Ord a) => a -> a -> [a]
