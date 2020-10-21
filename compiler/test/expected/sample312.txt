@@ -1,0 +1,2 @@
+[LT,EQ,GT]
+[GT,EQ,LT]

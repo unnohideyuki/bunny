@@ -104,7 +104,17 @@ shows :: (Show a) => a -> ShowS
 shows =  showsPrec 0
 
 instance Show () where
-  show _ = "()"
+  -- 'show _ = "()"' is not good. this prints () even for an error.
+  show () = "()"
+
+instance Enum () where
+  toEnum x | x == 0 = ()
+           | otherwise = error "().toEnum: bad argument"
+  fromEnum () = 0
+  enumFrom () = [()]
+  enumFrom _  = error "().enumFrom: bad argument"
+  enumFromThen () () = repeat ()
+  enumFromThen _  _  = error "().enumFromThen: bad argument"
 
 -- Numeric classes
 
@@ -304,6 +314,22 @@ f $! x = x `seq` f x
 
 data Bool = False | True deriving (Eq, Show)
 
+instance Ord Bool where
+  False <= False = True
+  False <= True  = True
+  _     <= _     = False
+
+instance Enum Bool where
+  toEnum x | x == 0 = False
+           | x == 1 = True
+           | otherwise = error "Bool.toEnum: bad argument"
+  fromEnum False = 0
+  fromEnum True  = 1
+  enumFrom b = map toEnum [fromEnum b .. 1]
+  enumFromThen b b' = map toEnum [fromEnum b, fromEnum b' .. lastInt]
+    where lastInt | b' < b = 0
+                  | otherwise = 1
+
 -- Boolean functions
 
 (&&), (||) :: Bool -> Bool -> Bool
@@ -402,6 +428,19 @@ instance Ord Ordering where
   EQ <= GT = True
   GT <= GT = True
   _  <= _  = False
+
+instance Enum Ordering where
+  toEnum x | x == 0 = LT
+           | x == 1 = EQ
+           | x == 2 = GT
+           | otherwise = error "Ordering.toEnum: bad argument"
+  fromEnum LT = 0
+  fromEnum EQ = 1
+  fromEnum GT = 2
+  enumFrom o = map toEnum [fromEnum o .. 2]
+  enumFromThen o o' = map toEnum [fromEnum o, fromEnum o' .. lastInt]
+    where lastInt | o' < o = 0
+                  | otherwise = 2
 
 instance (Show a) => Show [a] where
   showsPrec p = showList
