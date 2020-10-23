@@ -1,0 +1,12 @@
+()
+()
+True
+False
+1114111
+0
+GT
+LT
+(True,GT)
+(False,LT)
+((True,GT),(GT,True))
+((False,LT),(LT,False))
