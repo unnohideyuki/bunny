@@ -8,12 +8,14 @@ import           Symbol
 import           Typing                     (ClassEnv (..), super)
 
 import           Control.Monad.State.Strict
+import           Data.Char
 import           Data.List                  (find, intercalate, nub)
 import           Data.List.Split            (splitOn)
 import qualified Data.Map.Strict            as Map
 import           Data.Maybe                 (fromJust, fromMaybe)
 import           Debug.Trace
 import           System.IO
+import           Text.Printf
 
 emitPreamble :: Handle -> IO ()
 emitPreamble h =
@@ -439,8 +441,11 @@ genAtomExpr (AtomExpr (VarAtom (CompositDict d ds))) = do
 
 genAtomExpr (AtomExpr (LitAtom (LitStr s))) = do
   n <- nexti
-  appendCode $ "Expr t" ++ show n ++ " = RTLib.fromJString(" ++ show s ++ ");"
+  appendCode $ "Expr t" ++ show n ++ " = RTLib.fromJString(" ++ myshow s ++ ");"
   return n
+    where myshow s = "\"" ++ concatMap esc s ++ "\""
+          esc c | isPrint c = [c]
+                | otherwise = "\\" ++ printf "%03o" (fromEnum c)
 
 genAtomExpr (AtomExpr (LitAtom (LitChar c))) = do
   n <- nexti

@@ -71,17 +71,17 @@ haskell :-
 <0> \"                          { act_open_string }
 <string> \"                     { act_close_string }
 <string> $graphic # [\" \\]     { act_string }
-<string> [\xa1 - 0x10ffff]      { act_string }
 <string> " "                    { act_string }
 <string> "\\&"                  { skip }
 <string> @escape                { act_esc_string }
 <string> \\ $whitechar+ \\      { skip }
+<string> [^\']                  { act_string }
 
 -- char
 <0> \' $graphic # [\' \\] \'    { act_char }
-<0> \' [\xa1 - 0x10ffff] \'     { act_char }
 <0> \' " " \'                   { act_char }
 <0> \' @escape \'               { act_esc_char }
+<0> \' [^\'] \'                 { act_char }
 
 -- special symbols
 <0> "("                         { act_token1 TOParen }
