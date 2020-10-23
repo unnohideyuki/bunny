@@ -116,6 +116,10 @@ instance Enum () where
   enumFromThen () () = repeat ()
   enumFromThen _  _  = error "().enumFromThen: bad argument"
 
+instance Bounded () where
+  minBound = ()
+  maxBound = ()
+
 -- Numeric classes
 
 class (Eq a, Show a) => Num a where
@@ -330,6 +334,10 @@ instance Enum Bool where
     where lastInt | b' < b = 0
                   | otherwise = 1
 
+instance Bounded Bool where
+  minBound = False
+  maxBound = True
+
 -- Boolean functions
 
 (&&), (||) :: Bool -> Bool -> Bool
@@ -368,6 +376,10 @@ instance Show Char where
     where showl "" = (:) '"'
           -- showl ('"':cs) = (++) "\\\"" . showl cs
           showl (c:cs) = showLitChar c . showl cs
+
+instance Bounded Char where
+  maxBound = toEnum 1114111
+  minBound = toEnum 0
 
 -- todo: should convert to printable characters
 showLitChar c = (++) [c]
@@ -442,6 +454,10 @@ instance Enum Ordering where
     where lastInt | o' < o = 0
                   | otherwise = 2
 
+instance Bounded Ordering where
+  minBound = LT
+  maxBound = GT
+
 instance (Show a) => Show [a] where
   showsPrec p = showList
 
@@ -450,6 +466,10 @@ instance (Show a, Show b) => Show (a, b) where
 
 instance (Show a, Show b, Show c) => Show (a, b, c) where
   show (a, b, c) = "(" ++ show a ++ "," ++ show b ++ "," ++ show c ++ ")"
+
+instance (Bounded a, Bounded b) => Bounded (a, b) where
+  maxBound = (maxBound, maxBound)
+  minBound = (minBound, minBound)
 
 -- Standard numeric types.
 
@@ -495,6 +515,10 @@ instance Enum Int where
 instance Show Int where
   show = Prim.intShow
 
+instance Bounded Int where
+  maxBound = Prim.intMaxBound
+  minBound = Prim.intMinBound
+  
 instance Real Int where
   toRational x = toInteger x :% 1
 

@@ -5,6 +5,7 @@ import java.io.*;
 import java.util.regex.*;
 import java.math.BigInteger;
 import java.lang.Math;
+import java.lang.Long;
 
 public class Prim {
     private static Expr mkExpr(HeapObj obj){
@@ -151,6 +152,14 @@ public class Prim {
 
     public static Expr mkintQuotRem(){
 	return RTLib.mkFun(new IntQuotRem());
+    }
+
+    public static Expr mkintMaxBound(){
+	return new AtomExpr(new LitInt(Long.MAX_VALUE));
+    }
+
+    public static Expr mkintMinBound(){
+	return new AtomExpr(new LitInt(Long.MIN_VALUE));
     }
 
     public static Expr mkintFromInteger(){

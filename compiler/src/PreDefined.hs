@@ -148,6 +148,12 @@ integerQuotRem  = "Prim.integerQuotRem" :>:
 intQuotRem :: Assump
 intQuotRem  = "Prim.intQuotRem" :>: Forall [] ([] :=> (tInt `fn` tInt `fn` pair tInt tInt))
 
+intMaxBoundCfun :: Assump
+intMaxBoundCfun  = "Prim.intMaxBound" :>: Forall [] ([] :=> tInt)
+
+intMinBoundCfun :: Assump
+intMinBoundCfun  = "Prim.intMinBound" :>: Forall [] ([] :=> tInt)
+
 scDoubledoublebool :: Scheme
 scDoubledoublebool = Forall [] ([] :=> (tDouble `fn` tDouble `fn` tBool))
 
@@ -355,6 +361,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun, tripleCfun
                 , primIntegerFromIntCfun
                 , integerShowCfun, intShowCfun
                 , integerQuotRem, intQuotRem
+                , intMaxBoundCfun, intMinBoundCfun
                 , primDoubleLeCfun, primDoubleEqCfun
                 , primDoubleAddCfun, primDoubleSubCfun, primDoubleMulCfun
                 , primDoubleDivCfun
@@ -419,6 +426,8 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.intShow", "Prim.intShow")
                        , ("Prim.integerQuotRem", "Prim.integerQuotRem")
                        , ("Prim.intQuotRem", "Prim.intQuotRem")
+                       , ("Prim.intMaxBound", "Prim.intMaxBound")
+                       , ("Prim.intMinBound", "Prim.intMinBound")
                        , ("Prim.doubleLe", "Prim.doubleLe")
                        , ("Prim.doubleEq", "Prim.doubleEq")
                        , ("Prim.doubleAdd", "Prim.doubleAdd")

@@ -1,0 +1,13 @@
+main = do print (maxBound :: ())
+          print (minBound :: ())
+          print (maxBound :: Bool)
+          print (minBound :: Bool)
+          print $ fromEnum (maxBound :: Char)
+          print $ fromEnum (minBound :: Char)
+          print (maxBound :: Ordering)
+          print (minBound :: Ordering)
+          print (maxBound :: (Bool, Ordering))
+          print (minBound :: (Bool, Ordering))
+          print (maxBound :: ((Bool, Ordering),(Ordering,Bool)))
+          print (minBound :: ((Bool, Ordering),(Ordering,Bool)))
+
