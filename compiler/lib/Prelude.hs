@@ -381,8 +381,21 @@ instance Bounded Char where
   maxBound = toEnum 1114111
   minBound = toEnum 0
 
--- todo: should convert to printable characters
-showLitChar c = (++) [c]
+showLitChar :: Char -> ShowS
+showLitChar c s = s' ++ s
+  where i = fromEnum c
+        s' | i == 0x7f = "\\DEL"
+           | i < 0x20  = escs i
+           | i >= 0x80 = "\\" ++ show i ++ zw
+           | otherwise = [c]
+        escs j = [ "\\NUL", "\\SOH", "\\STX", "\\ETX", "\\EOT", "\\ENQ", "\\ACK", "\\a"
+                 , "\\b", "\\t", "\\n", "\\v", "\\f", "\\r", "\\SO", "\\SI"
+                 , "\\DLE", "\\DC1", "\\DC2", "\\DC3", "\\DC4", "\\NAK", "\\SYN", "\\ETB"
+                 , "\\CAN", "\\EM", "\\SUB", "\\ESC", "\\FS", "\\GS", "\\RS", "\\US"
+                 ] !! j
+        zw | null s = ""
+           | '0' <= head s && head s <= '9' = ['\\', '&']
+           | otherwise = ""
 
 -- Maybe type
 data Maybe a = Nothing | Just a deriving (Eq, Show)

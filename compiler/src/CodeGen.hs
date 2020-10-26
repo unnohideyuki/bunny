@@ -444,7 +444,8 @@ genAtomExpr (AtomExpr (LitAtom (LitStr s))) = do
   appendCode $ "Expr t" ++ show n ++ " = RTLib.fromJString(" ++ myshow s ++ ");"
   return n
     where myshow s = "\"" ++ concatMap esc s ++ "\""
-          esc c | isPrint c = [c]
+          esc c | c == '\\' = "\\\\"
+                | isPrint c = [c]
                 | otherwise = "\\" ++ printf "%03o" (fromEnum c)
 
 genAtomExpr (AtomExpr (LitAtom (LitChar c))) = do
