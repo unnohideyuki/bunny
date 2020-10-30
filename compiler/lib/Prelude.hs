@@ -1019,3 +1019,59 @@ getLine =  do c <- getChar
 
 print x = putStrLn (show x)
 
+-- Data.Ratio
+
+infixl 7 %
+
+ratPrec = 7 :: Int
+
+reduce _ 0 = error "Ratio.% : zero denominator"
+reduce x y = (x `quot` d) :% (y `quot` d)
+  where d = gcd x y
+
+(%) :: (Integral a) => a -> a -> Ratio a
+x % y      = reduce (x * signum y) (abs y)
+
+numerator   (x :% _) = x
+denominator (_ :% y) = y
+
+instance (Integral a) => Ord (Ratio a) where
+  x :% y <= x' :% y' = x * y' <= x' * y
+  x :% y <  x' :% y' = x * y' <  x' * y
+
+instance (Integral a) => Num (Ratio a) where
+  x :% y + x' :% y' = reduce (x*y' + x'*y) (y*y')
+  x :% y * x' :% y' = reduce (x*x') (y*y')
+  negate (x :% y)   = (-x) :% y
+  abs (x :% y)      = (abs x) :% y
+  signum (x :% y)   = (signum x) :% 1
+  fromInteger x     = (fromInteger x) :% 1
+
+instance (Integral a) => Real (Ratio a) where
+  toRational (x :% y) = toInteger x :% toInteger y
+
+instance (Integral a) => Fractional (Ratio a) where
+  (x :% y) / (x' :% y') = (x * y') % (y * x')
+  recip (x :% y) = y % x
+  fromRational (x :% y) = fromInteger x :% fromInteger y
+
+instance (Integral a) => RealFrac (Ratio a) where
+  properFraction (x :% y) = (fromIntegral q, r :% y)
+    where (q, r) = quotRem x y
+  -- truncate = undefined
+  truncate (x :% y) = fromIntegral (x `quot` y)
+  round = undefined
+  ceiling = undefined
+  floor = undefined
+  
+instance (Integral a) => Enum (Ratio a) where
+  succ x = x + 1
+  pred x = x - 1
+  toEnum = fromIntegral
+  fromEnum = fromInteger . truncate
+  -- fromEnum (x :% y) = fromIntegral (x `quot` y)
+  enumFrom = numericEnumFrom
+  enumFromThen = numericEnumFromThen
+  enumFromTo = numericEnumFromTo
+  enumFromThenTo = numericEnumFromThenTo
+  
