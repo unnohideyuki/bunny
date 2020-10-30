@@ -83,9 +83,25 @@ class Bounded a where
 
 type String = [Char]
 
+-- Show definitions from PreludeText
 -- todo: Show cannot be declare after Num
 
+-- type ReadS a = String -> [(a, String)]
 type ShowS = String -> String
+
+class Read a where
+  readsPrec :: Int -> String -> [(a, String)]
+  readList  :: String -> [([a], String)]
+  -- Minimal complete definition: readsSpec
+  readList = readParen False (\r -> [pr | ("[", s) <- rex r,
+                                          pr       <- readl s])
+    where readl  s = [([], t)   | ("]", t) <- lex s] ++
+                     [(x:xs, v) | (x, t)   <- reads s,
+                                  (xs, u)  <- readl' t]
+          readl' s = [([], tt)  | ("]", t) <- lex s] ++
+                     [(x:xs, v) | (",", t) <- lex s,
+                                  (x, u)   <- reads t,
+                                  (xs, v)  <- readl' u]
 
 class Show a where
   show      :: a -> String
@@ -100,12 +116,105 @@ class Show a where
     where showl []     = (:) ']'
           showl (x:xs) = (:) ',' . shows x . showl xs
 
+reads :: (Read a) => String -> [(a, String)]
+reads =  readsPrec 0
+
 shows :: (Show a) => a -> ShowS
 shows =  showsPrec 0
+
+read   :: (Read a) => String -> a
+read s =  case [x | (x, t) <- reads s, ("", "") <- lex t] of
+            [x] -> x
+            []  -> error "Prelude.read: no parse"
+            _   -> error "Prelude.read: ambiguous parse"
+
+showChar :: Char -> ShowS
+showChar =  (:)
+
+showString :: String -> ShowS
+showString =  (++)
+
+showParen     :: Bool -> ShowS -> ShowS
+showParen b p =  if b then showChar '(' . p . showChar ')' else p
+
+readParen     :: Bool -> (String -> [(a, String)]) -> (String -> [(a, String)])
+readParen b g =  if b then mandatory else optional
+  where optional r  = g r ++ mandatory r
+        mandatory r = [(x, u) | ("(", s) <- lex r,
+                                (x, t)   <- optional s,
+                                (")", u) <- lex t]
+
+-- isSpace returns true for any Unicode space character, and the
+-- control characters \t, \n, \r, \f, \v
+isSpace :: Char -> Bool
+isSpace c = let x = fromEnum c
+            in (c == ' ') && (x >= 9 && x <= 13)
+
+isDigit, isOctDigit, isHexDigit :: Char -> Bool
+isDigit c = c >= '0' && c <= '9'
+isOctDigit c = c >= '0' && c <= '7'
+isHexDigit c = isDigit c || c >= 'A' && c <= 'F' || c >= 'a' && c <= 'f'
+
+-- primUnicodeIsUpper
+isUpper c = c >= 'A' && c <= 'Z'
+isLower c = c >= 'a' && c <= 'z'
+isAlpha c = isUpper c || isLower c
+isAlphaNum c = isUpper c || isLower c || isDigit c
+
+-- lexLitChar from Haskell 98 language report
+lexLitChar :: String -> [(String, String)]
+lexLitChar ('\\':s) = map (prefix '\\') (lexEsc s)
+  where
+    lexEsc (c:s)     | c `elem` "abfnrtv\\\"'" = [([c], s)]
+    lexEsc ('^':c:s) | c >= '@' && c <= '_'    = [(['^', c], s)]
+    -- Numeric espacpes
+    lexEsc ('o':s) = [prefix 'o' (span isOctDigit s)]
+    lexEsc ('x':s) = [prefix 'x' (span isHexDigit s)]
+    -- lexEsc s@(d:_) | isDigit d = [span isDigit s]
+    lexEsc (d:s) | isDigit d = [span isDigit (d:s)]
+    -- Very crude approximation to \XYZ.
+    lexEsc (c:s) | isUpper c = [span isCharName (c:s)]
+    lexEsc _ = []
+
+    isCharName c = isUpper c || isDigit c
+    prefix c (t, s) = (c:t, s)
+
+-- lexDigits :: [Char] -> ([Char], [Char])
+lexDigits s = [(cs, t) | (cs, t) <- [span isDigit s], cs /= ""]
+
+lex :: String -> [(String, String)]
+lex "" = [("", "")]
+lex (c:s) | isSpace c = lex (dropWhile isSpace s)
+lex ('\'':s) = [('\'' : ch ++ "'", t) | (ch, '\'': t) <- lexLitChar s, ch /= "'"]
+lex ('"':s) = [('"':str, t) | (str, t) <- lexString s]
+  where lexString ('"':s) = [("\"", s)]
+        lexString s = [(ch++str, u) | (ch, t) <- lexStrItem s, (str, u) <- lexString t]
+        lexStrItem ('\\':'&':s) = [("\\&", s)]
+        lexStrItem ('\\':c:s) | isSpace c
+          = [("\\&", t) | '\\' : t <- [dropWhile isSpace s]]
+        lexStrItem s = lexLitChar s
+lex (c:s) | isSingle c = [([c],s)]
+          | isSym c    = [(c:sym,t) | (sym, t) <- [span isSym s]]
+          | isAlpha c  = [(c:nam,t) | (nam, t) <- [span isIdChar s]]
+          | isDigit c  = [(c:ds++fe, t) | (ds, s) <- [span isDigit s],
+                                          (fe, t) <- lexFracExp s]
+  where isSingle c = c `elem` ",:()[]{}_`"
+        isSym c = c `elem` "!@#$%&*+./<=>?\\^|:-~"
+        isIdChar c = isAlphaNum c || c `elem` "_'"
+        lexFracExp ('.':c:cs) | isDigit c
+          = [('.':ds++e, u) | (ds, t) <- lexDigits (c:cs), (e, u) <- lexExp t]
+        lexFracExp s = lexExp s
+        lexExp (e:s) | e `elem` "eE"
+          = [(e:c:ds, u) | (c:t) <- [s], c `elem` "+-", (ds, u) <- lexDigits t] ++
+            [(e:ds, t) | (ds, t) <- lexDigits s]
+        lexExp s = [("",s)]
+
+----
 
 instance Show () where
   -- 'show _ = "()"' is not good. this prints () even for an error.
   show () = "()"
+
 
 instance Enum () where
   toEnum x | x == 0 = ()
@@ -1075,3 +1184,4 @@ instance (Integral a) => Enum (Ratio a) where
   enumFromTo = numericEnumFromTo
   enumFromThenTo = numericEnumFromThenTo
   
+

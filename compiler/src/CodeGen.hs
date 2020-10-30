@@ -445,6 +445,7 @@ genAtomExpr (AtomExpr (LitAtom (LitStr s))) = do
   return n
     where myshow s = "\"" ++ concatMap esc s ++ "\""
           esc c | c == '\\' = "\\\\"
+                | c == '"'  = "\\\""
                 | isPrint c = [c]
                 | otherwise = "\\" ++ printf "%03o" (fromEnum c)
 
