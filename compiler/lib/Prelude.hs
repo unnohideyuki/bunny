@@ -148,7 +148,7 @@ readParen b g =  if b then mandatory else optional
 -- control characters \t, \n, \r, \f, \v
 isSpace :: Char -> Bool
 isSpace c = let x = fromEnum c
-            in (c == ' ') && (x >= 9 && x <= 13)
+            in (c == ' ') || (x >= 9 && x <= 13)
 
 isDigit, isOctDigit, isHexDigit :: Char -> Bool
 isDigit c = c >= '0' && c <= '9'
@@ -483,7 +483,7 @@ instance Show Char where
   show c = ['\'', c, '\'']
   showList cs = (:) '"' . showl cs
     where showl "" = (:) '"'
-          -- showl ('"':cs) = (++) "\\\"" . showl cs
+          showl ('"':cs) = (++) "\\\"" . showl cs
           showl (c:cs) = showLitChar c . showl cs
 
 instance Bounded Char where
@@ -1037,7 +1037,7 @@ lines s  = let (l, s') = break (== '\n') s
                     []      -> []
                     (_:s'') -> lines s''
 
-isSpace = (==' ') -- todo: Char.isSpace
+-- isSpace = (==' ') -- todo: Char.isSpace
 
 words :: String -> [String]
 words s = case dropWhile isSpace s of
