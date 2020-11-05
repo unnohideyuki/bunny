@@ -976,12 +976,12 @@ renExp (A.ExpWithTySig e sig) =
   in renExp (A.LetExp [x_tysigdecl, x_valdecl] (A.VarExp x_name))
 
 renExp (A.SectionR opname e) =
-  let x_var = A.VarExp (Name "x" (0,0) False)
+  let x_var = A.VarExp (Name "_x#" (0,0) False)
       e_body = A.InfixExp x_var opname e
   in renExp (A.LamExp [x_var] e_body)
 
 renExp (A.SectionL e opname) =
-  let x_var = A.VarExp (Name "x" (0,0) False)
+  let x_var = A.VarExp (Name "_x#" (0,0) False)
       e_body = A.InfixExp e opname x_var
   in renExp (A.LamExp [x_var] e_body)
 
