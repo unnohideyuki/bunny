@@ -198,6 +198,7 @@ lex (c:s) | isSingle c = [([c],s)]
           | isAlpha c  = [(c:nam,t) | (nam, t) <- [span isIdChar s]]
           | isDigit c  = [(c:ds++fe, t) | (ds, s) <- [span isDigit s],
                                           (fe, t) <- lexFracExp s]
+          | otherwise  = [] -- bad character
   where isSingle c = c `elem` ",:()[]{}_`"
         isSym c = c `elem` "!@#$%&*+./<=>?\\^|:-~"
         isIdChar c = isAlphaNum c || c `elem` "_'"

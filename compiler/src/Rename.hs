@@ -215,6 +215,15 @@ scanDecls ds = do
         renTy (A.ListTy t) = do rt <- renTy t
                                 return $ list rt
 
+        renTy (A.TupleTy ts) = do
+          let tcn = "Prelude.(" ++ take (length ts - 1) (repeat ',') ++ ")"
+              tk = foldr Kfun Star (replicate (length ts) Star)
+              tc = TCon (Tycon tcn tk)
+          ts' <- mapM renTy ts
+          return $ foldl' TAp tc ts'
+
+        renTy t = error $ "Non-exhaustive patterns in renTy: " ++ show t
+
         parseConsts (n, ts) = do
           qn <- renameVar n
           let aty = length ts
@@ -645,6 +654,8 @@ kiExpr t@(A.AppTy _ _) dict = dict ++ kiexpr' t []
         kiexpr' (A.Tycon _) ds = ds
         kiexpr' (A.Tyvar n) ds =
           (origName n, foldr Kfun Star (replicate (length ds) Star)):ds
+        kiexpr' (A.ParTy t) ds = kiexpr' t ds
+        kiexpr' t ds = error $ "kiexpr' :" ++ show t ++ " " ++ show ds
 
 kiExpr (A.Tyvar n) dict     = dict ++ [(origName n, Star)]
 
