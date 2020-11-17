@@ -1,5 +1,6 @@
 getIntList :: IO [Int]
-getIntList = return [1, 1, 7, 2]
+getIntList = do s <- getLine
+                return $ (map read . words) s
 
 main = do
   [sx, sy, gx, gy] <- getIntList
