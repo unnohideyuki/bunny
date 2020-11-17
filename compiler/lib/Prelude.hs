@@ -93,12 +93,12 @@ class Read a where
   readsPrec :: Int -> String -> [(a, String)]
   readList  :: String -> [([a], String)]
   -- Minimal complete definition: readsSpec
-  readList = readParen False (\r -> [pr | ("[", s) <- rex r,
+  readList = readParen False (\r -> [pr | ("[", s) <- lex r,
                                           pr       <- readl s])
     where readl  s = [([], t)   | ("]", t) <- lex s] ++
-                     [(x:xs, v) | (x, t)   <- reads s,
+                     [(x:xs, u) | (x, t)   <- reads s,
                                   (xs, u)  <- readl' t]
-          readl' s = [([], tt)  | ("]", t) <- lex s] ++
+          readl' s = [([], t)   | ("]", t) <- lex s] ++
                      [(x:xs, v) | (",", t) <- lex s,
                                   (x, u)   <- reads t,
                                   (xs, v)  <- readl' u]
@@ -688,6 +688,42 @@ instance Show Integer where
 
 instance Real Integer where
   toRational x = x :% 1
+
+nonnull     :: (Char -> Bool) -> (String -> [(String, String)])
+nonnull p s = [((c:cs), t) | ((c:cs), t) <- [span p s]]
+
+digitToInt :: Char -> Int
+digitToInt c
+  | isDigit c            = fromEnum c - fromEnum '0'
+  | c >= 'a' && c <= 'f' = fromEnum c - fromEnum 'a' + 10
+  | c >= 'A' && c <= 'F' = fromEnum c - fromEnum 'A' + 10
+  | otherwise            = error "digitToInt: not a digit"
+
+readInt :: (Integral a) => a -> (Char -> Bool) -> (Char -> Int) -> (String -> [(a, String)])
+readInt radix isDig digToInt s =
+  [(foldl1 (\n d -> n * radix + d) (map (fromIntegral . digToInt) ds), r)
+  | (ds, r) <- nonnull isDig s]
+
+readDec :: (Integral a) => (String -> [(a, String)])
+readDec = readInt 10 isDigit digitToInt
+
+readSigned :: (Real a) => (String -> [(a, String)]) -> (String -> [(a, String)])
+readSigned readPos = {- readParen False -}  read'
+  {-
+  where read' r = read'' r ++
+                  [(-x, t) | ("-", s) <- lex r,
+                             (x, t) <- read'' s]
+        read'' r = [(n, s) | (str, s) <- lex r,
+                             (n, "") <- readPos str]
+  -}
+  where read' r | head r == '-' = [(-n, s) | (n, s) <- readPos (tail r)]
+                | otherwise     = readPos r
+
+instance Read Integer where
+  readsPrec p = readSigned readDec
+
+instance Read Int where
+  readsPrec p r = [(fromInteger i, t) | (i, t) <- readsPrec p r]
 
 instance Eq Float where
   (==) = Prim.floatEq
