@@ -78,7 +78,7 @@ data RnState = RnState { rnModid    :: !Id
                        , rnConsts   :: !ConstructorInfo
                        , rnTConsts  :: ![(Id, Type)]
                        , rnNum      :: !Int
-                       , rnSyn      :: ![(A.Type, A.Type)]
+                       , rnSyn      :: ![(A.Type, ([A.Type], A.Type))]
                        , rnIContext :: ![((Id, Id), Id)]
                        }
                deriving Show
@@ -96,9 +96,11 @@ actualTy :: A.Type -> RN A.Type
 actualTy t = do
   d <- rnSyn <$> get
   actual_ty d t
-    where actual_ty d t = case lookup t d of
+    where actual_ty d t@(A.Tycon _) = case lookup t d of
             Nothing -> return t
-            Just t' -> actual_ty d t'
+            Just ([], t') -> actual_ty d t'
+            Just x -> error $ "acturl_ty: must not occur: " ++ show (t, x)
+          actual_ty d t = return t
 
 getCDicts :: RN [(Id, DictDef)]
 getCDicts = do

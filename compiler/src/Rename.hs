@@ -316,7 +316,7 @@ scanDecls ds = do
     scandecl (A.SynonymDecl t1 t2) = do
       st <- get
       let syn = rnSyn st
-      put st{rnSyn=((t1, t2):syn)}
+      put st{rnSyn=((t1, ([], t2)):syn)}
       return ([], [], [])
 
     scandecl (A.DefaultDecl _)   = error "not yet: DefaultDecl"
