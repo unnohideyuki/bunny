@@ -92,8 +92,9 @@ isSynonym t = do
     Just _  -> return True
     Nothing -> return False
 
-actualTy :: A.Type -> RN A.Type
-actualTy t = do
+-- todo: actualTy' should be obsoleted.
+actualTy' :: A.Type -> RN A.Type
+actualTy' t = do
   d <- rnSyn <$> get
   actual_ty d t
     where actual_ty d t@(A.Tycon _) = case lookup t d of
@@ -107,6 +108,52 @@ getSynonym t = do
   d <- rnSyn <$> get
   return $ fromMaybe (error $ "getSynonym: synonym not found: " ++ show t)
                      (lookup t d)
+
+actualType :: A.Type -> RN A.Type
+actualType t = actual_type (remParTy t)
+  where actual_type t@(A.AppTy t1 t2) = do
+          let r = aAppTy t
+          b <- case r of
+            Just (c, _) -> isSynonym c
+            Nothing     -> return False
+          if b
+            then do let Just (c, ts) = r
+                    syn <- getSynonym c
+                    let t' = substSyn syn ts
+                    trace ("actualType: " ++ show t') $ return ()
+                    actual_type t'
+            else do t1' <- actual_type t1
+                    t2' <- actual_type t2
+                    return (A.AppTy t1' t2')
+
+        actual_type (A.FunTy t1 t2) = do
+          t1' <- actual_type t1
+          t2' <- actual_type t2
+          return (A.FunTy t1' t2')
+
+        actual_type (A.BangTy t) = do
+          t' <- actual_type t
+          return (A.BangTy t')
+
+        actual_type (A.TupleTy ts) = do
+          ts' <- mapM actual_type ts
+          return (A.TupleTy ts')
+
+        actual_type (A.ListTy t) = do
+          t' <- actual_type t
+          return (A.ListTy t')
+
+        actual_type t@(A.Tycon _) = do
+          b <- isSynonym t
+          if b
+            then do d <- rnSyn <$> get
+                    case lookup t d of
+                      Nothing -> return t
+                      Just ([], t') -> actual_type t'
+                      Just x -> error $ "actual_type: must not occur: " ++ show (t, x)
+            else return t
+
+        actual_type t = return t
 
 getCDicts :: RN [(Id, DictDef)]
 getCDicts = do
@@ -319,8 +366,11 @@ isTyVar _           = False
 -- substSyn -- substitute the tyvars in the synonym
 substSyn :: ([A.Type], A.Type) -> [A.Type] -> A.Type
 substSyn (vs, t) ts = substsyn t
-  where d = zip ts vs
-        substsyn v@(A.Tyvar _)   = fromMaybe v (lookup v d)
+  where d = zip vs ts
+        substsyn v@(A.Tyvar _)   = -- fromMaybe v (lookup v d)
+          case lookup v d of
+            Just v' -> v'
+            Nothing -> trace (show (v, d)) v
         substsyn t@(A.Tycon _)   = t
         substsyn (A.FunTy t1 t2) = A.FunTy (substsyn t1) (substsyn t2)
         substsyn (A.AppTy t1 t2) = A.AppTy (substsyn t1) (substsyn t2)

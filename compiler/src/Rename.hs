@@ -206,7 +206,7 @@ scanDecls ds = do
         renTy t@(A.Tycon i) = do
           issyn <- isSynonym t
           if issyn
-            then do t' <- actualTy t
+            then do t' <- actualTy' t
                     renTy t'
             else do t <- lookupTConst (origName i)
                     st <- get
@@ -314,11 +314,13 @@ scanDecls ds = do
           in A.InstDecl ctx tycls_inst idecls
 
     scandecl (A.SynonymDecl t1 t2) = do
+      trace ("SynonymDecl " ++ show (t1, t2)) $ return ()
       st <- get
       let syn = rnSyn st
           newentry = case aAppTy t1 of
             Just (c, ts) -> (c, (ts, t2))
             Nothing      -> (t1, ([], t2))
+      trace (show newentry) $ return ()
       put st{rnSyn=(newentry:syn)}
       return ([], [], [])
 
@@ -641,8 +643,9 @@ renDecls decls = do tbss <- mapM renDecl decls
       exitLevel
       return [(n, Nothing, [(pats, rexp)])]
 
-    renDecl (A.TypeSigDecl ns (maybe_sigvar, sigdoc)) = do
+    renDecl (A.TypeSigDecl ns (maybe_sigvar, sigdoc')) = do
       ns' <- mapM renameVar ns
+      sigdoc <- actualType sigdoc'
       let kdict = kiExpr sigdoc []
       ps <- renSigvar maybe_sigvar kdict
       t <- renSigdoc sigdoc kdict
@@ -658,7 +661,8 @@ kiExpr t@(A.AppTy _ _) dict = dict ++ kiexpr' t []
         kiexpr' (A.Tyvar n) ds =
           (origName n, foldr Kfun Star (replicate (length ds) Star)):ds
         kiexpr' (A.ParTy t) ds = kiexpr' t ds
-        kiexpr' t ds = error $ "kiexpr' :" ++ show t ++ " " ++ show ds
+        kiexpr' t ds = trace ("warning: kiexpr' :" ++ show t ++ " " ++ show ds) ds
+        -- kiexpr' t ds = error $ "kiexpr' :" ++ show t ++ " " ++ show ds
 
 kiExpr (A.Tyvar n) dict     = dict ++ [(origName n, Star)]
 
@@ -694,33 +698,20 @@ renSigdoc (A.FunTy e1 e2) kdict = do
   t1 <- renSigdoc e1 kdict
   t2 <- renSigdoc e2 kdict
   return (t1 `fn` t2)
+
 renSigdoc (A.Tyvar n) kdict = let vname = origName n
                                   k = kindLookup vname kdict
                               in return (TVar (Tyvar vname k))
-renSigdoc t@(A.AppTy e1 e2) kdict = do
-  let aappty = aAppTy t
-  issyn <- case aappty of
-    Just (c, _) -> isSynonym c
-    Nothing     -> return False
-  if issyn
-    then do let Just (c, ts) = aappty
-            syn <- getSynonym c
-            let t' = substSyn syn ts
-            renSigdoc t' kdict
-    else do t1 <- renSigdoc e1 kdict
-            t2 <- renSigdoc e2 kdict
-            return (TAp t1 t2)
 
-renSigdoc (A.ParTy e) kdict = renSigdoc e kdict
+renSigdoc t@(A.AppTy e1 e2) kdict = do
+  t1 <- renSigdoc e1 kdict
+  t2 <- renSigdoc e2 kdict
+  return (TAp t1 t2)
 
 renSigdoc t@(A.Tycon n) kdict = do
-  issyn <- isSynonym t
-  if issyn
-    then do t' <- actualTy t
-            renSigdoc t' kdict
-    else do let n' = origName n
-            t <- lookupTConst n'
-            return $ fromMaybe (error $ "renSigDoc $ A.Tycon " ++ n') t
+  let n' = origName n
+  t <- lookupTConst n'
+  return $ fromMaybe (error $ "renSigDoc $ A.Tycon " ++ n') t
 
 renSigdoc (A.ListTy e) kdict = do
   t <- renSigdoc e kdict
@@ -735,6 +726,7 @@ renSigdoc (A.TupleTy ts) kdict = do
   let r = foldl' TAp tc ts'
   return r
 
+renSigdoc (A.ParTy e) kdict = error "renSigdoc: must not occur"
 renSigdoc t _ = error $ "renSigdoc" ++ show t
 
 kindLookup :: Id -> [(Id, Kind)] -> Kind
