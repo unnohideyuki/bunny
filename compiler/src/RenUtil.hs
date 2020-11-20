@@ -97,10 +97,16 @@ actualTy t = do
   d <- rnSyn <$> get
   actual_ty d t
     where actual_ty d t@(A.Tycon _) = case lookup t d of
-            Nothing -> return t
+            Nothing       -> return t
             Just ([], t') -> actual_ty d t'
-            Just x -> error $ "acturl_ty: must not occur: " ++ show (t, x)
+            Just x        -> error $ "acturl_ty: must not occur: " ++ show (t, x)
           actual_ty d t = return t
+
+getSynonym :: A.Type -> RN ([A.Type], A.Type)
+getSynonym t = do
+  d <- rnSyn <$> get
+  return $ fromMaybe (error $ "getSynonym: synonym not found: " ++ show t)
+                     (lookup t d)
 
 getCDicts :: RN [(Id, DictDef)]
 getCDicts = do
@@ -275,3 +281,53 @@ appendTConst n ty = do
   st <- get
   let d = rnTConsts st
   put st{rnTConsts = (n,ty):d}
+
+--
+-- A.Type utilities
+--
+
+-- remParTy -- strips parenthesis from the type
+remParTy :: A.Type -> A.Type
+remParTy (A.ParTy t)     = remParTy t -- A.ParTy is stripped
+remParTy (A.FunTy t1 t2) = A.FunTy (remParTy t1) (remParTy t2)
+remParTy (A.AppTy t1 t2) = A.AppTy (remParTy t1) (remParTy t2)
+remParTy (A.BangTy t)    = A.BangTy (remParTy t)
+remParTy (A.TupleTy ts)  = A.TupleTy $ map remParTy ts
+remParTy (A.ListTy t)    = A.ListTy (remParTy t)
+remParTy t               = t
+
+-- aAppTy -- analize AppTy
+--     If the type is the form: C T1 T2 ..
+--     it returns               Just (C, [T1, T2 ..])
+--     otherwise                Nothing
+--
+-- note: It strips parenthesis using remParTy and the caller doesn't have
+--       to do it.
+aAppTy :: A.Type -> Maybe (A.Type, [A.Type])
+aAppTy t@(A.AppTy _ _) = aappty (remParTy t) []
+  where aappty (A.AppTy c@(A.Tycon _) t) ts = Just (c, (t:ts))
+        aappty (A.AppTy (A.Tyvar _) _) _ = Nothing
+        aappty (A.AppTy t1@(A.AppTy _ _) t2) ts = aappty t1 (t2:ts)
+        aappty t ts = error $ "aapty: " ++ show (t, ts)
+aAppTy _ = Nothing
+
+-- isTyvar -- checks if the type is Tyvar or not
+isTyVar :: A.Type -> Bool
+isTyVar (A.Tyvar _) = True
+isTyVar _           = False
+
+-- substSyn -- substitute the tyvars in the synonym
+substSyn :: ([A.Type], A.Type) -> [A.Type] -> A.Type
+substSyn (vs, t) ts = substsyn t
+  where d = zip ts vs
+        substsyn v@(A.Tyvar _)   = fromMaybe v (lookup v d)
+        substsyn t@(A.Tycon _)   = t
+        substsyn (A.FunTy t1 t2) = A.FunTy (substsyn t1) (substsyn t2)
+        substsyn (A.AppTy t1 t2) = A.AppTy (substsyn t1) (substsyn t2)
+        substsyn (A.BangTy t)    = A.BangTy (substsyn t)
+        substsyn (A.TupleTy ts)  = A.TupleTy $ map substsyn ts
+        substsyn (A.ListTy t)    = A.ListTy (substsyn t)
+        substsyn (A.ParTy _)     = error $ "substsyn: must not occur"
+        substsyn t@(A.RecTy _)   = t
+
+

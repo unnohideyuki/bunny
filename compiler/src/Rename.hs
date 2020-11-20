@@ -316,7 +316,10 @@ scanDecls ds = do
     scandecl (A.SynonymDecl t1 t2) = do
       st <- get
       let syn = rnSyn st
-      put st{rnSyn=((t1, ([], t2)):syn)}
+          newentry = case aAppTy t1 of
+            Just (c, ts) -> (c, (ts, t2))
+            Nothing      -> (t1, ([], t2))
+      put st{rnSyn=(newentry:syn)}
       return ([], [], [])
 
     scandecl (A.DefaultDecl _)   = error "not yet: DefaultDecl"
@@ -694,10 +697,19 @@ renSigdoc (A.FunTy e1 e2) kdict = do
 renSigdoc (A.Tyvar n) kdict = let vname = origName n
                                   k = kindLookup vname kdict
                               in return (TVar (Tyvar vname k))
-renSigdoc (A.AppTy e1 e2) kdict = do
-  t1 <- renSigdoc e1 kdict
-  t2 <- renSigdoc e2 kdict
-  return (TAp t1 t2)
+renSigdoc t@(A.AppTy e1 e2) kdict = do
+  let aappty = aAppTy t
+  issyn <- case aappty of
+    Just (c, _) -> isSynonym c
+    Nothing     -> return False
+  if issyn
+    then do let Just (c, ts) = aappty
+            syn <- getSynonym c
+            let t' = substSyn syn ts
+            renSigdoc t' kdict
+    else do t1 <- renSigdoc e1 kdict
+            t2 <- renSigdoc e2 kdict
+            return (TAp t1 t2)
 
 renSigdoc (A.ParTy e) kdict = renSigdoc e kdict
 
@@ -728,7 +740,6 @@ renSigdoc t _ = error $ "renSigdoc" ++ show t
 kindLookup :: Id -> [(Id, Kind)] -> Kind
 kindLookup n kdict =
   fromMaybe (error $ "Kind not infered " ++ show (n, kdict)) (lookup n kdict)
-
 
 -- Todo:
 renFExp :: A.Exp -> RN (Id, [Pat])
