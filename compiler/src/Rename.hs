@@ -196,21 +196,19 @@ scanDecls ds = do
         parseTy (A.Tycon n) = return (n, [])
         parseTy t = parsety' [] t
           where
-            parsety' tvs (A.AppTy (A.Tycon cn) t2) = do rt2 <- renTy t2
+            parsety' tvs (A.AppTy (A.Tycon cn) t2) = do t2' <- actualType t2
+                                                        rt2 <- renTy t2'
                                                         return (cn, rt2 : tvs)
-            parsety' tvs (A.AppTy t t2) = do rt2 <- renTy t2
+            parsety' tvs (A.AppTy t t2) = do t2' <- actualType t2
+                                             rt2 <- renTy t2'
                                              parsety' (rt2 : tvs) t
 
         renTy (A.Tyvar i) = return $ TVar (Tyvar (origName i) Star)
 
         renTy t@(A.Tycon i) = do
-          issyn <- isSynonym t
-          if issyn
-            then do t' <- actualTy' t
-                    renTy t'
-            else do t <- lookupTConst (origName i)
-                    st <- get
-                    return $ fromMaybe (error $ "renTy: " ++ origName i) t
+          t <- lookupTConst (origName i)
+          st <- get
+          return $ fromMaybe (error $ "renTy: " ++ origName i) t
 
         renTy (A.ListTy t) = do rt <- renTy t
                                 return $ list rt
@@ -314,13 +312,11 @@ scanDecls ds = do
           in A.InstDecl ctx tycls_inst idecls
 
     scandecl (A.SynonymDecl t1 t2) = do
-      trace ("SynonymDecl " ++ show (t1, t2)) $ return ()
       st <- get
       let syn = rnSyn st
           newentry = case aAppTy t1 of
             Just (c, ts) -> (c, (ts, t2))
             Nothing      -> (t1, ([], t2))
-      trace (show newentry) $ return ()
       put st{rnSyn=(newentry:syn)}
       return ([], [], [])
 

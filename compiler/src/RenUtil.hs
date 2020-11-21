@@ -120,7 +120,6 @@ actualType t = actual_type (remParTy t)
             then do let Just (c, ts) = r
                     syn <- getSynonym c
                     let t' = substSyn syn ts
-                    trace ("actualType: " ++ show t') $ return ()
                     actual_type t'
             else do t1' <- actual_type t1
                     t2' <- actual_type t2

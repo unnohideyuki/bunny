@@ -86,12 +86,12 @@ type String = [Char]
 -- Show definitions from PreludeText
 -- todo: Show cannot be declare after Num
 
--- type ReadS a = String -> [(a, String)]
+type ReadS a = String -> [(a, String)]
 type ShowS = String -> String
 
 class Read a where
-  readsPrec :: Int -> String -> [(a, String)]
-  readList  :: String -> [([a], String)]
+  readsPrec :: Int -> ReadS a
+  readList  :: ReadS [a]
   -- Minimal complete definition: readsSpec
   readList = readParen False (\r -> [pr | ("[", s) <- lex r,
                                           pr       <- readl s])
@@ -116,7 +116,7 @@ class Show a where
     where showl []     = (:) ']'
           showl (x:xs) = (:) ',' . shows x . showl xs
 
-reads :: (Read a) => String -> [(a, String)]
+reads :: (Read a) => ReadS a
 reads =  readsPrec 0
 
 shows :: (Show a) => a -> ShowS
@@ -137,7 +137,7 @@ showString =  (++)
 showParen     :: Bool -> ShowS -> ShowS
 showParen b p =  if b then showChar '(' . p . showChar ')' else p
 
-readParen     :: Bool -> (String -> [(a, String)]) -> (String -> [(a, String)])
+readParen     :: Bool -> ReadS a -> ReadS a
 readParen b g =  if b then mandatory else optional
   where optional r  = g r ++ mandatory r
         mandatory r = [(x, u) | ("(", s) <- lex r,
@@ -182,7 +182,7 @@ lexLitChar ('\\':s) = map (prefix '\\') (lexEsc s)
 -- lexDigits :: [Char] -> ([Char], [Char])
 lexDigits s = [(cs, t) | (cs, t) <- [span isDigit s], cs /= ""]
 
-lex :: String -> [(String, String)]
+lex :: ReadS String
 lex "" = [("", "")]
 lex (c:s) | isSpace c = lex (dropWhile isSpace s)
 lex ('\'':s) = [('\'' : ch ++ "'", t) | (ch, '\'': t) <- lexLitChar s, ch /= "'"]
