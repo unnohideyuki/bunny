@@ -92,17 +92,6 @@ isSynonym t = do
     Just _  -> return True
     Nothing -> return False
 
--- todo: actualTy' should be obsoleted.
-actualTy' :: A.Type -> RN A.Type
-actualTy' t = do
-  d <- rnSyn <$> get
-  actual_ty d t
-    where actual_ty d t@(A.Tycon _) = case lookup t d of
-            Nothing       -> return t
-            Just ([], t') -> actual_ty d t'
-            Just x        -> error $ "acturl_ty: must not occur: " ++ show (t, x)
-          actual_ty d t = return t
-
 getSynonym :: A.Type -> RN ([A.Type], A.Type)
 getSynonym t = do
   d <- rnSyn <$> get
