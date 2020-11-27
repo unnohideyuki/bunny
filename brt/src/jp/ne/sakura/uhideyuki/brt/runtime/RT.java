@@ -35,7 +35,7 @@ class EvalApply {
 
 	if (code instanceof ErrExpr){
 	    ErrExpr e = (ErrExpr) code;
-	    System.out.println(e.message);
+	    IOWrapper.errorPrintln(e.message);
 	    System.exit(-1);
 	} if (code.isLiteral()){
 	    evalLiteral();
@@ -68,11 +68,11 @@ class EvalApply {
 	    evalRetFun();
 	} else {
 	    if (!(code.isValue() && s.empty())){
-		System.out.println(code.isValue());
-		System.out.println(s.empty());
-		System.out.println(s);
-		System.out.println(code.isLiteral());
-		System.out.println(code.inspect());
+		IOWrapper.println(code.isValue().toString());
+		IOWrapper.println(Boolean.toString(s.empty()));
+		IOWrapper.println(s.toString());
+		IOWrapper.println(code.isLiteral().toString());
+		IOWrapper.println(code.inspect());
 	    }
 	    assert code.isValue() && s.empty();
 	    return false;
@@ -278,7 +278,7 @@ class EvalApply {
     private void evalRetFun(){
 	Expr f = code;
 	if (!(f.isFunObj() || f.isPapObj())){
-	    System.out.println(f.inspect());
+	    IOWrapper.println(f.inspect());
 	}
 	assert f.isFunObj() || f.isPapObj();
 	CallCont c = (CallCont) s.pop();

@@ -1,7 +1,6 @@
 package jp.ne.sakura.uhideyuki.brt.runtime;
 
 import jp.ne.sakura.uhideyuki.brt.brtsyn.*;
-import java.io.*;
 import java.util.regex.*;
 import java.math.BigInteger;
 import java.lang.Math;
@@ -25,13 +24,7 @@ public class Prim {
     }
 
     public static Expr mkgetChar(){
-	int c = 0;
-	try {
-	    c = System.in.read();
-	}
-	catch (IOException e){
-	    // todo: handling the exception
-	}
+	char c = IOWrapper.getchar();
 	return new AtomExpr(new LitChar((char) c));
     }
 
@@ -241,7 +234,7 @@ public class Prim {
 		d = d0.divide(g);
 		if (isNeg){ n = n.negate(); }
 	    } else {
-		System.err.println("Prim.mkRational: must not occur");
+		IOWrapper.errorPrintln("Prim.mkRational: must not occur");
 		return Prim.mkerror();
 	    }
 	}

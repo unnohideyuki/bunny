@@ -27,7 +27,7 @@ class PutStrLnFunc implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 	String t = RTLib.toJString(RT.eval(args[0]));
-	System.out.println(t);
+	IOWrapper.println(t);
 	return RTLib.app(Prim.mkretIO(), RTLib.unit);
     }
 }
@@ -37,7 +37,7 @@ class ErrorFunc implements LambdaForm {
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
 	String t = RTLib.toJString(RT.eval(args[0]));
-	System.err.println("error: " + t);
+	IOWrapper.errorPrintln("error: " + t);
 	System.exit(1);
 	return null;
     }
@@ -93,7 +93,7 @@ public class RTLib {
 	    assert(((AtomExpr)e).a instanceof Var);
 
 	    if (! (((Var)((AtomExpr)e).a).obj instanceof BoxedCharObj)){
-		System.err.println("Not a BoxedCharObj:" + e.inspect());
+		IOWrapper.errorPrintln("Not a BoxedCharObj:" + e.inspect());
 	    }
 	    assert(((Var)((AtomExpr)e).a).obj instanceof BoxedCharObj);
 
@@ -185,7 +185,7 @@ public class RTLib {
 
     public static Dictionary extrDict(AtomExpr e){
 	if (!(e.a instanceof Dict)){
-	    System.err.println("extrDict Error: " + e.inspect());
+	    IOWrapper.errorPrintln("extrDict Error: " + e.inspect());
 	}
 	return ((Dict) e.a).d;
     }
