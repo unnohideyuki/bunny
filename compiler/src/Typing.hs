@@ -243,8 +243,7 @@ toHnfs ce ps = do pss <- mapM (toHnf ce) ps
 toHnf :: Monad m => ClassEnv -> Pred -> m [Pred]
 toHnf ce p | inHnf p   = return [p]
            | otherwise = case byInst ce p of
-                           Nothing -> fail $ "context reduction\n" ++
-                                             show ce ++ "\n" ++ show p
+                           Nothing -> fail $ "context reduction: " ++ show p
                            Just ps -> toHnfs ce ps
 
 simplify   :: ClassEnv -> [Pred] -> [Pred]
