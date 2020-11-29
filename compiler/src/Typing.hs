@@ -157,7 +157,7 @@ modify ce@ClassEnv{ceMap = m} i c = ce{ceMap = insert i c m}
 
 initialEnv :: ClassEnv
 initialEnv  = ClassEnv { ceMap    = empty
-                       , defaults = [tInteger, tDouble]}
+                       , defaults = [tInteger]}
 
 type EnvTransformer = ClassEnv -> Maybe ClassEnv
 
@@ -549,7 +549,7 @@ candidates ce (v, qs) = [t' | let is = [i | IsIn i _ <- qs]
 withDefaults :: Monad m => ([Ambiguity] -> [Type] -> a)
                   -> ClassEnv -> [Tyvar] -> [Pred] -> m a
 withDefaults f ce vs ps
-  | any null tss = fail $ "cannot resolve ambiguity: " ++ show (ce, vs, ps, vps, tss)
+  | any null tss = fail $ "cannot resolve ambiguity: " ++ show vps
   | otherwise    = return (f vps (map head tss))
   where vps = ambiguities ce vs ps
         tss = map (candidates ce) vps
