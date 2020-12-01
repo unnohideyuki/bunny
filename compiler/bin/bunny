@@ -1,0 +1,132 @@
+#!/bin/bash
+# -*- mode: Shell -*-
+
+PROGRAM_NAME=`basename $0`
+VERSION="0.9.0"
+
+BASE_DIR=$(cd $(dirname $0); pwd)
+CONFIG_FILE=$BASE_DIR/bunny.config
+
+## bunny.config should contain LIB_DIR and BRT_DIR
+
+if [ -f $CONFIG_FILE ]; then
+    . $CONFIG_FILE
+fi
+
+if [ -z "$LIB_DIR" ]; then
+    LIB_DIR=$BASE_DIR/../lib
+fi
+
+if [ -z "$BRTSRC_DIR" ]; then
+    BRTSRC_DIR=$BASE_DIR/../../brt/src
+fi
+
+BUNNYC=$BASE_DIR/bunnyc
+
+usage(){
+    echo "Usage: $PROGRAM_NAME <command> [options] source-file-path"
+    echo "    or $PROGRAM_NAME --version"
+    echo ""
+    echo "Commands:"
+    echo "  android       compile the program and make an android project for it"
+    echo "  testrun       compile & run the program for testing on the host"
+    echo "  tcompile      compile the program for debug on the host"
+    exit 1
+}
+
+version(){
+    echo "Bunny - A Haskell compiler for android, version $VERSION"
+    exit 0
+}
+
+testrun(){
+    source_file=$1
+    outdir=$2
+    if [ -z $outdir ]; then
+	outdir="./jout"
+    fi
+
+    if [ ! -f $source_file ]; then
+	echo "testrun: file not found: $source_file"
+	exit 1
+    fi
+
+    bname=$(basename $source_file .hs)
+    mkdir -p $outdir/$bname
+    rm -f $outdir/$bname/*
+
+
+    cat <<EOF > $outdir/$bname/Sample.java
+import jp.ne.sakura.uhideyuki.brt.brtsyn.*;
+import jp.ne.sakura.uhideyuki.brt.runtime.*;
+
+public class Sample {
+    public static void main(String[] args){
+      RT.eval(Main.mkmain());
+    }
+}
+EOF
+
+    cmd="$BUNNYC -d $outdir/$bname --xno-implicit-prelude $LIB_DIR/Prelude.hs"
+    echo $cmd
+    $cmd
+
+    if [ $? -ne 0 ]; then
+	echo "testrun: failed to compile lib/Prelide.hs"
+	exit 1
+    else
+	cmd="$BUNNYC -d $outdir/$bname --xlibrary-path $LIB_DIR $source_file"
+	echo $cmd
+	$cmd
+    fi
+
+    if [ $? -ne 0 ]; then
+	echo "testrun: failed to compile $source_file"
+	exit 1
+    fi
+
+    cd $outdir
+
+    s=":"
+    if [ -d /c ]; then
+	s=";"
+    fi
+
+    cmd="javac -J-Duser.language=en -cp "$BRTSRC_DIR$s$bname" $bname/Sample.java"
+    echo $cmd
+    $cmd
+
+    if [ $? -ne 0 ]; then
+	echo "testrun: failed to compile the java files."
+	exit 1
+    fi
+
+    cmd="java -Duser.language=en -Dfile.encoding=UTF-8 -ea -cp "$BRTSRC_DIR$s$bname" Sample 2> trace.txt"
+    echo $cmd
+    $cmd
+
+    if [ $? -ne 0 ];then
+	tail trace.txt
+	exit 1
+    fi
+}
+
+if [ "$1" = "--version" ];then
+    version
+fi
+
+if [ $# -ne 2 ];then
+    usage
+fi
+
+command=$1
+source_file=$2
+outdir="" ## cannot specify it yet
+
+case $command in
+    testrun) testrun $source_file $outdir
+	     ;;
+    *) usage
+       ;;
+esac
+

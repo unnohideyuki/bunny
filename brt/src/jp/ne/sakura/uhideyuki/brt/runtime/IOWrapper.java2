@@ -1,0 +1,21 @@
+package jp.ne.sakura.uhideyuki.brt.runtime;
+
+import java.io.*;
+
+import com.example.runtimeproto.MainIntentService;
+
+public class IOWrapper {
+    public static char getchar(){
+		char c = MainIntentService.getChar();
+		return c;
+    }
+
+    public static void println(String s){
+		MainIntentService.putStrLn(s);
+    }
+
+    public static void errorPrintln(String s){
+	System.err.println(s);
+    }
+
+}

@@ -10,9 +10,10 @@ compiler/test/jout
 compiler/test/results
 compiler/test/*.txt
 compiler/log
-compiler/bin
+compiler/bin/bunnyc
 *.hi
 *.o
 *~
 *.exe
 *.class
+/local.properties
