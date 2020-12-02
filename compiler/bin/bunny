@@ -31,7 +31,7 @@ fi
 BUNNYC=$BASE_DIR/bunnyc
 
 usage(){
-    echo "Usage: $PROGRAM_NAME <command> [options] source-file-path"
+    echo "Usage: $PROGRAM_NAME <command> [options] source-file-path [output-directory-path]"
     echo "    or $PROGRAM_NAME --version"
     echo ""
     echo "Commands:"
@@ -49,9 +49,6 @@ version(){
 testrun(){
     source_file=$1
     outdir=$2
-    if [ -z $outdir ]; then
-	outdir="./jout"
-    fi
 
     if [ ! -f $source_file ]; then
 	echo "testrun: file not found: $source_file"
@@ -122,12 +119,8 @@ mkproject(){
     source_file=$1
     outdir=$2
 
-    if [ -z $outdir ]; then
-	outdir="$HOME/BunnyProjects"
-    fi
-
     if [ ! -f $source_file ]; then
-	echo "testrun: file not found: $source_file"
+	echo "android: file not found: $source_file"
 	exit 1
     fi
 
@@ -180,24 +173,100 @@ mkproject(){
     echo "----------------------------------------"
 }
 
-if [ "$1" = "--version" ];then
+tcompile(){
+    source_file=$1
+    outdir=$2
+    shift
+    shift
+
+    if [ ! -f $source_file ]; then
+	echo "tcompile: file not found: $source_file"
+	exit 1
+    fi
+
+    bname=$(basename $source_file .hs)
+    
+    mkdir -p $outdir/$bname
+    rm -f $outdir/$bname/*
+
+
+    cat <<EOF > $outdir/$bname/Sample.java
+import jp.ne.sakura.uhideyuki.brt.brtsyn.*;
+import jp.ne.sakura.uhideyuki.brt.runtime.*;
+
+public class Sample {
+    public static void main(String[] args){
+      RT.eval(Main.mkmain());
+    }
+}
+EOF
+
+    cmd="$BUNNYC -d $outdir/$bname --xno-implicit-prelude $LIB_DIR/Prelude.hs"
+    echo $cmd
+    $cmd
+
+    if [ $? -ne 0 ]; then
+	echo "tcompile: failed to compile lib/Prelide.hs"
+	exit 1
+    else
+	cmd="$BUNNYC -d $outdir/$bname --xlibrary-path $LIB_DIR -v $* $source_file"
+	echo $cmd
+	$cmd
+    fi
+
+    if [ $? -ne 0 ]; then
+	echo "tcompile: failed to compile $source_file"
+	exit 1
+    fi
+}
+
+declare -a args
+
+for a in $@; do
+    args=("${args[@]}" $a)
+done
+
+if [ ${args[0]} = "--version" ];then
     version
 fi
 
-if [ $# -ne 2 ];then
+if [ ${#args[*]} -lt 2 ];then
     usage
 fi
 
-command=$1
-source_file=$2
+command=${args[0]}
+args=("${args[@]:1}")
+
 outdir="" ## cannot specify it yet
+if [ -d ${args[((${#args[*]}-1))]} ];then
+    outdir=${args[((${#args[*]}-1))]}
+    args=(${args[@]:0:((${#args[*]}-1))})
+fi
+
+source_file=${args[((${#args[*]}-1))]}
+args=(${args[@]:0:((${#args[*]}-1))})
 
 case $command in
-    android) mkproject $source_file $outdir
-	     ;;
-    testrun) testrun $source_file $outdir
-	     ;;
-    *) usage
-       ;;
+    android)
+	if [ -z $outdir ]; then
+	    outdir="$HOME/BunnyProjects"
+	fi
+	mkproject $source_file $outdir
+	;;
+    testrun)
+	if [ -z $outdir ]; then
+	    outdir="./jout"
+	fi
+	testrun $source_file $outdir
+	;;
+    tcompile)
+	if [ -z $outdir ]; then
+	    outdir="./jout"
+	fi
+	tcompile $source_file $outdir ${args[@]}
+	;;
+    *)  echo "unknown commmand: " $command
+	usage
+	;;
 esac
 
