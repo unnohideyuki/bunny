@@ -3,6 +3,7 @@
 
 PROGRAM_NAME=`basename $0`
 VERSION="0.9.0"
+CODENAME="Basecamp"
 
 PKG_NAME="com.example.runtimeproto.jout"
 
@@ -41,7 +42,7 @@ usage(){
 }
 
 version(){
-    echo "Bunny - A Haskell compiler for android, version $VERSION"
+    echo "Bunny - A Haskell compiler for android, version $VERSION ($CODENAME)"
     exit 0
 }
 
