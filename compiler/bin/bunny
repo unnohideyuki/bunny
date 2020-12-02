@@ -226,7 +226,7 @@ for a in $@; do
     args=("${args[@]}" $a)
 done
 
-if [ ${args[0]} = "--version" ];then
+if [ "${args[0]}" = "--version" ];then
     version
 fi
 
