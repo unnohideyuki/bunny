@@ -4,6 +4,8 @@
 PROGRAM_NAME=`basename $0`
 VERSION="0.9.0"
 
+PKG_NAME="com.example.runtimeproto.jout"
+
 BASE_DIR=$(cd $(dirname $0); pwd)
 CONFIG_FILE=$BASE_DIR/bunny.config
 
@@ -19,6 +21,10 @@ fi
 
 if [ -z "$BRTSRC_DIR" ]; then
     BRTSRC_DIR=$BASE_DIR/../../brt/src
+fi
+
+if [ -z "$PRJPROTO_DIR" ]; then
+    PRJPROTO_DIR=$BASE_DIR/../AndroidProjectPrototype
 fi
 
 BUNNYC=$BASE_DIR/bunnyc
@@ -111,6 +117,68 @@ EOF
     fi
 }
 
+mkproject(){
+    source_file=$1
+    outdir=$2
+
+    if [ -z $outdir ]; then
+	outdir="$HOME/BunnyProjects"
+    fi
+
+    if [ ! -f $source_file ]; then
+	echo "testrun: file not found: $source_file"
+	exit 1
+    fi
+
+    bname=$(basename $source_file .hs)
+
+    prjdir=$outdir/$bname
+    joutdir=$prjdir/app/src/main/java/com/example/runtimeproto/jout
+
+    mkdir -p $outdir
+    rm -rf $prjdir
+    cp -r $PRJPROTO_DIR $prjdir
+    cp -r $BRTSRC_DIR/jp $prjdir/app/src/main/java/
+
+    t="$prjdir/app/src/main/java/jp/ne/sakura/uhideyuki/brt/runtime/"
+    mv $t/IOWrapper.java2 $t/IOWrapper.java 
+
+    tmpfile=/tmp/tmp.$$
+    strings_xml=$prjdir/app/src/main/res/values/strings.xml
+    mv  $strings_xml $tmpfile
+    sed -e "s/##APP_NAME##/$bname/;" $tmpfile > $strings_xml
+
+    mkdir -p $joutdir
+
+    cmd="$BUNNYC -d $joutdir --xno-implicit-prelude --package $PKG_NAME $LIB_DIR/Prelude.hs"
+    echo $cmd
+    $cmd
+
+    if [ $? -ne 0 ]; then
+	echo "android: failed to compile lib/Prelide.hs"
+	exit 1
+    else
+	cmd="$BUNNYC -d $joutdir --xlibrary-path $LIB_DIR --package $PKG_NAME $source_file"
+	echo $cmd
+	$cmd
+    fi
+
+    if [ $? -ne 0 ]; then
+	echo "android: failed to compile $source_file"
+	exit 1
+    fi
+
+    echo "----------------------------------------"
+    echo "An android project has been created!"
+    echo "  path: $prjdir"
+    echo ""
+    echo "then you can try:"
+    echo "\$ cd $prjdir"
+    echo "\$ ./gradlew assembleDebug"
+    echo "etc."
+    echo "----------------------------------------"
+}
+
 if [ "$1" = "--version" ];then
     version
 fi
@@ -124,6 +192,8 @@ source_file=$2
 outdir="" ## cannot specify it yet
 
 case $command in
+    android) mkproject $source_file $outdir
+	     ;;
     testrun) testrun $source_file $outdir
 	     ;;
     *) usage
