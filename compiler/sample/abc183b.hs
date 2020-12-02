@@ -4,5 +4,7 @@ getIntList = do s <- getLine
 
 main = do
   [sx, sy, gx, gy] <- getIntList
-  print $ fromIntegral (sx*gy + gx*sy) / fromIntegral (sy + gy)
+  let ans :: Double
+      ans = fromIntegral (sx*gy + gx*sy) / fromIntegral (sy + gy)
+  print ans
 
