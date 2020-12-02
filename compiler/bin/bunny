@@ -91,24 +91,36 @@ EOF
 
     cd $outdir
 
-    s=":"
-    if [ -d /c ]; then
-	s=";"
+    uname | grep MINGW > /dev/null
+    if [ $? -eq 0 ]; then
+	windows="yes"
+    else
+	windows="" # empty
     fi
 
-    cmd="javac -J-Duser.language=en -cp "$BRTSRC_DIR$s$bname" $bname/Sample.java"
-    echo $cmd
-    $cmd
-
+    if [ -n windows ];then
+	brt_cygpath=$(cygpath -d $BRTSRC_DIR)
+	javac -J-Duser.language=en -cp "$brt_cygpath;$bname" $bname/Sample.java
+    else
+	cmd="javac -J-Duser.language=en -cp \"$BRTSRC_DIR:$bname\" $bname/Sample.java"
+	echo $cmd
+	$cmd
+    fi
+    
     if [ $? -ne 0 ]; then
 	echo "testrun: failed to compile the java files."
 	exit 1
     fi
 
-    cmd="java -Duser.language=en -Dfile.encoding=UTF-8 -ea -cp "$BRTSRC_DIR$s$bname" Sample 2> trace.txt"
-    echo $cmd
-    $cmd
-
+    if [ -n windows ];then
+	brt_cygpath=$(cygpath -d $BRTSRC_DIR)
+	java -Duser.language=en -Dfile.encoding=UTF-8 -ea -cp "$brt_cygpath;$bname" Sample 2> trace.txt
+    else
+	cmd="java -Duser.language=en -Dfile.encoding=UTF-8 -ea -cp \"$BRTSRC_DIR$:$bname\" Sample 2> trace.txt"
+	echo $cmd
+	$cmd
+    fi
+    
     if [ $? -ne 0 ];then
 	tail trace.txt
 	exit 1
