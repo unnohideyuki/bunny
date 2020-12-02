@@ -94,17 +94,13 @@ EOF
     uname | grep MINGW > /dev/null
     if [ $? -eq 0 ]; then
 	windows="yes"
-    else
-	windows="" # empty
     fi
 
-    if [ -n windows ];then
+    if [ -n "$windows" ];then
 	brt_cygpath=$(cygpath -d $BRTSRC_DIR)
 	javac -J-Duser.language=en -cp "$brt_cygpath;$bname" $bname/Sample.java
     else
-	cmd="javac -J-Duser.language=en -cp \"$BRTSRC_DIR:$bname\" $bname/Sample.java"
-	echo $cmd
-	$cmd
+	javac -J-Duser.language=en -cp "$BRTSRC_DIR:$bname" $bname/Sample.java
     fi
     
     if [ $? -ne 0 ]; then
@@ -112,13 +108,11 @@ EOF
 	exit 1
     fi
 
-    if [ -n windows ];then
+    if [ -n "$windows" ];then
 	brt_cygpath=$(cygpath -d $BRTSRC_DIR)
 	java -Duser.language=en -Dfile.encoding=UTF-8 -ea -cp "$brt_cygpath;$bname" Sample 2> trace.txt
     else
-	cmd="java -Duser.language=en -Dfile.encoding=UTF-8 -ea -cp \"$BRTSRC_DIR$:$bname\" Sample 2> trace.txt"
-	echo $cmd
-	$cmd
+	java -Duser.language=en -Dfile.encoding=UTF-8 -ea -cp "$BRTSRC_DIR:$bname" Sample 2> trace.txt
     fi
     
     if [ $? -ne 0 ];then
