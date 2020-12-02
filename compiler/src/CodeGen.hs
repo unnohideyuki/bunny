@@ -29,9 +29,10 @@ emitPreamble h =
   in
    ploop preamble
 
-emitProgram :: Program -> String -> String -> ConstructorInfo -> IO ()
-emitProgram prog dest mname ci = do
+emitProgram :: Program -> String -> String -> ConstructorInfo -> String -> IO ()
+emitProgram prog dest mname ci pkgname = do
   h <- openFile (dest ++ "/" ++ mname ++ ".java") WriteMode
+  when (not (null pkgname)) $ hPutStrLn h $ "package " ++ pkgname ++ ";"
   emitPreamble h
   emitHeader mname h -- Todo: module name.
   emitBinds prog h 0
@@ -476,12 +477,13 @@ refTopLevel n =
    then m ++ ".mk" ++ n' ++ "()"
    else error $ "Unbound variable " ++ n
 
-emitDicts :: String -> [DictDef] -> IO ()
-emitDicts _ [] = return ()
-emitDicts dest (dict:ds) = do
+emitDicts :: String -> [DictDef] -> String -> IO ()
+emitDicts _ [] _ = return ()
+emitDicts dest (dict:ds) pkgname = do
   let dname = cls2dictNameM $ ddId dict
       msM = map mangle $ ddMethods dict
   h <- openFile (dest ++ "/" ++ dname ++ ".java") WriteMode
+  when (not (null pkgname)) $ hPutStrLn h $ "package " ++ pkgname ++ ";"
   emitPreamble h
   hPutStrLn h $
     "interface " ++ dname ++ " {"
@@ -490,11 +492,11 @@ emitDicts dest (dict:ds) = do
     msM
   hPutStrLn h "}"
   hClose h
-  emitDicts dest ds
+  emitDicts dest ds pkgname
 
-emitInsts :: String -> [DictDef] -> [(Id, Id)] -> ClassEnv -> IO ()
-emitInsts _ _ [] _ = return ()
-emitInsts dest dicts ((qin, qcn):ctab) ce = do
+emitInsts :: String -> [DictDef] -> [(Id, Id)] -> ClassEnv -> String -> IO ()
+emitInsts _ _ [] _ _ = return ()
+emitInsts dest dicts ((qin, qcn):ctab) ce pkgname = do
   -- trace (show (qin, qcn)) $ return ()
   let ms = ddMethods $ fromMaybe (error $ "emitInsts: " ++ qcn ++ " not found: " ++ show dicts)
                                  (find ((== qcn). ddId) dicts)
@@ -506,6 +508,7 @@ emitInsts dest dicts ((qin, qcn):ctab) ce = do
       dname = cls2dictNameM $ qin ++ "@" ++ qcn
       mname = modname qin
   h <- openFile (dest ++ "/" ++ dname ++ ".java") WriteMode
+  when (not (null pkgname)) $ hPutStrLn h $ "package " ++ pkgname ++ ";"
   emitPreamble h
   hPutStrLn h $ "public class " ++ dname
   hPutStrLn h $ "    extends Dictionary"
@@ -545,7 +548,7 @@ emitInsts dest dicts ((qin, qcn):ctab) ce = do
     msM
   hPutStrLn h "}"
   hClose h
-  emitInsts dest dicts ctab ce
+  emitInsts dest dicts ctab ce pkgname
 
 emitConsts :: Handle -> ConstructorInfo -> IO ()
 emitConsts h ci = do

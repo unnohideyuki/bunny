@@ -12,6 +12,7 @@ data Options = Options
                { destDir            :: String
                , xlibPath           :: String
                , xnoImplicitPrelude :: Bool
+               , optPackageString   :: String
                , optVerbose         :: Bool
                , optDdumpabsyn      :: Bool
                , optDdumpren        :: Bool
@@ -51,6 +52,14 @@ xNoImplicitPreludeP = switch $ mconcat
                    [ long "xno-implicit-prelude"
                    , help "Suppress implicit loading of Prelude"
                    ]
+
+packageStrP :: Parser String
+packageStrP = strOption $ mconcat
+              [ long "package"
+              , help "Package name of the output java codes"
+              , metavar "name"
+              , value ""
+              ]
 
 verboseP :: Parser Bool
 verboseP = switch $ mconcat
@@ -98,6 +107,7 @@ optionsP = (<*>) helper $
            <$> destDirP
            <*> xlibPathP
            <*> xNoImplicitPreludeP
+           <*> packageStrP
            <*> verboseP
            <*> ddumpabsynP
            <*> ddumprenP

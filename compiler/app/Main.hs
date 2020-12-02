@@ -107,9 +107,10 @@ doCompile st0 m dest cont idicts opts = do
   let b'' = TR.trBind b'
       mname = case cmod of
         Module n _ -> n
-  CodeGen.emitProgram b'' dest mname ci
-  CodeGen.emitDicts dest dicts
-  CodeGen.emitInsts dest (dicts++idicts) ctab ce
+      pkgname = optPackageString opts
+  CodeGen.emitProgram b'' dest mname ci pkgname
+  CodeGen.emitDicts dest dicts pkgname
+  CodeGen.emitInsts dest (dicts++idicts) ctab ce pkgname
   debugmes verbose_mode "done.\n"
 
 main :: IO ()
