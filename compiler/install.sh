@@ -23,12 +23,18 @@ fi
 INSTALL_DIR=$INSTALL_BASE_DIR/bunny/$VERSION
 
 if [ ! -x bin/bunnyc ]; then
-    echo "bin/bunnyc is not found. about."
+    echo "ERROR: bin/bunnyc is not found. about."
     exit 1
 fi
 
 echo "Installing bunny to $INSTALL_DIR ..."
 read -p "Hit enter key to continue: "
+
+## checking local.properties
+if [ ! -f AndroidProjectPrototype/local.properties ]; then
+    echo "ERROR: AndroidProjectPrototype/local.properties not found."
+    exit 1
+fi
 
 ## $INSTALL_DIR/bin
 ##             /lib

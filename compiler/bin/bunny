@@ -135,6 +135,11 @@ mkproject(){
     prjdir=$outdir/$bname
     joutdir=$prjdir/app/src/main/java/com/example/runtimeproto/jout
 
+    if [ ! -f $PRJPROTO_DIR/local.properties ]; then
+	echo "local.properties not found in $PRJPROTO_DIR"
+	exit 1
+    fi
+    
     mkdir -p $outdir
     rm -rf $prjdir
     cp -r $PRJPROTO_DIR $prjdir
@@ -175,14 +180,15 @@ mkproject(){
 	gradlew="./gradlew"
     fi
 
-    echo "----------------------------------------"
+    echo "--------------------------------------------------------"
     echo "An android project has been created!"
     echo "  path: $prjdir"
     echo ""
     echo "then you can try:"
     echo "\$ cd $prjdir"
     echo "\$ $gradlew assembleDebug"
-    echo "----------------------------------------"
+    echo "\$ adb install app/build/outputs/apk/debug/app-debug.apk"
+    echo "--------------------------------------------------------"
 }
 
 tcompile(){
