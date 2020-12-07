@@ -8,13 +8,13 @@ In addition to what is included in the Haskell Platform,
 the following tools and libraries must be installed beforehand.
 
 - Tools
- - GNU Make
- - HLint
- - Alex
- - Happy
+  - GNU Make
+  - HLint
+  - Alex
+  - Happy
 - Libraries
- - ansi-wl-pprint
- - optparse-applicative
+  - ansi-wl-pprint
+  - optparse-applicative
 
 To make Android applications with Bunny,
 [Android Studio](https://developer.android.com/studio)
