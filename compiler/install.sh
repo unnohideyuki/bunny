@@ -55,6 +55,9 @@ cp lib/Prelude.hs $INSTALL_DIR/lib/
 
 mkdir -p $INSTALL_DIR/brt/
 cp -r ../brt/src $INSTALL_DIR/brt/
+rm -f $INSTALL_DIR/brt/src/jp/ne/sakura/uhideyuki/brt/*/*.class
+rm -f $INSTALL_DIR/brt/src/jp/ne/sakura/uhideyuki/brt/*/*~
+
 
 cp -r AndroidProjectPrototype $INSTALL_DIR/
 
