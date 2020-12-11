@@ -652,7 +652,8 @@ kiExpr :: A.Type -> [(Id, Kind)] -> [(Id, Kind)]
 kiExpr (A.FunTy t1 t2) dict = kiExpr t2 $ kiExpr t1 dict
 
 kiExpr t@(A.AppTy _ _) dict = dict ++ kiexpr' t []
-  where kiexpr' (A.AppTy t1 (A.Tyvar n)) ds = kiexpr' t1 ((origName n, Star):ds)
+  where kiexpr' (A.AppTy (A.Tycon _) (A.Tycon _)) ds = ds
+        kiexpr' (A.AppTy t1 (A.Tyvar n)) ds = kiexpr' t1 ((origName n, Star):ds)
         kiexpr' (A.Tycon _) ds = ds
         kiexpr' (A.Tyvar n) ds =
           (origName n, foldr Kfun Star (replicate (length ds) Star)):ds
