@@ -835,17 +835,26 @@ renRhs rhs = do
   error $ "renRhs not yet implemented. " ++ show rhs
 
 resolveFixity :: A.Exp -> Name -> A.Exp -> Name -> A.Exp -> RN A.Exp
-resolveFixity rest op2 e2 op1 e1 = do
-  (prec1, fix1) <- lookupInfixOp op1
-  (prec2, fix2) <- lookupInfixOp op2
-  if prec1 == prec2 && (fix1 /= fix2 || fix1 == A.Infix)
-    then fail "fixty resolution error."
-    else if prec1 > prec2 || (prec1 == prec2 && fix1 == A.Infixr)
-         then return (A.InfixExp rest op2 (opAppExp op1 e2 e1))
-         else return (opAppExp op1 (A.InfixExp rest op2 e2) e1)
+resolveFixity rest opb eb opa ea = do
+  let (e0, ((op1, e1):toks)) = travarse rest [(opb, eb), (opa, ea)]
+  (r, _) <- resolve 0 e0 op1 e1 toks
+  return r
   where
+    resolve _ e0 op1 e1 [] = return (opAppExp op1 e0 e1, [])
+    resolve i e0 op1 e1 ((op2, e2):toks) = do
+      (prec1, fix1) <- lookupInfixOp op1
+      (prec2, fix2) <- lookupInfixOp op2
+      if prec1 == prec2 && (fix1 /= fix2 || fix1 == A.Infix)
+        then fail "fixty resolution error."
+        else if prec1 > prec2 || (prec1 == prec2 && fix1 == A.Infixl)
+             then if i == 0
+                  then resolve 0 (opAppExp op1 e0 e1) op2 e2 toks
+                  else return (opAppExp op1 e0 e1, (op2, e2):toks)
+             else do (e, r) <- resolve 1 e1 op2 e2 toks
+                     resolve i e0 op1 e r
     opAppExp op e = A.FunAppExp (A.FunAppExp (A.VarExp op) e)
-
+    travarse (A.InfixExp e1 op e2) toks = travarse e1 ((op, e2):toks)
+    travarse e                     toks = (e, toks)
 
 renExp :: A.Exp -> RN Expr
 
