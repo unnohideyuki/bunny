@@ -1,6 +1,14 @@
 Bunny - A Haskell compiler for Android
 ======================================
 
+Bunny is a Haskell compiler to build applications for Android.
+The current release of the prototype (version 0.9.0) is far
+from complete, however,
+it is planned to meet the specification of Haskell 2010 language report.
+
+For more information visit [the project webpage](https://uhideyuki.sakura.ne.jp/studs/index.cgi/en/Bunny).
+
+
 ## Build environment requirements
 
 Bunny can be built on Windows (MINGW) or Linux with GHC (Haskell Platform).
