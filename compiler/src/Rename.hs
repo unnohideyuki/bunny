@@ -896,7 +896,7 @@ renExp (A.ListCompExp e (A.ExpStmt b : stmts)) =
   renExp (A.IfExp b (A.ListCompExp e stmts) nil)
   where nil = A.VarExp $ Name "[]" (0,0) True
 
--- [e | p <- l, Q] = let ok p = [e | Q] in concatMap ok l
+-- [e | p <- l, Q] = let {ok p = [e | Q]; ok _ = []} in concatMap ok l
 renExp (A.ListCompExp e (A.BindStmt p l : stmts)) = renExp letexp
   where
     ok = Name "OK" (0,0) False -- "OK" is fresh,  will never parsed as a variable.
@@ -904,11 +904,14 @@ renExp (A.ListCompExp e (A.BindStmt p l : stmts)) = renExp letexp
     rhs = case stmts of
       [] -> A.UnguardedRhs (A.ListExp [e]) []
       _  -> A.UnguardedRhs (A.ListCompExp e stmts) []
-    decl = A.VDecl $ A.ValDecl okp rhs
+    okp' = A.FunAppExp (A.VarExp ok) A.WildcardPat
+    rhs' = A.UnguardedRhs (A.VarExp (Name "[]" (0,0) True)) []
+    decl1 = A.VDecl $ A.ValDecl okp rhs
+    decl2 = A.VDecl $ A.ValDecl okp' rhs'
     body = A.FunAppExp (A.FunAppExp (A.VarExp $ Name "concatMap" (0,0) False)
                                     (A.VarExp ok))
                        l
-    letexp = A.LetExp [decl] body
+    letexp = A.LetExp [decl1, decl2] body
 
 -- [e | let dictdefDecls, Q] = let dictdefDecls in [e | Q]
 renExp (A.ListCompExp e (A.LetStmt ddecls : stmts)) = renExp letexp

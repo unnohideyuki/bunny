@@ -708,16 +708,12 @@ readDec :: (Integral a) => (String -> [(a, String)])
 readDec = readInt 10 isDigit digitToInt
 
 readSigned :: (Real a) => (String -> [(a, String)]) -> (String -> [(a, String)])
-readSigned readPos = {- readParen False -}  read'
-  {-
+readSigned readPos = readParen False read'
   where read' r = read'' r ++
                   [(-x, t) | ("-", s) <- lex r,
                              (x, t) <- read'' s]
         read'' r = [(n, s) | (str, s) <- lex r,
                              (n, "") <- readPos str]
-  -}
-  where read' r | head r == '-' = [(-n, s) | (n, s) <- readPos (tail r)]
-                | otherwise     = readPos r
 
 instance Read Integer where
   readsPrec p = readSigned readDec
