@@ -41,20 +41,21 @@ scanDecls ds = do
       ds' <- concat <$> mapM scanValueDecl2 ds
       return ds'
         where trAsPat n (A.ParExp e) rhs = trAsPat n e rhs
-              trAsPat n (A.FunAppExp (A.FunAppExp c a) b) rhs = do
-                let d1 = [A.ValDecl (A.VarExp n) rhs]
-                    a1 = A.VarExp (Name "_a#1" (0,0) False)
-                    a2 = A.VarExp (Name "_a#2" (0,0) False)
-                    cab = A.FunAppExp (A.FunAppExp c a1) a2
-                    e2 = A.CaseExp (A.VarExp n) [A.Match cab (A.UnguardedRhs a1 [])]
-                    e3 = A.CaseExp (A.VarExp n) [A.Match cab (A.UnguardedRhs a2 [])]
-                    d2 = case a of
-                      A.WildcardPat -> []
-                      _             -> [A.ValDecl a (A.UnguardedRhs e2 [])]
-                    d3 = case b of
-                      A.WildcardPat -> []
-                      _             -> [A.ValDecl b (A.UnguardedRhs e3 [])]
-                  in return $ concat [d1, d2, d3]
+              trAsPat n e@(A.FunAppExp _ _) rhs = do
+                let parsef (A.FunAppExp f@(A.FunAppExp _ _) a) vs = parsef f (a:vs)
+                    parsef (A.FunAppExp c a) vs = (c, a:vs)
+                    (c, vs) = parsef e []
+                    d0 = A.ValDecl (A.VarExp n) rhs
+                    as = [A.VarExp (Name ("_a#" ++ show i) (0,0) False)
+                         | i <- [1..(length vs)]]
+                    cas = foldl' A.FunAppExp c as
+                    ds = [case v of
+                            A.WildcardPat -> []
+                            _ -> [A.ValDecl v (A.UnguardedRhs e [])]
+                         | (v, a) <- zip vs as
+                         , let e = A.CaseExp (A.VarExp n) [A.Match cas (A.UnguardedRhs a [])]
+                         ]
+                  in return $ (d0:concat ds)
               trAsPat n (A.TupleExp xs) rhs = do
                 let xs' = map fromJust xs
                     cn = "(" ++ replicate (length xs - 1) ',' ++ ")"
