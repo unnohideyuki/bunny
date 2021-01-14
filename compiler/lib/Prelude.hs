@@ -213,9 +213,16 @@ lex (c:s) | isSingle c = [([c],s)]
 ----
 
 instance Show () where
-  -- 'show _ = "()"' is not good. this prints () even for an error.
-  show () = "()"
+  showsPrec p () = showString "()"
 
+instance Read () where
+  readsPrec p    = readParen False (\r -> [((), t) | ("(", s) <- lex r
+                                                   , (")", t) <- lex s])
+
+instance (Read a) => Read [a] where
+  readsPrec p = readList
+
+---
 
 instance Enum () where
   toEnum x | x == 0 = ()
