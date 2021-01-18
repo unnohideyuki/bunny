@@ -132,6 +132,9 @@ scanDecls ds = do
 
     removeInfix e@(A.ListExp es) = removeInfix $ expandList es
 
+    removeInfix (A.AsPat n e) = do e' <- removeInfix e
+                                   return (A.AsPat n e')
+
     removeInfix e = error $ "removeInfix :" ++ show e
 
     scandecl (A.VDecl d@(A.ValDecl e _)) = do return ([d], [], [])
@@ -800,6 +803,9 @@ renPat (A.TupleExp [Just e1, Just e2, Just e3]) = do
 renPat (A.ListExp es) = renPat $ expandList es
 
 renPat A.WildcardPat = return PWildcard
+
+renPat (A.AsPat n e) = do p <- renPat e
+                          return (PAs (origName n) p)
 
 renPat e = error $ "renPat: " ++ show e
 
