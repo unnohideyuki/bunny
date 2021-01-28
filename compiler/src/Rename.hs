@@ -34,7 +34,7 @@ scanDecls ds = do
   ds' <- concat <$> mapM scanValueDecl2 ds
   cds' <- mapM scanClassDecl2 cds
   ids' <- mapM scanInstDecl2 ids
-  return (ds', cds', ids')
+  return (ds', tsortCDs cds', ids')
   where
     scanValueDecl2 (A.ValDecl (A.AsPat n expr) rhs) = do
       ds <- trAsPat n expr rhs

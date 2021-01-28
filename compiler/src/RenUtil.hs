@@ -8,9 +8,11 @@ import           Typing
 
 import           Control.Monad.State.Strict (State, get, put)
 import           Data.Char                  (isUpper)
+import qualified Data.Graph                 as G
 import           Data.List.Split            (splitOn)
 import qualified Data.Map.Strict            as Map
-import           Data.Maybe                 (fromMaybe)
+import           Data.Maybe                 (fromJust, fromMaybe)
+import qualified Data.Tree                  as T
 import           Debug.Trace
 
 aTrue :: A.Exp
@@ -368,4 +370,32 @@ substSyn (vs, t) ts = substsyn t
         substsyn (A.ParTy _)     = error $ "substsyn: must not occur"
         substsyn t@(A.RecTy _)   = t
 
+tsortCDs :: [A.ClassDecl] -> [A.ClassDecl]
+tsortCDs ds = let ty2IDs (A.AppTy (A.Tycon n) (A.Tyvar _)) = [origName n]
+                  ty2IDs (A.TupleTy ts) = concatMap ty2IDs ts
+                  ty2IDs (A.ParTy t) = ty2IDs t
 
+                  d2id (A.ClassDecl (_, t) _) = head $ ty2IDs t
+
+                  -- m: map from name to A.ClassDecl
+                  m = Map.fromList $ zip (map d2id ds) ds
+
+                  ks = Map.keys m
+                  k2num = Map.fromList $ zip ks [0..]
+
+                  d2edges (A.ClassDecl (Nothing, _) _) = []
+                  d2edges (A.ClassDecl (Just s, t) _) =
+                    let supers = ty2IDs s
+                        ss = concatMap (\n -> case Map.lookup n k2num of
+                                                Nothing -> []
+                                                Just x  -> [x]) supers
+                        i = fromJust $ Map.lookup (head $ ty2IDs t) k2num
+                    in map (\j -> (i, j)) ss
+
+                  edges = concatMap d2edges ds
+                  g = G.buildG (0, length ks - 1) edges
+                  -- TODO: when a SCC which size > 1 exists, report error
+                  sortedNums = concatMap T.flatten $ G.scc g
+                  sortedKeys = map (ks !!) sortedNums
+                  ds' = map (\k -> fromJust $ Map.lookup k m) sortedKeys
+  in ds'
