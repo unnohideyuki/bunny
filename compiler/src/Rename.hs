@@ -25,21 +25,16 @@ import           Data.Maybe                 (fromJust, fromMaybe, isJust)
 import           Debug.Trace
 
 scanDecls :: [A.Decl] -> RN ([A.ValueDecl], [A.ClassDecl], [A.InstDecl])
-scanDecls ds = do
-  r <- mapM scandecl ds
-  let (dss, cdss, idss) = unzip3 r
-      ds = concat dss
-      cds = concat cdss
-      ids = concat idss
-  ds' <- concat <$> mapM scanValueDecl2 ds
-  cds' <- mapM scanClassDecl2 cds
-  ids' <- mapM scanInstDecl2 ids
+scanDecls decls = do
+  (dss, cdss, idss) <- unzip3 <$> mapM scandecl1 decls
+  ds' <- concat <$> mapM scanValueDecl2 (concat dss)
+  cds' <- mapM scanClassDecl2 (concat cdss)
+  ids' <- mapM scanInstDecl2 (concat idss)
   return (ds', tsortCDs cds', ids')
   where
     scanValueDecl2 (A.ValDecl (A.AsPat n expr) rhs) = do
       ds <- trAsPat n expr rhs
-      ds' <- concat <$> mapM scanValueDecl2 ds
-      return ds'
+      concat <$> mapM scanValueDecl2 ds
         where trAsPat n (A.ParExp e) rhs = trAsPat n e rhs
               trAsPat n e@(A.FunAppExp _ _) rhs = do
                 let parsef (A.FunAppExp f@(A.FunAppExp _ _) a) vs = parsef f (a:vs)
@@ -137,11 +132,9 @@ scanDecls ds = do
 
     removeInfix e = error $ "removeInfix :" ++ show e
 
-    scandecl (A.VDecl d@(A.ValDecl e _)) = do return ([d], [], [])
+    scandecl1 (A.VDecl d) = return ([d], [], [])
 
-    scandecl (A.VDecl d@(A.TypeSigDecl _ _)) = return ([d], [], [])
-
-    scandecl (A.CDecl d@(A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds')) = do
+    scandecl1 (A.CDecl d@(A.ClassDecl (_, A.AppTy (A.Tycon n) _) ds')) = do
       _ <- renameVar n
       mapM_ colname' ds'
       return ([], [d], [])
@@ -155,14 +148,14 @@ scanDecls ds = do
             (A.CDecl (A.ClassDecl (_, A.FunTy _ _) _))
             (A.CDecl (A.ClassDecl (_, A.AppTy (A.Tyvar _) _) _))
     -}
-    scandecl (A.CDecl (A.ClassDecl (_, _) _)) = error "scandecl: unexpected."
+    scandecl1 (A.CDecl (A.ClassDecl (_, _) _)) = error "scandecl1: unexpected."
 
-    scandecl (A.IDecl d) = return ([], [], [d])
+    scandecl1 (A.IDecl d) = return ([], [], [d])
 
-    scandecl (A.FixSigDecl fixity i ns) = do regFixity fixity i ns
-                                             return ([], [], [])
+    scandecl1 (A.FixSigDecl fixity i ns) = do regFixity fixity i ns
+                                              return ([], [], [])
 
-    scandecl d@(A.DataDecl (maybe_context, ty) consts maybe_dtys) = do
+    scandecl1 d@(A.DataDecl (maybe_context, ty) consts maybe_dtys) = do
       (tn, tvs) <- parseTy ty
       qtn <- renameVar tn
       let k = foldr Kfun Star (replicate (length tvs) Star)
@@ -315,7 +308,7 @@ scanDecls ds = do
 
           in A.InstDecl ctx tycls_inst idecls
 
-    scandecl (A.SynonymDecl t1 t2) = do
+    scandecl1 (A.SynonymDecl t1 t2) = do
       st <- get
       let syn = rnSyn st
           newentry = case aAppTy t1 of
@@ -324,9 +317,9 @@ scanDecls ds = do
       put st{rnSyn=(newentry:syn)}
       return ([], [], [])
 
-    scandecl (A.DefaultDecl _)   = error "not yet: DefaultDecl"
-    scandecl (A.ForeignDecl _)   = error "not yet: ForeignDecl"
-    scandecl A.NewtypeDecl{}     = error "not yet: NewtypeDecl"
+    scandecl1 (A.DefaultDecl _)   = error "not yet: DefaultDecl"
+    scandecl1 (A.ForeignDecl _)   = error "not yet: ForeignDecl"
+    scandecl1 A.NewtypeDecl{}     = error "not yet: NewtypeDecl"
 
 trCdecl :: Id -> A.ClassDecl -> DictDef
 trCdecl modid (A.ClassDecl (_, sigvar@(A.AppTy (A.Tycon n) (A.Tyvar ntyvar))) ds) =
