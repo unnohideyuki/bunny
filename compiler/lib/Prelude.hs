@@ -191,6 +191,39 @@ class (Real a, Fractional a) => RealFrac a where
   floor x = if r < 0 then n - 1 else n
     where (n, r) = properFraction x
 
+class (RealFrac a, Floating a) => RealFloat a where
+  floatRadix  :: a -> Integer
+  floatDigits :: a -> Int
+  floatRange  :: a -> (Int, Int)
+  decodeFloat :: a -> (Integer, Int)
+  encodeFloat :: Integer -> Int -> a
+  exponent    :: a -> Int
+  significand :: a -> a
+  scaleFloat  :: Int -> a -> a
+  isNan, isInfinite, isDenormalized, isNegativeZero, isIEEE
+              :: a -> Bool
+  atan2       :: a -> a -> a
+  -- Minimal complete definition:
+  -- All except exponent, significand, scaleFloat, atan2
+  exponent x = if m == 0 then 0 else n + floatDigits x
+    where (m, n) = decodeFloat x
+  significand x = encodeFloat m (- floatDigits x)
+    where (m, _) = decodeFloat x
+  scaleFloat k x = encodeFloat m (n+k)
+    where (m, n) = decodeFloat x
+  atan2 y x
+    | x > 0            = atan (y/x)
+    | x == 0 && y > 0  = pi / 2
+    | x < 0  && y > 0  = pi + atan (y/x)
+    | (x <= 0 && y < 0) ||
+      (x < 0 && isNegativeZero y) ||
+      (isNegativeZero x && isNegativeZero y)
+                       = -atan2 (-y) x
+    | y == 0 && (x < 0 || isNegativeZero y)
+                       = pi -- must be after the previous test on zero y
+    | x == 0 && y == 0 = y -- must be after the other double zero tests
+    | otherwise        = x + y -- x or y is a NaN, return a NaN (via +)
+  
 -- Numeric functions
 
 subtract :: (Num a) => a -> a -> a
