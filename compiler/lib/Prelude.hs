@@ -1186,6 +1186,10 @@ instance (Read a) => Read [a] where
   readsPrec p = readList
 
 -- PreludeIO
+
+putChar :: Char -> IO ()
+putChar = Prim.putChar
+
 putStrLn :: String -> IO ()
 putStrLn =  Prim.putStrLn
 

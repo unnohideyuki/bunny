@@ -330,6 +330,10 @@ primFloatAtanhCfun =  "Prim.floatAtanh" :>: Forall [] ([] :=> (tFloat `fn` tFloa
 primFloatShowCfun :: Assump
 primFloatShowCfun  = "Prim.floatShow" :>: Forall [] ([] :=> (tFloat `fn` tString))
 
+primPutCharCfun :: Assump
+primPutCharCfun =
+  "Prim.putChar" :>: Forall [] ([] :=> (tChar `fn` TAp tIO tUnit))
+
 primPutStrLnCfun :: Assump
 primPutStrLnCfun =
   "Prim.putStrLn" :>: Forall [] ([] :=> (TAp tList tChar `fn` TAp tIO tUnit))
@@ -387,6 +391,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun, tripleCfun
                 , errorCfun
                 , eFAILCfun
                 , primSeqCfun
+                , primPutCharCfun
                 , primPutStrLnCfun
                 , primGetCharCfun
                 , overloadedCfun
@@ -485,6 +490,7 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.bindIO", "Prim.bindIO")
                        , ("Prim.failIO", "Prim.failIO")
                        , ("Prim.seq", "Prim.seq")
+                       , ("Prim.putChar", "Prim.putChar")
                        , ("Prim.putStrLn", "Prim.putStrLn")
                        , ("Prim.getChar", "Prim.getChar")
                        ])

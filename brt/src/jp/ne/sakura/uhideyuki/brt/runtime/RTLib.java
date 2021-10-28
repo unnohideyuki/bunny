@@ -22,6 +22,15 @@ class SeqFunc implements LambdaForm {
     }
 }
 
+class PutCharFunc implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	IOWrapper.println("#### putChar is not implemented yet. ####");
+	return RTLib.app(Prim.mkretIO(), RTLib.unit);
+    }
+}
+
 class PutStrLnFunc implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
@@ -174,6 +183,8 @@ public class RTLib {
     }
 
     public static Expr seq = mkFun(new SeqFunc());
+    
+    public static Expr putChar = mkFun(new PutCharFunc());
     
     public static Expr putStrLn = mkFun(new PutStrLnFunc());
 
