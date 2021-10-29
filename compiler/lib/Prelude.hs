@@ -1190,6 +1190,9 @@ instance (Read a) => Read [a] where
 putChar :: Char -> IO ()
 putChar = Prim.putChar
 
+putStr :: String -> IO ()
+putStr s = mapM_ putChar s
+
 putStrLn :: String -> IO ()
 putStrLn =  Prim.putStrLn
 
