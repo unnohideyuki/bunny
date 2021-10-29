@@ -22,4 +22,7 @@ public class IOWrapper {
 	System.err.println(s);
     }
 
+    public static void print(char[] s){
+	System.out.print(s);
+    }
 }

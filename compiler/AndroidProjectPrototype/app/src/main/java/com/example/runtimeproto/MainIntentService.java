@@ -86,4 +86,10 @@ public class MainIntentService extends IntentService {
             textView.append(str + "\n");
         }
     }
+
+    public static void print(char[] s){
+        synchronized (textView) {
+            textView.append(new String(s));
+        }
+    }
 }

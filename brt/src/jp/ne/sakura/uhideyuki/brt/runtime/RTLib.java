@@ -26,7 +26,11 @@ class PutCharFunc implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
 	assert args.length == arity();
-	IOWrapper.println("#### putChar is not implemented yet. ####");
+	AtomExpr e = (AtomExpr) RT.eval(args[0]);
+	assert(((AtomExpr)e).a instanceof Var);
+	assert(((Var)e.a).obj instanceof BoxedCharObj);
+	BoxedCharObj c = (BoxedCharObj)((Var) e.a).obj;
+	IOWrapper.print(Character.toChars(c.value));
 	return RTLib.app(Prim.mkretIO(), RTLib.unit);
     }
 }
