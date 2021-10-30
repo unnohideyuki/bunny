@@ -239,6 +239,18 @@ primDoubleAcoshCfun =  "Prim.doubleAcosh" :>: Forall [] ([] :=> (tDouble `fn` tD
 primDoubleAtanhCfun :: Assump
 primDoubleAtanhCfun =  "Prim.doubleAtanh" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
 
+primDoubleIsNaNCfun :: Assump
+primDoubleIsNaNCfun =  "Prim.doubleIsNaN" :>: Forall [] ([] :=> (tDouble `fn` tBool))
+
+primDoubleIsInfiniteCfun :: Assump
+primDoubleIsInfiniteCfun =  "Prim.doubleIsInfinite" :>: Forall [] ([] :=> (tDouble `fn` tBool))
+
+primDoubleIsDenormalizedCfun :: Assump
+primDoubleIsDenormalizedCfun =  "Prim.doubleIsDenormalized" :>: Forall [] ([] :=> (tDouble `fn` tBool))
+
+primDoubleIsNegativeZeroCfun :: Assump
+primDoubleIsNegativeZeroCfun =  "Prim.doubleIsNegativeZero" :>: Forall [] ([] :=> (tDouble `fn` tBool))
+
 primDoubleShowCfun :: Assump
 primDoubleShowCfun  = "Prim.doubleShow" :>: Forall [] ([] :=> (tDouble `fn` tString))
 
@@ -327,6 +339,18 @@ primFloatAcoshCfun =  "Prim.floatAcosh" :>: Forall [] ([] :=> (tFloat `fn` tFloa
 primFloatAtanhCfun :: Assump
 primFloatAtanhCfun =  "Prim.floatAtanh" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
 
+primFloatIsNaNCfun :: Assump
+primFloatIsNaNCfun =  "Prim.floatIsNaN" :>: Forall [] ([] :=> (tFloat `fn` tBool))
+
+primFloatIsInfiniteCfun :: Assump
+primFloatIsInfiniteCfun =  "Prim.floatIsInfinite" :>: Forall [] ([] :=> (tFloat `fn` tBool))
+
+primFloatIsDenormalizedCfun :: Assump
+primFloatIsDenormalizedCfun =  "Prim.floatIsDenormalized" :>: Forall [] ([] :=> (tFloat `fn` tBool))
+
+primFloatIsNegativeZeroCfun :: Assump
+primFloatIsNegativeZeroCfun =  "Prim.floatIsNegativeZero" :>: Forall [] ([] :=> (tFloat `fn` tBool))
+
 primFloatShowCfun :: Assump
 primFloatShowCfun  = "Prim.floatShow" :>: Forall [] ([] :=> (tFloat `fn` tString))
 
@@ -376,6 +400,8 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun, tripleCfun
                 , primDoubleSinhCfun, primDoubleCoshCfun, primDoubleTanhCfun
                 , primDoubleAsinCfun, primDoubleAcosCfun, primDoubleAtanCfun
                 , primDoubleAsinhCfun, primDoubleAcoshCfun, primDoubleAtanhCfun
+                , primDoubleIsNaNCfun, primDoubleIsInfiniteCfun
+                , primDoubleIsDenormalizedCfun, primDoubleIsNegativeZeroCfun
                 , primDoubleShowCfun
                 , primFloatLeCfun, primFloatEqCfun
                 , primFloatAddCfun, primFloatSubCfun, primFloatMulCfun
@@ -387,6 +413,8 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun, tripleCfun
                 , primFloatSinhCfun, primFloatCoshCfun, primFloatTanhCfun
                 , primFloatAsinCfun, primFloatAcosCfun, primFloatAtanCfun
                 , primFloatAsinhCfun, primFloatAcoshCfun, primFloatAtanhCfun
+                , primFloatIsNaNCfun, primFloatIsInfiniteCfun
+                , primFloatIsDenormalizedCfun, primFloatIsNegativeZeroCfun
                 , primFloatShowCfun
                 , errorCfun
                 , eFAILCfun
@@ -458,6 +486,10 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.doubleAsinh", "Prim.doubleAsinh")
                        , ("Prim.doubleAcosh", "Prim.doubleAcosh")
                        , ("Prim.doubleAtanh", "Prim.doubleAtanh")
+                       , ("Prim.doubleIsNaN", "Prim.doubleIsNaN")
+                       , ("Prim.doubleIsInfinite", "Prim.doubleIsInfinite")
+                       , ("Prim.doubleIsDenormalized", "Prim.doubleIsDenormalized")
+                       , ("Prim.doubleIsNegativeZero", "Prim.doubleIsNegativeZero")
                        , ("Prim.doubleShow", "Prim.doubleShow")
                        , ("Prim.floatLe", "Prim.floatLe")
                        , ("Prim.floatEq", "Prim.floatEq")
@@ -484,6 +516,10 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.floatAsinh", "Prim.floatAsinh")
                        , ("Prim.floatAcosh", "Prim.floatAcosh")
                        , ("Prim.floatAtanh", "Prim.floatAtanh")
+                       , ("Prim.floatIsNaN", "Prim.floatIsNaN")
+                       , ("Prim.floatIsInfinite", "Prim.floatIsInfinite")
+                       , ("Prim.floatIsDenormalized", "Prim.floatIsDenormalized")
+                       , ("Prim.floatIsNegativeZero", "Prim.floatIsNegativeZero")
                        , ("Prim.floatShow", "Prim.floatShow")
                        , ("Prim.error", "Prim.error")
                        , ("Prim.retIO", "Prim.retIO")

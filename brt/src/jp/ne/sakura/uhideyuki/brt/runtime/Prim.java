@@ -327,6 +327,10 @@ public class Prim {
 	return RTLib.mkFun(new DoubleAtanh());
     }
     
+    public static Expr mkdoubleIsNaN(){
+	return RTLib.mkFun(new DoubleIsNaN());
+    }
+    
     public static Expr mkdoubleShow(){
 	return RTLib.mkFun(new DoubleShow());
     }
@@ -430,7 +434,11 @@ public class Prim {
     public static Expr mkfloatAtanh(){
 	return RTLib.mkFun(new FloatAtanh());
     }
-    
+
+    public static Expr mkfloatIsNaN(){
+	return RTLib.mkFun(new FloatIsNaN());
+    }
+
     public static Expr mkfloatShow(){
 	return RTLib.mkFun(new FloatShow());
     }
@@ -1279,6 +1287,22 @@ class DoubleAtanh implements LambdaForm {
     }
 }
 
+class DoubleIsNaN implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedDouble();
+	BoxedDoubleObj ix = (BoxedDoubleObj)((Var)((AtomExpr)x).a).obj;
+	double a = ix.value;
+	if (Double.isNaN(a)){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
 class DoubleShow implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
@@ -1694,6 +1718,22 @@ class FloatAtanh implements LambdaForm {
 	double a = (double) ix.value;
 	float r = (float) (Math.log((1.0 + a)/(1.0-a)) / 2.0);
 	return new AtomExpr(new LitFloat(r));
+    }
+}
+
+class FloatIsNaN implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedFloat();
+	BoxedFloatObj ix = (BoxedFloatObj)((Var)((AtomExpr)x).a).obj;
+	float a = ix.value;
+	if (Float.isNaN(a)){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
     }
 }
 

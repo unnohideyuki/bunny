@@ -200,7 +200,7 @@ class (RealFrac a, Floating a) => RealFloat a where
   exponent    :: a -> Int
   significand :: a -> a
   scaleFloat  :: Int -> a -> a
-  isNan, isInfinite, isDenormalized, isNegativeZero, isIEEE
+  isNaN, isInfinite, isDenormalized, isNegativeZero, isIEEE
               :: a -> Bool
   atan2       :: a -> a -> a
   -- Minimal complete definition:
@@ -674,6 +674,18 @@ properfrac x = let (n :% d) = toRational x
 instance RealFrac Float where
   properFraction = properfrac
 
+instance RealFloat Float where
+  floatRadix _ = 2
+  floatDigits _ = 24
+  floatRange _ = (-125,128)
+  decodeFloat = undefined
+  encodeFloat m n = fromIntegral m * (2.0 ** fromIntegral n)
+  isNaN = Prim.floatIsNaN
+  isInfinite = undefined
+  isDenormalized = undefined
+  isNegativeZero = undefined
+  isIEEE _ = True
+
 instance Real Float where
   toRational = Prim.floatToRational
 
@@ -720,6 +732,19 @@ instance Show Double where
 
 instance RealFrac Double where
   properFraction = properfrac
+
+instance RealFloat Double where
+  floatRadix _ = 2
+  floatDigits _ = 53
+  floatRange _ = (-1021,1024)
+  decodeFloat = undefined
+  encodeFloat m n = fromIntegral m * (2.0 ** fromIntegral n)
+  isNaN = Prim.doubleIsNaN
+  isInfinite = undefined
+  isDenormalized = undefined
+  isNegativeZero = undefined
+  isIEEE _ = True
+
 
 instance Real Double where
   toRational = Prim.doubleToRational
