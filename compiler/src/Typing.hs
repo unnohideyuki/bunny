@@ -157,7 +157,7 @@ modify ce@ClassEnv{ceMap = m} i c = ce{ceMap = insert i c m}
 
 initialEnv :: ClassEnv
 initialEnv  = ClassEnv { ceMap    = empty
-                       , defaults = [tInteger]}
+                       , defaults = [tInteger, tDouble]}
 
 type EnvTransformer = ClassEnv -> Maybe ClassEnv
 
@@ -641,9 +641,9 @@ tiProgram ce as bgs cont = runTI cont $
                            do (ps, as') <- tiSeq tiBindGroup ce as bgs
                               s         <- getSubst
                               rs        <- reduce ce (apply s ps)
-                              s'        <- defaultSubst ce [] rs
+                              -- s'        <- defaultSubst ce [] rs
                               as''      <- getAssump
-                              return (apply2As (s'@@s) (Map.union as' as''))
+                              return (apply2As s (Map.union as' as''))
 
 initialTI :: (Subst, Int, Assumps)
 initialTI = (nullSubst, 0, Map.empty)
