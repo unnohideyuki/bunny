@@ -331,6 +331,22 @@ public class Prim {
 	return RTLib.mkFun(new DoubleIsNaN());
     }
     
+    public static Expr mkdoubleIsInfinite(){
+	return RTLib.mkFun(new DoubleIsInfinite());
+    }
+    
+    public static Expr mkdoubleIsDenormalized(){
+	return RTLib.mkFun(new DoubleIsDenormalized());
+    }
+    
+    public static Expr mkdoubleIsNegativeZero(){
+	return RTLib.mkFun(new DoubleIsNegativeZero());
+    }
+    
+    public static Expr mkdoubleDecodeFloat(){
+	return RTLib.mkFun(new DoubleDecodeFloat());
+    }
+    
     public static Expr mkdoubleShow(){
 	return RTLib.mkFun(new DoubleShow());
     }
@@ -439,6 +455,22 @@ public class Prim {
 	return RTLib.mkFun(new FloatIsNaN());
     }
 
+    public static Expr mkfloatIsInfinite(){
+	return RTLib.mkFun(new FloatIsInfinite());
+    }
+
+    public static Expr mkfloatIsDenormalized(){
+	return RTLib.mkFun(new FloatIsDenormalized());
+    }
+    
+    public static Expr mkfloatIsNegativeZero(){
+	return RTLib.mkFun(new FloatIsNegativeZero());
+    }
+    
+    public static Expr mkfloatDecodeFloat(){
+	return RTLib.mkFun(new FloatDecodeFloat());
+    }
+    
     public static Expr mkfloatShow(){
 	return RTLib.mkFun(new FloatShow());
     }
@@ -1303,6 +1335,74 @@ class DoubleIsNaN implements LambdaForm {
     }
 }
 
+class DoubleIsInfinite implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedDouble();
+	BoxedDoubleObj ix = (BoxedDoubleObj)((Var)((AtomExpr)x).a).obj;
+	double a = ix.value;
+	if (Double.isInfinite(a)){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class DoubleIsDenormalized implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedDouble();
+	BoxedDoubleObj ix = (BoxedDoubleObj)((Var)((AtomExpr)x).a).obj;
+	double a = ix.value;
+	if ((a > - Double.MIN_NORMAL) && (a < Double.MIN_NORMAL)){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class DoubleIsNegativeZero implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedDouble();
+	BoxedDoubleObj ix = (BoxedDoubleObj)((Var)((AtomExpr)x).a).obj;
+	double a = ix.value;
+	if ((a == 0.0) && (1 / a < 0)){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class DoubleDecodeFloat implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedDouble();
+	BoxedDoubleObj ix = (BoxedDoubleObj)((Var)((AtomExpr)x).a).obj;
+	long b = Double.doubleToLongBits(ix.value);
+
+	long s = 1;
+	if ((0x8000000000000000L & b) != 0){ s = -1; }
+	long m = ((0x000fffffffffffffL & b) + 0x10000000000000L) * s;
+	int e = (int)((0x7ff0000000000000L & b) >> 52) - 1023;
+
+	AtomExpr[] v = { new AtomExpr(new LitInteger(m)),
+			 new AtomExpr(new LitInt(e - 52))};
+	return new AtomExpr(new Var(new ConObj(new Cotr("Prelude.(,)"), v)));
+    }
+}
+
 class DoubleShow implements LambdaForm {
     public int arity(){ return 1; }
     public Expr call(AtomExpr[] args){
@@ -1734,6 +1834,74 @@ class FloatIsNaN implements LambdaForm {
 	} else {
 	    return Prim.mkFalse();
 	}
+    }
+}
+
+class FloatIsInfinite implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedFloat();
+	BoxedFloatObj ix = (BoxedFloatObj)((Var)((AtomExpr)x).a).obj;
+	float a = ix.value;
+	if (Float.isInfinite(a)){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class FloatIsDenormalized implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedFloat();
+	BoxedFloatObj ix = (BoxedFloatObj)((Var)((AtomExpr)x).a).obj;
+	float a = ix.value;
+	if ((a > - Float.MIN_NORMAL) && (a < Float.MIN_NORMAL)){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class FloatIsNegativeZero implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedFloat();
+	BoxedFloatObj ix = (BoxedFloatObj)((Var)((AtomExpr)x).a).obj;
+	float a = ix.value;
+	if ((a == 0.0) && (1 / a < 0)){
+	    return Prim.mkTrue();
+	} else {
+	    return Prim.mkFalse();
+	}
+    }
+}
+
+class FloatDecodeFloat implements LambdaForm {
+    public int arity(){ return 1; }
+    public Expr call(AtomExpr[] args){
+	assert args.length == arity();
+	Expr x = RT.eval(args[0]);
+	assert x.isBoxedFloat();
+	BoxedFloatObj ix = (BoxedFloatObj)((Var)((AtomExpr)x).a).obj;
+	int b = Float.floatToIntBits(ix.value);
+
+	long s = 1;
+	if ((0x80000000 & b) != 0){ s = -1; }
+	long m = (long) (((0x007fffff & b) + 0x800000) * s);
+	int e = ((0x7f800000 & b) >> 23) - 127;
+
+	AtomExpr[] v = { new AtomExpr(new LitInteger(m)),
+			 new AtomExpr(new LitInt(e - 23))};
+	return new AtomExpr(new Var(new ConObj(new Cotr("Prelude.(,)"), v)));
     }
 }
 

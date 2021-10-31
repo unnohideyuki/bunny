@@ -239,6 +239,9 @@ primDoubleAcoshCfun =  "Prim.doubleAcosh" :>: Forall [] ([] :=> (tDouble `fn` tD
 primDoubleAtanhCfun :: Assump
 primDoubleAtanhCfun =  "Prim.doubleAtanh" :>: Forall [] ([] :=> (tDouble `fn` tDouble))
 
+primDoubleDecodeFloatCfun :: Assump
+primDoubleDecodeFloatCfun =  "Prim.doubleDecodeFloat" :>: Forall [] ([] :=> (tDouble `fn` pair tInteger tInt))
+
 primDoubleIsNaNCfun :: Assump
 primDoubleIsNaNCfun =  "Prim.doubleIsNaN" :>: Forall [] ([] :=> (tDouble `fn` tBool))
 
@@ -339,6 +342,9 @@ primFloatAcoshCfun =  "Prim.floatAcosh" :>: Forall [] ([] :=> (tFloat `fn` tFloa
 primFloatAtanhCfun :: Assump
 primFloatAtanhCfun =  "Prim.floatAtanh" :>: Forall [] ([] :=> (tFloat `fn` tFloat))
 
+primFloatDecodeFloatCfun :: Assump
+primFloatDecodeFloatCfun =  "Prim.floatDecodeFloat" :>: Forall [] ([] :=> (tFloat `fn` pair tInteger tInt))
+
 primFloatIsNaNCfun :: Assump
 primFloatIsNaNCfun =  "Prim.floatIsNaN" :>: Forall [] ([] :=> (tFloat `fn` tBool))
 
@@ -400,6 +406,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun, tripleCfun
                 , primDoubleSinhCfun, primDoubleCoshCfun, primDoubleTanhCfun
                 , primDoubleAsinCfun, primDoubleAcosCfun, primDoubleAtanCfun
                 , primDoubleAsinhCfun, primDoubleAcoshCfun, primDoubleAtanhCfun
+                , primDoubleDecodeFloatCfun
                 , primDoubleIsNaNCfun, primDoubleIsInfiniteCfun
                 , primDoubleIsDenormalizedCfun, primDoubleIsNegativeZeroCfun
                 , primDoubleShowCfun
@@ -413,6 +420,7 @@ primConsMems  = [ unitCfun, nilCfun, consCfun, pairCfun, tripleCfun
                 , primFloatSinhCfun, primFloatCoshCfun, primFloatTanhCfun
                 , primFloatAsinCfun, primFloatAcosCfun, primFloatAtanCfun
                 , primFloatAsinhCfun, primFloatAcoshCfun, primFloatAtanhCfun
+                , primFloatDecodeFloatCfun
                 , primFloatIsNaNCfun, primFloatIsInfiniteCfun
                 , primFloatIsDenormalizedCfun, primFloatIsNegativeZeroCfun
                 , primFloatShowCfun
@@ -486,6 +494,7 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.doubleAsinh", "Prim.doubleAsinh")
                        , ("Prim.doubleAcosh", "Prim.doubleAcosh")
                        , ("Prim.doubleAtanh", "Prim.doubleAtanh")
+                       , ("Prim.doubleDecodeFloat", "Prim.doubleDecodeFloat")
                        , ("Prim.doubleIsNaN", "Prim.doubleIsNaN")
                        , ("Prim.doubleIsInfinite", "Prim.doubleIsInfinite")
                        , ("Prim.doubleIsDenormalized", "Prim.doubleIsDenormalized")
@@ -516,6 +525,7 @@ primNames  = fromList (primConsNames ++
                        , ("Prim.floatAsinh", "Prim.floatAsinh")
                        , ("Prim.floatAcosh", "Prim.floatAcosh")
                        , ("Prim.floatAtanh", "Prim.floatAtanh")
+                       , ("Prim.floatDecodeFloat", "Prim.floatDecodeFloat")
                        , ("Prim.floatIsNaN", "Prim.floatIsNaN")
                        , ("Prim.floatIsInfinite", "Prim.floatIsInfinite")
                        , ("Prim.floatIsDenormalized", "Prim.floatIsDenormalized")

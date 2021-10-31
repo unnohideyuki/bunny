@@ -678,12 +678,12 @@ instance RealFloat Float where
   floatRadix _ = 2
   floatDigits _ = 24
   floatRange _ = (-125,128)
-  decodeFloat = undefined
+  decodeFloat = Prim.floatDecodeFloat
   encodeFloat m n = fromIntegral m * (2.0 ** fromIntegral n)
   isNaN = Prim.floatIsNaN
-  isInfinite = undefined
-  isDenormalized = undefined
-  isNegativeZero = undefined
+  isInfinite = Prim.floatIsInfinite
+  isDenormalized = Prim.floatIsDenormalized
+  isNegativeZero = Prim.floatIsNegativeZero
   isIEEE _ = True
 
 instance Real Float where
@@ -737,12 +737,12 @@ instance RealFloat Double where
   floatRadix _ = 2
   floatDigits _ = 53
   floatRange _ = (-1021,1024)
-  decodeFloat = undefined
+  decodeFloat = Prim.doubleDecodeFloat
   encodeFloat m n = fromIntegral m * (2.0 ** fromIntegral n)
   isNaN = Prim.doubleIsNaN
-  isInfinite = undefined
-  isDenormalized = undefined
-  isNegativeZero = undefined
+  isInfinite = Prim.doubleIsInfinite
+  isDenormalized = Prim.doubleIsDenormalized
+  isNegativeZero = Prim.doubleIsNegativeZero
   isIEEE _ = True
 
 
