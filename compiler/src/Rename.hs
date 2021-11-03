@@ -798,7 +798,8 @@ renPat (A.ListExp es) = renPat $ expandList es
 renPat A.WildcardPat = return PWildcard
 
 renPat (A.AsPat n e) = do p <- renPat e
-                          return (PAs (origName n) p)
+                          qn <- renameVar n
+                          return (PAs qn p)
 
 renPat e = error $ "renPat: " ++ show e
 
