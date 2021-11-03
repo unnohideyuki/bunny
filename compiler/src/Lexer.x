@@ -528,7 +528,7 @@ act_token2 maker inp@(_, _, _, s) len =
   act_token1 (\pos -> maker $ (take len s, pos)) inp len
 
 act_integer :: AlexAction Token
-act_integer (pos, _, _, s) len = do unFlags; return $ TInteger (i, pos)
+act_integer (pos, _, _, s) len = act_token (TInteger (i, pos)) pos
   where
     i = read $ take len s  
 
