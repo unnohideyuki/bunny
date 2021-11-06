@@ -533,7 +533,7 @@ act_integer (pos, _, _, s) len = act_token (TInteger (i, pos)) pos
     i = read $ take len s  
 
 act_float :: AlexAction Token
-act_float (pos, _, _, s) len = do unFlags; return $ TFloat (x, pos)
+act_float (pos, _, _, s) len = do act_token (TFloat (x, pos)) pos
   where
     x = read $ take len s  
 }

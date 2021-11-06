@@ -1,0 +1,6 @@
+non-zero
+zero
+non-zero
+zero
+non-zero
+zero
