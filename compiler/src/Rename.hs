@@ -540,10 +540,8 @@ renInstDecls dcls' = do
     renMName pfx (A.TypeSigDecl _ _) = error "must not occur"
 
     ren' pfx name = do
-      lvs' <- getLvs
-      let lv = head lvs'
-          lvs = tail lvs'
-          n = origName name
+      lv:lvs <- getLvs
+      let n = origName name
           n' = lvPrefix lv ++ "." ++ pfx ++ "." ++ n
           dict' = insert n' n' (lvDict lv) -- here is defferent from renameVar
           lv' = lv{lvDict=dict'}
@@ -620,9 +618,7 @@ renDecls decls = do tbss <- mapM renDecl decls
                 (e2', res'') <- checklit e2 res'
                 return (A.FunAppExp e1' e2', res'')
               checklit (A.UMinusExp l@(A.LitExp _)) res = do
-                -- (e', [(v, e)])<- checklit l []
-                (e', xs) <- checklit l []
-                let (v, e) = head xs
+                (e', [(v, e)])<- checklit l []
                 return (e', (v, A.UMinusExp e):res)
               checklit (A.AsPat n e) res = do
                 (e', res') <- checklit e res
@@ -850,7 +846,7 @@ resolveFixity rest opb eb opa ea = do
       (prec1, fix1) <- lookupInfixOp op1
       (prec2, fix2) <- lookupInfixOp op2
       if prec1 == prec2 && (fix1 /= fix2 || fix1 == A.Infix)
-        then error "fixty resolution error."
+        then fail "fixty resolution error."
         else if prec1 > prec2 || (prec1 == prec2 && fix1 == A.Infixl)
              then if i == 0
                   then resolve 0 (opAppExp op1 e0 e1) op2 e2 toks
@@ -944,7 +940,7 @@ renExp (A.ListExp es) =
 
 renExp (A.DoExp [stmt]) = case stmt of
   A.ExpStmt e -> renExp e
-  _ -> error "The last statement in a 'do' block must be an expression"
+  _ -> fail "The last statement in a 'do' block must be an expression"
 
 renExp (A.DoExp (A.ExpStmt e:stmts)) =
   renExp $ A.FunAppExp (A.FunAppExp aThen e) (A.DoExp stmts)

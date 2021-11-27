@@ -69,7 +69,7 @@ infixr 4 @@
 s1 @@ s2 = [(u, apply s1 t) | (u, t) <- s2] ++ s1
 
 merge      :: Monad m => Subst -> Subst -> m Subst
-merge s1 s2 = if agree then return (s1 ++ s2) else error "merge fails"
+merge s1 s2 = if agree then return (s1 ++ s2) else fail "merge fails"
   where agree = all (\v -> apply s1 (TVar v) == apply s2 (TVar v))
                     (map fst s1 `intersect` map fst s2)
 
@@ -84,11 +84,11 @@ mgu (TAp l r) (TAp l' r') = do s1 <- mgu l l'
 mgu (TVar u) t            = varBind u t
 mgu t (TVar u)            = varBind u t
 mgu (TCon tc1) (TCon tc2) | tc1 == tc2 = return nullSubst
-mgu t1 t2                 = error $ "types do not unify: " ++ show (t1, t2)
+mgu t1 t2                 = fail $ "types do not unify: " ++ show (t1, t2)
 
 varBind u t | t == TVar u      = return nullSubst
-            | u `elem` tv t    = error $ "occurs check fails: " ++ show u ++ ", " ++ show t
-            | kind u /= kind t = error "kinds do not match"
+            | u `elem` tv t    = fail $ "occurs check fails: " ++ show u ++ ", " ++ show t
+            | kind u /= kind t = fail "kinds do not match"
             | otherwise        = return (u +-> t)
 
 match :: Monad m => Type -> Type -> m Subst
@@ -98,7 +98,7 @@ match (TAp l r) (TAp l' r')                    = do sl <- match l l'
                                                     merge sl sr
 match (TVar u) t            | kind u == kind t = return (u +-> t)
 match (TCon tc1) (TCon tc2) | tc1 == tc2       = return nullSubst
-match _ _                                      = error "types do not match"
+match _ _                                      = fail "types do not match"
 
 -- Predicates
 
@@ -120,7 +120,7 @@ matchPred = lift match
 
 lift :: Monad m => (Type -> Type -> m a) -> Pred -> Pred -> m a
 lift m (IsIn i t) (IsIn i' t') | i == i'   = m t t'
-                               | otherwise = error "classes differ"
+                               | otherwise = fail "classes differ"
 
 -- Class
 
@@ -136,7 +136,7 @@ data ClassEnv = ClassEnv { ceMap    :: Table Class
 classes :: Monad m => ClassEnv -> Id -> m Class
 classes ce i = case tabLookup i (ceMap ce) of
                 Just c  -> return c
-                Nothing -> error $ "class not defined: " ++ show (ce, i)
+                Nothing -> fail "class not defined"
 
 super     :: ClassEnv -> Id -> [Id]
 super ce i = case classes ce i of
@@ -167,8 +167,8 @@ infixr 5 <:>
 
 addClass                           :: Id -> [Id] -> EnvTransformer
 addClass i is ce
-  | defined (classes ce i)          = error "class already defined"
-  | any (not.defined.classes ce) is = error "superclass not defined"
+  | defined (classes ce i)          = fail "class already defined"
+  | any (not.defined.classes ce) is = fail "superclass not defined"
   | otherwise                       = return (modify ce i (is, []))
 
 
@@ -197,8 +197,8 @@ addNumClasses =
 
 addInst :: [Pred] -> Pred -> EnvTransformer
 addInst ps p@(IsIn i _) ce
-  | not (defined (classes ce i)) = error "no class for instance"
-  | any (overlap p) qs           = error "overlapping instance"
+  | not (defined (classes ce i)) = fail "no class for instance"
+  | any (overlap p) qs           = fail "overlapping instance"
   | otherwise                    = return (modify ce i c)
   where its = insts ce i
         qs  = [q | (_ :=> q) <- its]
@@ -243,7 +243,7 @@ toHnfs ce ps = do pss <- mapM (toHnf ce) ps
 toHnf :: Monad m => ClassEnv -> Pred -> m [Pred]
 toHnf ce p | inHnf p   = return [p]
            | otherwise = case byInst ce p of
-                           Nothing -> error $ "context reduction: " ++ show p
+                           Nothing -> fail $ "context reduction: " ++ show p
                            Just ps -> toHnfs ce ps
 
 simplify   :: ClassEnv -> [Pred] -> [Pred]
@@ -299,7 +299,7 @@ tv2As as      = let as' = map (\(i,sc) -> i :>: sc) (Map.toList as)
 
 find                   :: Monad m => Id -> Assumps -> m Scheme
 find i as = case Map.lookup i as of
-              Nothing -> error $ "unbound identifier: " ++ i
+              Nothing -> fail $ "unbound identifier: " ++ i
               Just sc -> return sc
 
 -------------------------------------------------------------------------------
@@ -549,7 +549,7 @@ candidates ce (v, qs) = [t' | let is = [i | IsIn i _ <- qs]
 withDefaults :: Monad m => ([Ambiguity] -> [Type] -> a)
                   -> ClassEnv -> [Tyvar] -> [Pred] -> m a
 withDefaults f ce vs ps
-  | any null tss = error $ "cannot resolve ambiguity: " ++ show vps
+  | any null tss = fail $ "cannot resolve ambiguity: " ++ show vps
   | otherwise    = return (f vps (map head tss))
   where vps = ambiguities ce vs ps
         tss = map (candidates ce) vps
@@ -577,9 +577,9 @@ tiExpl ce as (_, sc, alts)
            ps'     = filter (not.entail ce qs') (apply s ps)
        (ds, rs)   <- split ce fs gs ps'
        if sc /= sc' then
-           error "signature too general"
+           fail "signature too general"
          else if not (null rs) then
-           error "context too weak"
+           fail "context too weak"
          else
            return ds
 

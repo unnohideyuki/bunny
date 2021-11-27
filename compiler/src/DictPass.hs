@@ -154,7 +154,7 @@ getTy (Case scrut _ as) = do
 
 getTy (Let _ e) = getTy e
 
-getTy e = error $ "Non-Exaustive Patterns in getTy: " ++ show e
+getTy e = fail $ "Non-Exaustive Patterns in getTy: " ++ show e
 
 tyScrut s as = do
   qt' :=> t <- getTy s
@@ -199,7 +199,7 @@ unifyTs (t:ts) = do
   unify' t t'
   s <- getSubst
   return $ apply s t
-unifyTs [] = error "Non-exhaustive patterns in uniftyTs."
+unifyTs [] = fail "Non-exhaustive patterns in uniftyTs."
 
 lookupDictArg :: (Id, Tyvar) -> TC (Maybe Var)
 lookupDictArg (c, y) = do
