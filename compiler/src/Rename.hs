@@ -540,7 +540,9 @@ renInstDecls dcls' = do
     renMName pfx (A.TypeSigDecl _ _) = error "must not occur"
 
     ren' pfx name = do
-      lv:lvs <- getLvs
+      x <- getLvs
+      let lv = head x
+          lvs = tail x
       let n = origName name
           n' = lvPrefix lv ++ "." ++ pfx ++ "." ++ n
           dict' = insert n' n' (lvDict lv) -- here is defferent from renameVar
@@ -618,7 +620,8 @@ renDecls decls = do tbss <- mapM renDecl decls
                 (e2', res'') <- checklit e2 res'
                 return (A.FunAppExp e1' e2', res'')
               checklit (A.UMinusExp l@(A.LitExp _)) res = do
-                (e', [(v, e)])<- checklit l []
+                (e', x)<- checklit l []
+                let (v, e) = head x
                 return (e', (v, A.UMinusExp e):res)
               checklit (A.AsPat n e) res = do
                 (e', res') <- checklit e res

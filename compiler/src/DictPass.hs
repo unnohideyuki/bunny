@@ -97,7 +97,9 @@ extSubst s' = do s <- getSubst
 -- it is equivalent to Typing.unify
 unify' :: Type -> Type -> TC ()
 unify' t1 t2 = do s <- getSubst
-                  u <- mgu (apply s t1) (apply s t2)
+                  let u = case mgu (apply s t1) (apply s t2) of
+                            Just x  -> x
+                            Nothing -> error "unify' failed"
                   extSubst u
 
 getPss :: TC [(Pred, Id)]

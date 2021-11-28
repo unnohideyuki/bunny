@@ -16,12 +16,11 @@ module Typing where
 import           Symbol
 import           Types
 
-import           Control.Monad              (msum, zipWithM)
-import           Control.Monad.State.Strict (State, get, put, runState, state)
-import           Data.List                  (intersect, nub, partition, union,
-                                             (\\))
-import qualified Data.Map.Strict            as Map
-import           Data.Maybe                 (fromMaybe)
+import           Control.Monad      (msum, zipWithM)
+import qualified Control.Monad.Fail as Fail
+import           Data.List          (intersect, nub, partition, union, (\\))
+import qualified Data.Map.Strict    as Map
+import           Data.Maybe         (fromMaybe)
 import           Debug.Trace
 
 class HasKind t where
@@ -75,8 +74,8 @@ merge s1 s2 = if agree then return (s1 ++ s2) else error "merge fails"
 
 -- Unification
 
-mgu     :: Monad m => Type -> Type -> m Subst
-varBind :: Monad m => Tyvar -> Type -> m Subst
+mgu     :: Fail.MonadFail m => Type -> Type -> m Subst
+varBind :: Fail.MonadFail m => Tyvar -> Type -> m Subst
 
 mgu (TAp l r) (TAp l' r') = do s1 <- mgu l l'
                                s2 <- mgu (apply s1 r) (apply s1 r')
@@ -91,7 +90,7 @@ varBind u t | t == TVar u      = return nullSubst
             | kind u /= kind t = error "kinds do not match"
             | otherwise        = return (u +-> t)
 
-match :: Monad m => Type -> Type -> m Subst
+match :: Fail.MonadFail m => Type -> Type -> m Subst
 
 match (TAp l r) (TAp l' r')                    = do sl <- match l l'
                                                     sr <- match r r'
@@ -114,7 +113,7 @@ instance Types Pred where
   apply s (IsIn i t) = IsIn i (apply s t)
   tv (IsIn _ t)      = tv t
 
-mguPred, matchPred :: Monad m => Pred -> Pred -> m Subst
+mguPred, matchPred :: Fail.MonadFail m => Pred -> Pred -> m Subst
 mguPred   = lift mgu
 matchPred = lift match
 
@@ -305,13 +304,39 @@ find i as = case Map.lookup i as of
 -------------------------------------------------------------------------------
 -- Type inference monad
 
-type TI a = State (Subst, Int, Assumps) a
+newtype TI a = TI (Subst -> Int -> Assumps -> (Subst, Int, Assumps, a))
+
+instance Functor TI where
+  fmap f (TI g) = TI (\s n as -> case g s n as of
+                                   (s', n', as', x) -> (s', n', as', f x))
+
+instance Applicative TI where
+  pure x = TI (\s n as -> (s, n, as, x))
+  TI f <*> TI g =
+    TI (\s n as -> case f s n as of
+                     (s', n', as', h) -> case g s' n' as' of
+                                           (s'', n'', as'', x) -> (s'', n'', as'', h x))
+
+instance Monad TI where
+  return x = TI (\s n as -> (s, n, as, x))
+  TI f >>= g = TI (\s n as -> case f s n as of
+                                (s', n', as', x) -> let TI gx = g x
+                                                    in gx s' n' as')
+
+instance Fail.MonadFail TI where
+  fail = error
+
+get' :: TI (Subst, Int, Assumps)
+get' = TI (\s n as -> (s, n, as, (s, n, as)))
+
+put' :: (Subst, Int, Assumps) -> TI ()
+put' (s, n, as) = TI (\_ _ _ -> (s, n, as, ()))
 
 runTI :: (Subst, Int, Assumps) -> TI a -> a
-runTI st ti = x where (x, _) = runState ti st
+runTI (s, n, as) (TI f) = x where (_, _, _, x) = f s n as
 
 getSubst :: TI Subst
-getSubst  = state $ \st@(s, _, _) -> (s, st)
+getSubst  = TI (\s n as -> (s, n, as, s))
 
 unify      :: Type -> Type -> TI ()
 unify t1 t2 = do s <- getSubst
@@ -319,14 +344,14 @@ unify t1 t2 = do s <- getSubst
                  extSubst u
 
 extSubst   :: Subst -> TI ()
-extSubst s' = state $ \(s, n, as) -> ((), (s'@@s, n, as))
+extSubst s' = TI (\s n as -> (s'@@s, n, as, ()))
 
 enumId :: Int -> Id
 enumId n = "v" ++ show n
 
 newTVar :: Kind -> TI Type
-newTVar k = state $ \(s, n, as) -> let v = Tyvar (enumId n) k
-                                   in (TVar v, (s, n+1, as))
+newTVar k = TI (\s n as -> let v = Tyvar (enumId n) k
+                           in (s, n+1, as, TVar v))
 
 freshInst :: Scheme -> TI (Qual Type)
 freshInst (Forall ks qt) = do ts <- mapM newTVar ks
@@ -334,12 +359,12 @@ freshInst (Forall ks qt) = do ts <- mapM newTVar ks
 
 appendAssump :: Assumps -> TI ()
 appendAssump as' = do
-  (s, n, as) <- get
-  put (s, n, Map.union as as')
+  (s, n, as) <- get'
+  put' (s, n, Map.union as as')
 
 getAssump :: TI Assumps
 getAssump = do
-  (_, _, as) <- get
+  (_, _, as) <- get'
   return as
 
 class Instantiate t where
@@ -597,7 +622,7 @@ tiImpls ce as bs = do ts <- mapM (\_ -> newTVar Star) bs
                           scs   = map toScheme ts
                           as'   = Map.union (Map.fromList (zipWith (,) is scs)) as
                           altss = map snd bs
-                      pss <- zipWithM (tiAlts ce as') altss ts
+                      pss <- sequence (zipWith (tiAlts ce as') altss ts)
                       s   <- getSubst
                       let ps' = apply s (concat pss)
                           ts' = apply s ts
@@ -653,5 +678,5 @@ tiImportedProgram ::
   -> (Subst, Int, Assumps)
 tiImportedProgram ce as bgs st =
   runTI st $ do (_, as') <- tiSeq tiBindGroup ce as bgs
-                (s, n, _) <- get -- TODO: why not use [Assump] in the state
+                (s, n, _) <- get' -- TODO: why not use [Assump] in the state
                 return (s, n, Map.union as as')

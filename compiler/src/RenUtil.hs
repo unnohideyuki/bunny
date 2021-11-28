@@ -176,12 +176,15 @@ pushLv lv = do lvs <- getLvs
                putLvs (lv:lvs)
 
 getPrefix :: RN Id
-getPrefix = do lv:_ <- getLvs
+getPrefix = do x <- getLvs
+               let lv = head x
                return $ lvPrefix lv
 
 newNum :: RN Int
 newNum = do
-  lv:lvs <- getLvs
+  x <- getLvs
+  let lv = head x
+      lvs = tail x
   let n = lvNum lv
   putLvs (lv{lvNum = n + 1} : lvs)
   return n
@@ -212,7 +215,9 @@ renameVar :: Name -> RN Id
 renameVar name
   | alreadyQualified (origName name) = return $ origName name
   | otherwise   = do
-  lv:lvs <- getLvs
+  x <- getLvs
+  let lv = head x
+      lvs = tail x
   let n = origName name
       n' = lvPrefix lv ++ "." ++ n
       dict' = insert n n' (lvDict lv)
