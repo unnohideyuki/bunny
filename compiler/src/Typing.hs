@@ -132,7 +132,7 @@ data ClassEnv = ClassEnv { ceMap    :: Table Class
                          , defaults :: [Type]}
                 deriving Show
 
-classes :: Monad m => ClassEnv -> Id -> m Class
+classes :: Fail.MonadFail m => ClassEnv -> Id -> m Class
 classes ce i = case tabLookup i (ceMap ce) of
                 Just c  -> return c
                 Nothing -> fail "class not defined" -- cannot replace with error
