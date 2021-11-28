@@ -846,7 +846,7 @@ resolveFixity rest opb eb opa ea = do
       (prec1, fix1) <- lookupInfixOp op1
       (prec2, fix2) <- lookupInfixOp op2
       if prec1 == prec2 && (fix1 /= fix2 || fix1 == A.Infix)
-        then fail "fixty resolution error."
+        then error "fixty resolution error."
         else if prec1 > prec2 || (prec1 == prec2 && fix1 == A.Infixl)
              then if i == 0
                   then resolve 0 (opAppExp op1 e0 e1) op2 e2 toks
@@ -940,7 +940,7 @@ renExp (A.ListExp es) =
 
 renExp (A.DoExp [stmt]) = case stmt of
   A.ExpStmt e -> renExp e
-  _ -> fail "The last statement in a 'do' block must be an expression"
+  _ -> error "The last statement in a 'do' block must be an expression"
 
 renExp (A.DoExp (A.ExpStmt e:stmts)) =
   renExp $ A.FunAppExp (A.FunAppExp aThen e) (A.DoExp stmts)

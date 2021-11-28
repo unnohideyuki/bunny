@@ -160,7 +160,7 @@ lookupCDicts :: Id -> RN DictDef
 lookupCDicts n = do
   dicts <- getCDicts
   case lookup n dicts of
-    Nothing   -> fail $ "lookupCDicts: class not found: " ++ show (n, dicts)
+    Nothing   -> error $ "lookupCDicts: class not found: " ++ show (n, dicts)
     Just dict -> return dict
 
 getLvs :: RN [Level]
@@ -232,7 +232,7 @@ regFixity f i (n:ns) = do reg (trFixity f i) n; regFixity f i ns
           qn <- renameVar name
           let  ifxenv' = insert qn finfo ifxenv
           if defined (tabLookup qn ifxenv)
-            then fail $ "duplicate fixity declaration:" ++ qn
+            then error $ "duplicate fixity declaration:" ++ qn
             else putIfxenv ifxenv'
 
 extrName :: A.Exp -> Name
