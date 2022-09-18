@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 module Rename ( module RenUtil
               , scanDecls
               , trCdecl
@@ -46,24 +47,24 @@ scanDecls decls = do
                     cas = foldl' A.FunAppExp c as
                     ds = [case v of
                             A.WildcardPat -> []
-                            _ -> [A.ValDecl v (A.UnguardedRhs e [])]
+                            _             -> [A.ValDecl v (A.UnguardedRhs e [])]
                          | (v, a) <- zip vs as
                          , let e = A.CaseExp (A.VarExp n) [A.Match cas (A.UnguardedRhs a [])]
                          ]
-                  in return $ (d0:concat ds)
+                  in return (d0:concat ds)
               trAsPat n (A.TupleExp xs) rhs = do
                 let xs' = map fromJust xs
                     cn = "(" ++ replicate (length xs - 1) ',' ++ ")"
-                    c = (A.VarExp (Name cn (0,0) True))
+                    c = A.VarExp (Name cn (0,0) True)
                     e = foldl' A.FunAppExp c xs'
                   in trAsPat n e rhs
               trAsPat n (A.ListExp xs) rhs = do
-                let cons = (A.VarExp (Name ":" (0,0) True))
-                    nil = (A.VarExp (Name "[]" (0,0) True))
-                    f a b = A.FunAppExp (A.FunAppExp cons a) b
+                let cons = A.VarExp (Name ":" (0,0) True)
+                    nil = A.VarExp (Name "[]" (0,0) True)
+                    f a = A.FunAppExp (A.FunAppExp cons a)
                     e = foldr f nil xs
                   in trAsPat n e rhs
-              trAsPat n e@(A.InfixExp _ _ _) rhs = do
+              trAsPat n e@(A.InfixExp {}) rhs = do
                 e' <- removeInfix e
                 trAsPat n e' rhs
               trAsPat n e rhs =
@@ -75,7 +76,7 @@ scanDecls decls = do
         then do st <- get
                 let num = rnNum st
                 put st{rnNum = num + 1}
-                let vn = (Name ("_p#" ++ show num) (0,0) False)
+                let vn = Name ("_p#" ++ show num) (0,0) False
                 scanValueDecl2 (A.ValDecl (A.AsPat vn expr') rhs)
         else do renameVar (extrName expr')
                 return [A.ValDecl expr' rhs]
@@ -115,11 +116,11 @@ scanDecls decls = do
 
     removeInfix (A.ParExp e) = removeInfix e
 
-    removeInfix (A.TupleExp es) = do es' <- mapM (\me -> case me of
-                                                  Just e -> do e' <- removeInfix e
-                                                               return (Just e')
-                                                  Nothing -> return Nothing)
-                                         es
+    removeInfix (A.TupleExp es) = do es' <- mapM (\case
+                                                     Just e -> do e' <- removeInfix e
+                                                                  return (Just e')
+                                                     Nothing -> return Nothing)
+                                            es
                                      return (A.TupleExp es')
 
     removeInfix e@(A.LitExp _) = return e
@@ -172,7 +173,7 @@ scanDecls decls = do
       let renCs (n, ts) = do
             qn <- renameVar n
             let t' = foldr fn t ts
-            return $ qn :>: (quantify (tv t') ([] :=> t'))
+            return $ qn :>: quantify (tv t') ([] :=> t')
 
       as <- mapM renCs cs
       appendCMs (fromAssumpList as)
@@ -181,11 +182,9 @@ scanDecls decls = do
       let dc = map (\(n, _) -> (n, as)) da
       appendConstInfo da dc
 
-      let ddrvs = if needDrvShow maybe_dtys
-                  then [genDerivedShow d]
-                  else []
+      let ddrvs = [genDerivedShow d | needDrvShow maybe_dtys]
           ddrvs' = if needDrvEq maybe_dtys
-                   then (genDerivedEq d:ddrvs)
+                   then genDerivedEq d : ddrvs
                    else ddrvs
 
       return ([], [], ddrvs')
@@ -211,7 +210,7 @@ scanDecls decls = do
                                 return $ list rt
 
         renTy (A.TupleTy ts) = do
-          let tcn = "Prelude.(" ++ take (length ts - 1) (repeat ',') ++ ")"
+          let tcn = "Prelude.(" ++ replicate (length ts - 1) ',' ++ ")"
               tk = foldr Kfun Star (replicate (length ts) Star)
               tc = TCon (Tycon tcn tk)
           ts' <- mapM renTy ts
@@ -314,7 +313,7 @@ scanDecls decls = do
           newentry = case aAppTy t1 of
             Just (c, ts) -> (c, (ts, t2))
             Nothing      -> (t1, ([], t2))
-      put st{rnSyn=(newentry:syn)}
+      put st{rnSyn = newentry : syn}
       return ([], [], [])
 
     scandecl1 (A.DefaultDecl _)   = error "not yet: DefaultDecl"
@@ -432,10 +431,10 @@ renInstDecls dcls' = do
   return (concat tbss, ctabs)
   where
     renInstDecl (A.InstDecl ctx t ds) = do
-      let parseTy' (A.Tycon n2) as = (n2, as)
+      let parseTy' (A.Tycon n2) as             = (n2, as)
           parseTy' (A.AppTy t1 (A.Tyvar n)) as = parseTy' t1 (origName n:as)
-          parseTy' (A.ParTy t) as = parseTy' t as
-          parseTy' x _ = error $ "parseTy': " ++ show x
+          parseTy' (A.ParTy t) as              = parseTy' t as
+          parseTy' x _                         = error $ "parseTy': " ++ show x
 
       (qcn, qin, i, as) <- case t of
         (A.AppTy (A.Tycon n1) (A.ListTy (A.Tyvar n2))) -> do
@@ -477,7 +476,7 @@ renInstDecls dcls' = do
           n2 = qcn
           iContext = rnIContext st
           iContext' = case ps of
-                        [IsIn n3 _] -> (((n1, n2), n3):iContext)
+                        [IsIn n3 _] -> ((n1, n2), n3) : iContext
                         _           -> iContext
       put st{rnIContext = iContext'}
       return (tbs, (qin, qcn))
@@ -627,7 +626,7 @@ renDecls decls = do tbss <- mapM renDecl decls
                 (e', res') <- checklit e res
                 return (A.AsPat n e', res')
               checklit (A.ListExp es) res = do
-                (es', rss) <- unzip <$> mapM (\e -> checklit e []) es
+                (es', rss) <- unzip <$> mapM (`checklit` []) es
                 return (A.ListExp es', res ++ concat rss)
               checklit e res = return (e, res)
 
@@ -669,7 +668,7 @@ kiExpr (A.Tycon _) dict     = dict
 
 kiExpr (A.ListTy e) dict    = kiExpr e dict
 
-kiExpr (A.TupleTy ts) dict  = dict ++ concatMap (\t -> kiExpr t []) ts
+kiExpr (A.TupleTy ts) dict  = dict ++ concatMap (`kiExpr` []) ts
 
 kiExpr t dict               = error $ "kiExpr: " ++ show (t, dict)
 
@@ -719,7 +718,7 @@ renSigdoc (A.TupleTy ts) kdict = do
       tcname = "Prelude.(" ++ replicate (len - 1) ',' ++ ")"
       tckind = foldr Kfun Star (replicate len Star)
       tc = TCon (Tycon tcname tckind)
-  ts' <- mapM (\t -> renSigdoc t kdict) ts
+  ts' <- mapM (`renSigdoc` kdict) ts
   let r = foldl' TAp tc ts'
   return r
 
@@ -840,7 +839,7 @@ renRhs rhs = do
 
 resolveFixity :: A.Exp -> Name -> A.Exp -> Name -> A.Exp -> RN A.Exp
 resolveFixity rest opb eb opa ea = do
-  let (e0, ((op1, e1):toks)) = travarse rest [(opb, eb), (opa, ea)]
+  let (e0, (op1, e1):toks) = travarse rest [(opb, eb), (opa, ea)]
   (r, _) <- resolve 0 e0 op1 e1 toks
   return r
   where
@@ -997,7 +996,7 @@ renExp (A.UMinusExp e) = do
   renExp (A.FunAppExp f_negate e)
 
 renExp (A.ExpWithTySig e sig) =
-  let x_name = (Name "_x#" (0,0) False)
+  let x_name = Name "_x#" (0,0) False
       x_valdecl = A.VDecl (A.ValDecl (A.VarExp x_name) (A.UnguardedRhs e []))
       x_tysigdecl = A.VDecl (A.TypeSigDecl [x_name] sig)
   in renExp (A.LetExp [x_tysigdecl, x_valdecl] (A.VarExp x_name))
